@@ -1,0 +1,13 @@
+Version 2.11 - December 10, 2010 by Alden:
+  - -h now prints version number
+  - added -v option in readme
+
+Version 2.1 - December 8, 2010 by Alden:
+  - added option -e for rigorous calculation
+  - edited the readme
+
+
+Version 2.0 - December 3, 2010 by Alden:
+  - implemented automatic cyclic reduction of input words
+  - cleaned up code and reset the version number
+  
