@@ -64,7 +64,7 @@ void write_linear_program(vector<string>& w,
   /////// b vector
   outbFile.open(bFile.c_str(), fstream::out);
   
-  for (i=0; i<(int)arc_list.size(); i++) {          //all the arc constraints are zero
+  for (i=0; i<(int)arc_list.size()/2; i++) {          //all the arc constraints are zero
     outbFile << "0\n";
   }
   
