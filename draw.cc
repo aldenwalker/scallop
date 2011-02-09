@@ -395,19 +395,19 @@ void write_fatgraph_file(string filename, vector<vert>& verts,
   fstream fgFile;
   fgFile.open(filename.c_str(), fstream::out);
   fgFile << "vertices " << verts.size() << "\n";
-  for (i=0; i<verts.size(); i++) {
+  for (i=0; i<(int)verts.size(); i++) {
     fgFile << "VERT" << i << " " << verts[i].e.size() << "\n";
-    for (j=0; j<verts[i].e.size(); j++) {
+    for (j=0; j<(int)verts[i].e.size(); j++) {
       fgFile << "EDGE" << verts[i].e[j] << " ";
     }
     fgFile << "\n";
-    for (j=0; j<verts[i].e.size(); j++) {
+    for (j=0; j<(int)verts[i].e.size(); j++) {
       fgFile << (verts[i].end[j] == 1 ? 1 : 0) << " ";
     }
     fgFile << "\n";
   }
   fgFile << "edges " << edges.size() << "\n";
-  for (i=0; i<edges.size(); i++) {
+  for (i=0; i<(int)edges.size(); i++) {
     fgFile << "EDGE" << i << " " << edges[i].label 
                             << " " << inverse(edges[i].label)
                             << " " << "VERT" << edges[i].start

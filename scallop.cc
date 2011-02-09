@@ -32,6 +32,7 @@
 #include "draw.h"
 #include "rational.h"
 #include "lp.h"
+#include "io.h"
 
 using namespace std;
 
@@ -184,6 +185,8 @@ int main(int argc, char* argv[]){
 	int VERBOSE = 0;
 	int DRAW = 0;
 	int RIGOROUS = 0;
+	int WRITE_PROGRAM = 0;
+	string programFile = "";
 	int RAT = 0;
 	int overrideMaxjun = 0;
 	int overridedMaxjun = -1;
@@ -194,12 +197,13 @@ int main(int argc, char* argv[]){
 	  cout << "version 2.11 - December 10, 2010\n";
 	  cout << "by Danny Calegari and Alden Walker\n";
 	  cout << "see the README for details\n";
-		cout << "usage: scallop [-revh, -mn, -s filename] [i_1]w_1 [i_1]w_2 . . [i_n]w_n for scl(i_1*w_1 + i_2*w_2 + . . + i_n*w_n) \n";
+		cout << "usage: scallop [-revh, -mn, -s filename, -L filename] [i_1]w_1 [i_1]w_2 . . [i_n]w_n for scl(i_1*w_1 + i_2*w_2 + . . + i_n*w_n) \n";
 		cout << "options:\n\t-s filename :\tdraw the components of an extremal surface, each to \n";
 		cout <<                      "\t\t\ta different file and print generators for the \n";
 		cout <<                      "\t\t\timage of the fundamental group\n";
 		cout << "\t-r : use rational arithmetic (GMP) internally\n";
 		cout << "\t-e : rigorous (slower) calculation (see README)\n";
+		cout << "\t-L : output the linear program to filename.A, .b, and .c\n";
 		cout << "\t-mn : advanced: use polygons with up to n edges\n";
 		cout << "\t-v : verbose output\n";
 		cout << "\t-h : print this message\n";
@@ -218,6 +222,12 @@ int main(int argc, char* argv[]){
       case 's':
         DRAW = 1;
         drawFile = argv[chainStart+1];
+        chainStart++;
+        WORD--;
+        break;
+      case 'L':
+        WRITE_PROGRAM = 1;
+        programFile = argv[chainStart+1];
         chainStart++;
         WORD--;
         break;
@@ -306,12 +316,12 @@ int main(int argc, char* argv[]){
 	}
 	
 	//make sure the words are cyclically reduced
-  for (i=0; i<w.size(); i++) {
+  for (i=0; i<(int)w.size(); i++) {
     cyc_red(w[i]);
   }
   if (VERBOSE==1) {
     cout << "Words after cyclic reduction:\n";
-    for (i=0; i<w.size(); i++) {
+    for (i=0; i<(int)w.size(); i++) {
       cout << w[i] << "\n";
     }
   }
@@ -321,7 +331,7 @@ int main(int argc, char* argv[]){
     vector<string> wTripled(WORD);
     for (i=0; i<WORD; i++) {
       wTripled[i] = "";
-      for (j=0; j<w[i].size(); j++) {
+      for (j=0; j<(int)w[i].size(); j++) {
         wTripled[i] += w[i][j];
         wTripled[i] += w[i][j];
         wTripled[i] += w[i][j];
@@ -368,6 +378,10 @@ int main(int argc, char* argv[]){
 			cout << '\n';
 		};
 	};
+
+	if (WRITE_PROGRAM == 1) {
+	  write_linear_program(w, weight, arc_list, polygon_list, programFile);
+  }
 
 	solutionVector.resize(polygon_list_length);
 	
