@@ -29,6 +29,7 @@ void write_linear_program(vector<string>& w,
   outAFile.open(AFile.c_str(), fstream::out);
   
   //write out the arc constraints matrix
+  outAFile << (int)arc_list.size()/2 + (int)w.size() << " " << (int)polygon_list.size() << " 0\n";
   for (i=0; i<(int)arc_list.size()/2; i++) {          //for each arc (row)
     for (j=0; j<(int)polygon_list.size(); j++) {     //for each polygon (column)
       coef = 0;
@@ -39,9 +40,12 @@ void write_linear_program(vector<string>& w,
           coef--;
         }
       }
-      outAFile << coef << " ";                           //write the coefficient
+      //outAFile << coef << " ";                           //write the coefficient
+      if (coef != 0) {
+        outAFile << i+1 << " " << j+1 << " " << coef << "\n";   //sparse output
+      }
     }
-    outAFile << "\n";                              //this ends the row
+    //outAFile << "\n";                              //this ends the row
   }
   
   //write out the chain constraint
@@ -54,9 +58,12 @@ void write_linear_program(vector<string>& w,
           coef++;
         }
       }
-      outAFile << coef << " ";
+      //outAFile << coef << " ";
+      if (coef != 0) {
+        outAFile << (int)arc_list.size()/2 + i + 1 << " " << j+1 << " " << coef << "\n";
+      }
     }
-    outAFile << "\n";
+    //outAFile << "\n";
   }
   
   outAFile.close();

@@ -164,7 +164,60 @@ void generate_polygons(vector<string> w,
 }
 
 
-
+void generate_polygons_new(vector<string> w,
+                          vector<polygon> &polygon_list,  
+                          vector<arc>  &arc_list, 
+                          int maxjun) {
+  int i,j,k;
+  int ALL = (int)arc_list.size();
+  int len_bound = (maxjun%2 == 0 ? maxjun/2 : maxjun/2 + 1);
+  int total_len_bound = maxjun;
+  int old_old_arc_seq_len;
+  int old_arc_seq_len;
+  int current_poly_len;
+  arc temp_arc;
+  arc temp_arc_2;
+  polygon_list.resize(0);
+  
+  vector<int> templist(1);
+  
+  vector<vector<int> > arc_sequences(0);
+  //build all the arc sequences of up to half the necessary length
+  //hopefully, there won't be a ridiculous number of these
+  
+  //start with length 1 (just all arcs)
+  for (i=0; i<ALL; i++) {
+    templist[0] = i;
+    arc_sequences.push_back(templist);
+  }
+  
+  //now build up
+  old_old_arc_seq_len = 0;
+  for (j=0; j<len_bound-1; j++) {     //we need to add on len_bound-1 arcs
+    old_arc_seq_len = arc_sequences.size();
+    current_poly_len = arc_sequences[old_old_arc_seq_len].size();
+    for (i=old_old_arc_seq_len; i<old_arc_seq_len; i++) {     //for each arc sequence
+      for (k=0; k<ALL; k++) {                               //for each arc
+        temp_arc = arc_list[arc_sequences[i][current_poly_len-1]];
+        if (temp_arc.last_word == arc_list[k].first_word
+            &&
+            (temp_arc.last + 1)%w[temp_arc.last_word].size() 
+                              == arc_list[k].first) {
+        //so this arc can be glued to the end of this arc sequence
+        //there are two options -- either the polygon (sequence) closes up, in 
+        //which case we put it on polygon_list and *not* into the larger 
+        //arc sequence list
+        temp_arc_2 = arc_list[arc_sequences[i][0]];
+        if (arc_list[k].last_word == temp_arc_2.first_word
+        ) {
+          
+        } else {  //or it doesn't close up, so we just append this to the
+                  //list of arc sequences
+        
+        }
+        
+      }
+}
 
 
 
@@ -186,6 +239,7 @@ int main(int argc, char* argv[]){
 	int DRAW = 0;
 	int RIGOROUS = 0;
 	int WRITE_PROGRAM = 0;
+	int ONLY_WRITE_PROGRAM = 0;
 	string programFile = "";
 	int RAT = 0;
 	int overrideMaxjun = 0;
@@ -197,13 +251,13 @@ int main(int argc, char* argv[]){
 	  cout << "version 2.11 - December 10, 2010\n";
 	  cout << "by Danny Calegari and Alden Walker\n";
 	  cout << "see the README for details\n";
-		cout << "usage: scallop [-revh, -mn, -s filename, -L filename] [i_1]w_1 [i_1]w_2 . . [i_n]w_n for scl(i_1*w_1 + i_2*w_2 + . . + i_n*w_n) \n";
+		cout << "usage: scallop [-revh, -mn, -s filename, -L[!] filename] [i_1]w_1 [i_1]w_2 . . [i_n]w_n for scl(i_1*w_1 + i_2*w_2 + . . + i_n*w_n) \n";
 		cout << "options:\n\t-s filename :\tdraw the components of an extremal surface, each to \n";
 		cout <<                      "\t\t\ta different file and print generators for the \n";
 		cout <<                      "\t\t\timage of the fundamental group\n";
 		cout << "\t-r : use rational arithmetic (GMP) internally\n";
 		cout << "\t-e : rigorous (slower) calculation (see README)\n";
-		cout << "\t-L : output the linear program to filename.A, .b, and .c\n";
+		cout << "\t-L[!] : (!=no solving) output the linear program to filename.A, .b, and .c\n";
 		cout << "\t-mn : advanced: use polygons with up to n edges\n";
 		cout << "\t-v : verbose output\n";
 		cout << "\t-h : print this message\n";
@@ -227,6 +281,9 @@ int main(int argc, char* argv[]){
         break;
       case 'L':
         WRITE_PROGRAM = 1;
+        if (argv[chainStart][2] == '!') {
+          ONLY_WRITE_PROGRAM = 1;
+         }
         programFile = argv[chainStart+1];
         chainStart++;
         WORD--;
@@ -381,6 +438,9 @@ int main(int argc, char* argv[]){
 
 	if (WRITE_PROGRAM == 1) {
 	  write_linear_program(w, weight, arc_list, polygon_list, programFile);
+	  if (ONLY_WRITE_PROGRAM == 1) {
+	    return 0;
+	  }
   }
 
 	solutionVector.resize(polygon_list_length);

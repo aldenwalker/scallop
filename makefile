@@ -4,22 +4,22 @@ IFLAGS=-I/sw/include
 LDFLAGS=-L/sw/lib -lglpk -lgmp
 all: scallop
 
-scallop.o:
+scallop.o: scallop.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c scallop.cc
 	
-word.o:
+word.o: word.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c word.cc
 	
-draw.o:
+draw.o: draw.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c draw.cc
 
-rational.o:
+rational.o: rational.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c rational.cc
 	
-lp.o:
+lp.o: lp.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c lp.cc
 	
-io.o:
+io.o: io.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c io.cc
 
 

@@ -60,7 +60,8 @@ void do_linear_program(   vector<string> &w,
 	
 	  lp = glp_create_prob();
 	  glp_init_smcp(&parm);
-	  parm.presolve=GLP_ON;
+	  parm.presolve=GLP_OFF;
+	  
 	  parm.msg_lev=GLP_MSG_OFF;
 	  glp_set_prob_name(lp, "scl");
 	  glp_set_obj_dir(lp,GLP_MIN);
