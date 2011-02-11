@@ -97,128 +97,113 @@ void generate_polygons(vector<string> w,
                        vector<polygon> &polygon_list,  
                        vector<arc>  &arc_list, 
                        int maxjun) {
-                       
-	int i,j,k,size,add,close,appeared;
-	polygon testpoly;
-	testpoly.arc.resize(maxjun);
-	int arc_list_length = arc_list.size();
-
-  vector<int> word_length(w.size());
+  int i,j;
   
-  for (i=0; i<(int)w.size(); i++) {
-    word_length[i] = w[i].size();
-  }
-
-	polygon_list.resize(0);
-
-	for(i=0;i<arc_list_length-1;i++){	// i is initial index of hypothetical polygon
-		testpoly.arc[0]=i;
-		j=(i+1);
-		size=1;
-		while(size>0){
-
-			add=1;		// haven't yet added
-			close=1;	// haven't yet closed
-			
-			// does arc j glue up to end of last arc of testpoly?
-			if(arc_list[j].first_word == arc_list[testpoly.arc[size-1]].last_word && 
-			  (arc_list[j].first - arc_list[testpoly.arc[size-1]].last-1)%word_length[arc_list[j].first_word]==0){		
-				appeared=1;
-				for(k=0;k<size;k++){
-					if(j==testpoly.arc[k]){		//has arc j already appeared in testpoly?
-						appeared=0;
-					}
-				}
-			
-				if(appeared==1){	        // if j has not appeared
-					testpoly.arc[size]=j;		// then add it to testpoly
-					add=0;						      // note that we have added an arc
-					
-					// does it close up?
-					if(arc_list[j].last_word == arc_list[testpoly.arc[0]].first_word && 
-					  (arc_list[testpoly.arc[0]].first-arc_list[j].last-1)%word_length[arc_list[j].last_word]==0){		
-						testpoly.size = size+1;
-						polygon_list.push_back(testpoly);
-						close=0;				// note that we have closed a polygon
-					}
-				}
-			}
-	
-	
-			if(add==0 && close==1){
-				size++;
-				j=i+1;
-				if(size>=maxjun){
-					j=arc_list_length;
-				}
-			} else {
-				j++;		// increment j
-			}
-			while(j>=arc_list_length){
-				size--;
-				j=testpoly.arc[size]+1;
-			}
-		}
-	}
-
-}
-
-
-void generate_polygons_new(vector<string> w,
-                          vector<polygon> &polygon_list,  
-                          vector<arc>  &arc_list, 
-                          int maxjun) {
-  int i,j,k;
-  int ALL = (int)arc_list.size();
-  int len_bound = (maxjun%2 == 0 ? maxjun/2 : maxjun/2 + 1);
-  int total_len_bound = maxjun;
-  int old_old_arc_seq_len;
-  int old_arc_seq_len;
-  int current_poly_len;
-  arc temp_arc;
-  arc temp_arc_2;
   polygon_list.resize(0);
-  
-  vector<int> templist(1);
-  
-  vector<vector<int> > arc_sequences(0);
-  //build all the arc sequences of up to half the necessary length
-  //hopefully, there won't be a ridiculous number of these
-  
-  //start with length 1 (just all arcs)
-  for (i=0; i<ALL; i++) {
-    templist[0] = i;
-    arc_sequences.push_back(templist);
-  }
-  
-  //now build up
-  old_old_arc_seq_len = 0;
-  for (j=0; j<len_bound-1; j++) {     //we need to add on len_bound-1 arcs
-    old_arc_seq_len = arc_sequences.size();
-    current_poly_len = arc_sequences[old_old_arc_seq_len].size();
-    for (i=old_old_arc_seq_len; i<old_arc_seq_len; i++) {     //for each arc sequence
-      for (k=0; k<ALL; k++) {                               //for each arc
-        temp_arc = arc_list[arc_sequences[i][current_poly_len-1]];
-        if (temp_arc.last_word == arc_list[k].first_word
-            &&
-            (temp_arc.last + 1)%w[temp_arc.last_word].size() 
-                              == arc_list[k].first) {
-        //so this arc can be glued to the end of this arc sequence
-        //there are two options -- either the polygon (sequence) closes up, in 
-        //which case we put it on polygon_list and *not* into the larger 
-        //arc sequence list
-        temp_arc_2 = arc_list[arc_sequences[i][0]];
-        if (arc_list[k].last_word == temp_arc_2.first_word
-        ) {
-          
-        } else {  //or it doesn't close up, so we just append this to the
-                  //list of arc sequences
-        
-        }
-        
-      }
-}
 
+  //we need to make a structure saying which arcs start where
+  //the array structure is arc_locs[word][index] is a list
+  //of the arcs which start at index index in word word
+  vector<vector<vector<int> > > arc_locs(0);
+  arc_locs.resize(w.size());
+
+  for (i=0; i<(int)w.size(); i++) {
+    arc_locs[i].resize(w[i].size());
+    for (j=0; j<(int)w[i].size(); j++) {
+      arc_locs[i][j].resize(0);
+    }
+  }
+
+  //go through the arcs and add them all
+  for(i=0; i<(int)arc_list.size(); i++) {
+    arc_locs[arc_list[i].first_word][arc_list[i].first].push_back(i);
+  }
+
+  //now we build the polygon
+  vector<int> temp_arc_list(maxjun);
+  int temp_arc_list_size = 0; // this is probably redundant
+  vector<int> arc_end_indices(maxjun); //this keeps track of where the current
+                                       //arc list selection has ending indices
+                                       //in the data structure
+  polygon temp_poly;
+  temp_poly.arc = vector<int>(0);
+  int next_arc_ind;
+  arc first_arc;
+  arc cur_arc;
+  int cur_target_word;
+  int cur_target_ind;
+  int we_pushed;
+  for (i=0; i<(int)arc_list.size(); i++) {  //loop through which arc is the first
+                                            //note we may assume it is minimal
+    temp_arc_list[0] = i;
+    temp_arc_list_size = 1;
+    arc_end_indices[0] = 0;
+    first_arc = arc_list[i];
+    while (1) {
+      if (temp_arc_list_size==0) {  //we are really done
+        break;
+      }
+      //first, load the arc that we're talking about
+      cur_arc = arc_list[temp_arc_list[temp_arc_list_size-1]];
+      cur_target_word = cur_arc.last_word;
+      cur_target_ind = (cur_arc.last+1)%(int)w[cur_target_word].size();
+
+      //if we have reached this point, we know that 
+      //(A) our arc doesn't glue to the original arc and
+      //(B) our arc has index bigger than the original arc
+      //therefore, all we need to do is to find the next
+      //ok arc to push on, and then continue
+      //the next candidate is contained in arc_locs at index
+      //arc_end_indices[temp_arc_list_size-1]
+      we_pushed = 0;
+      while (arc_end_indices[temp_arc_list_size-1] < 
+             (int)arc_locs[cur_target_word][cur_target_ind].size()) {
+        next_arc_ind = arc_locs[cur_target_word]
+                               [cur_target_ind]
+                               [arc_end_indices[temp_arc_list_size-1]];
+        //check if the next arc glues up or has a bad index or we've got maxjun
+        if (next_arc_ind < i) {
+          //index is too small, skip it
+        
+        } else if (arc_list[next_arc_ind].last_word == first_arc.first_word
+             && (arc_list[next_arc_ind].last+1)%(int)w[first_arc.first_word].size() == first_arc.first) {
+          //it glues!
+          temp_poly.arc.resize(temp_arc_list_size+1);
+          temp_poly.size = temp_arc_list_size+1; 
+          for (j=0; j<temp_arc_list_size; j++) {
+            temp_poly.arc[j] = temp_arc_list[j];
+          }
+          temp_poly.arc[j] = next_arc_ind;
+          polygon_list.push_back(temp_poly);
+        } else if (temp_arc_list_size == maxjun-1) {
+          //we've reached maxjun -- can't push anything
+
+        } else {
+          //it doesn't glue, its index is ok, and we haven't reached maxjun,
+          //then we add it on, step forward, and continue
+          temp_arc_list[temp_arc_list_size] = next_arc_ind;
+          arc_end_indices[temp_arc_list_size] = 0;
+          temp_arc_list_size++;
+          we_pushed = 1;
+          break;
+        }
+        arc_end_indices[temp_arc_list_size-1]++;
+            }
+
+            //if we pushed a new arc, ok just loop
+            //if we didn't push a new arc, we need to step back
+            if (we_pushed==1) {
+        //nothing
+            } else {
+        temp_arc_list_size--;
+        if (temp_arc_list_size > 0) {
+          arc_end_indices[temp_arc_list_size-1]++;
+        }
+      }
+    }
+  }	
+
+}
 
 
 
@@ -307,11 +292,6 @@ int main(int argc, char* argv[]){
   }
 
   //chainStart is now the index of the first word in the chain
-
-
-  //NOTE: it would be really awesome if we knew how big to make the polygon
-  //list, since right now it probably does tons of single-element reallocs, 
-  //which is just horrible
 
 	vector<string> w(WORD);
 	vector<string> oldW(WORD);
@@ -422,7 +402,11 @@ int main(int argc, char* argv[]){
 	};
 	
 	//generate the polygons!
+	//generate_polygons(w, polygon_list, arc_list, maxjun);
 	generate_polygons(w, polygon_list, arc_list, maxjun);
+	cout << "generated polys\n";
+	fflush(stdout);
+
 	polygon_list_length = polygon_list.size();
 	
 	if(VERBOSE==1){
@@ -433,8 +417,8 @@ int main(int argc, char* argv[]){
 				cout << polygon_list[i].arc[j] << " ";
 			};
 			cout << '\n';
-		};
-	};
+		}
+	}
 
 	if (WRITE_PROGRAM == 1) {
 	  write_linear_program(w, weight, arc_list, polygon_list, programFile);
