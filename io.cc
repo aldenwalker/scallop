@@ -25,9 +25,8 @@ void write_linear_program(vector<string>& w,
   fstream outcFile;
   
   /////  A matrix
-  
+  /*
   outAFile.open(AFile.c_str(), fstream::out);
-  
   //write out the arc constraints matrix
   outAFile << (int)arc_list.size()/2 + (int)w.size() << " " << (int)polygon_list.size() << " 0\n";
   for (i=0; i<(int)arc_list.size()/2; i++) {          //for each arc (row)
@@ -67,6 +66,38 @@ void write_linear_program(vector<string>& w,
   }
   
   outAFile.close();
+  
+  */
+  /////  A matrix
+  
+  outAFile.open(AFile.c_str(), fstream::out);
+  //write out the dimensions
+  outAFile << (int)arc_list.size()/2 + (int)w.size() << " " << (int)polygon_list.size() << " 0\n";
+  //we need to do this intelligently, so we do each column (polygon)
+  //every arc can appear at most once, so we just read off the arcs
+  for (i=0; i<(int)polygon_list.size(); i++) {
+    for (j=0; j<(int)polygon_list[i].size; j++) {
+      if (polygon_list[i].arc[j] % 2 == 0) {
+        outAFile << (polygon_list[i].arc[j]/2)+1 << " " << i+1 << " 1\n";
+      } else {
+        outAFile << ((polygon_list[i].arc[j]-1)/2)+1 << " " << i+1 << " -1\n";
+      }
+    }
+  }
+  
+  //now write the chain constraint
+  for (i=0; i<(int)polygon_list.size(); i++) {
+    for (j=0; j<(int)polygon_list[i].size; j++) {
+      if (arc_list[polygon_list[i].arc[j]].first == 0) {
+        outAFile << (int)arc_list.size()/2 + arc_list[polygon_list[i].arc[j]].first_word + 1
+                 << " " << i+1 << " 1\n";
+      }
+    }
+  }
+  
+  outAFile.close(); 
+  
+  
   
   /////// b vector
   outbFile.open(bFile.c_str(), fstream::out);
