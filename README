@@ -31,7 +31,7 @@ of B_1(F), where F is a free group.
 -----
 Current version: 
 -----
-2.11 - December 10, 2010
+2.5 - March 8, 2011
 
 -----
 Theory:
@@ -66,7 +66,10 @@ exact rational output
    can be input to wallop (see Alden's website)
 -h prints help
 -mn uses polygons with up to n sides (this can potentially fix some of the rigor problems below)
-
+-L[!] filename causes scallop to output the linear program into the files
+      filename.A, .b, and .c, being the matrix, vector, and objectve function, 
+      where we want to minimize cx subject to Ax==b and x>=0.
+      A is a sparse matrix in matlab format -- b and c are just lists
 
 ------
 Rigour:

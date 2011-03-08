@@ -404,8 +404,9 @@ int main(int argc, char* argv[]){
 	//generate the polygons!
 	//generate_polygons(w, polygon_list, arc_list, maxjun);
 	generate_polygons(w, polygon_list, arc_list, maxjun);
-	cout << "generated polys\n";
-	fflush(stdout);
+	if (VERBOSE==1) {
+	  cout << "generated polys\n";
+	}
 
 	polygon_list_length = polygon_list.size();
 	
