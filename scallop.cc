@@ -8,7 +8,7 @@
 *								                  	*
 *	Copyright Danny Calegari 2008	    *
 *   Copyright Danny Calegari and	  *
-*		Alden Walker 2009, 2010        	*
+*		Alden Walker 2009, 2010, 2011  	*
 *									                  *
 *	Includes modifications by	      	*
 *		Alden Walker				            *
@@ -188,13 +188,13 @@ void generate_polygons(vector<string> w,
           break;
         }
         arc_end_indices[temp_arc_list_size-1]++;
-            }
-
-            //if we pushed a new arc, ok just loop
-            //if we didn't push a new arc, we need to step back
-            if (we_pushed==1) {
+      }
+      
+      //if we pushed a new arc, ok just loop
+      //if we didn't push a new arc, we need to step back
+      if (we_pushed==1) {
         //nothing
-            } else {
+      } else {
         temp_arc_list_size--;
         if (temp_arc_list_size > 0) {
           arc_end_indices[temp_arc_list_size-1]++;
@@ -202,7 +202,7 @@ void generate_polygons(vector<string> w,
       }
     }
   }	
-
+  
 }
 
 
@@ -225,6 +225,8 @@ int main(int argc, char* argv[]){
 	int RIGOROUS = 0;
 	int WRITE_PROGRAM = 0;
 	int ONLY_WRITE_PROGRAM = 0;
+  int WRITE_POLYHEDRON = 0;
+  string polyFileName = "";
 	string programFile = "";
 	int RAT = 0;
 	int overrideMaxjun = 0;
@@ -233,17 +235,18 @@ int main(int argc, char* argv[]){
 
 	if(argc < 2 || strcmp(argv[1],"-h")==0){
 	  cout << "scallop\n";
-	  cout << "version 2.11 - December 10, 2010\n";
+	  cout << "version 2.6 - March 28, 2011\n";
 	  cout << "by Danny Calegari and Alden Walker\n";
 	  cout << "see the README for details\n";
-		cout << "usage: scallop [-revh, -mn, -s filename, -L[!] filename] [i_1]w_1 [i_1]w_2 . . [i_n]w_n for scl(i_1*w_1 + i_2*w_2 + . . + i_n*w_n) \n";
+		cout << "usage: scallop [-revh, -mn, -s filename, -L[!] filename, -P filename] [i_1]w_1 [i_1]w_2 . . [i_n]w_n for scl(i_1*w_1 + i_2*w_2 + . . + i_n*w_n) \n";
 		cout << "options:\n\t-s filename :\tdraw the components of an extremal surface, each to \n";
 		cout <<                      "\t\t\ta different file and print generators for the \n";
 		cout <<                      "\t\t\timage of the fundamental group\n";
 		cout << "\t-r : use rational arithmetic (GMP) internally\n";
 		cout << "\t-e : rigorous (slower) calculation (see README)\n";
 		cout << "\t-L[!] : (!=no solving) output the linear program to filename.A, .b, and .c\n";
-		cout << "\t-mn : advanced: use polygons with up to n edges\n";
+		cout << "\t-P : output a polyhedron representation of the optimal solutions to filename\n";
+    cout << "\t-mn : advanced: use polygons with up to n edges\n";
 		cout << "\t-v : verbose output\n";
 		cout << "\t-h : print this message\n";
 		return(0);
@@ -270,6 +273,12 @@ int main(int argc, char* argv[]){
           ONLY_WRITE_PROGRAM = 1;
          }
         programFile = argv[chainStart+1];
+        chainStart++;
+        WORD--;
+        break;
+      case 'P':
+        WRITE_POLYHEDRON = 1;
+        polyFileName = argv[chainStart+1];
         chainStart++;
         WORD--;
         break;
@@ -442,6 +451,12 @@ int main(int argc, char* argv[]){
 			cout << "polygon " << i << " : " << solutionVector[i] << "\n";
 		}
 	}
+  
+  //write the optimal polyhedron if we're supposed to 
+  if (WRITE_POLYHEDRON == 1) {
+    write_solution_polyhedron(w, weight, arc_list, polygon_list, polyFileName, scl);
+  }
+  
 	
 	//draw the surface if we're supposed to
 	if (DRAW == 1) {

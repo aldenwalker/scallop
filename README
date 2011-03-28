@@ -31,7 +31,7 @@ of B_1(F), where F is a free group.
 -----
 Current version: 
 -----
-2.5 - March 8, 2011
+2.6 - March 28, 2011
 
 -----
 Theory:
@@ -44,7 +44,7 @@ Danny Calegari, scl, MSJ Memoirs 20. Mathematical Society of Japan, Tokyo, 2009
 -----
 Usage:
 -----
-	scallop [-r -e -v -h -mn -s filename] [i_1]w_1 [i_2]w_2 . . [i_n]w_n
+	scallop [-r -e -v -h -mn -s filename [-L[!] filename] [-P filename] ] [i_1]w_1 [i_2]w_2 . . [i_n]w_n
 
 where each i_j is an integer and w_j is a word in a free group, and where 
 the formal sum of the w_i is in B_1(F).  The free group is defined implicitly 
@@ -70,6 +70,8 @@ exact rational output
       filename.A, .b, and .c, being the matrix, vector, and objectve function, 
       where we want to minimize cx subject to Ax==b and x>=0.
       A is a sparse matrix in matlab format -- b and c are just lists
+-P filename : scallop write an H-representation of the optimal polyhedron to filename
+              this could be input to cdd or lrs to get all extremal surfaces
 
 ------
 Rigour:
