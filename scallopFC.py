@@ -57,6 +57,8 @@ def gcd(a,b=None):
 
 def lcm(a,b=None):
   if type(a) == int:
+    if a==0 or b==0:
+      return 1
     return a*b/gcd(a,b)
   elif type(w) == list:
     return reduce(lcm, a)
@@ -121,23 +123,76 @@ def rewrite_word(w, g1, g2, n, m):
   
   
 #the canonical form is cyclically reduced and lexicographically first
+#Just do this brute force for now, because whatever
 def cyclic_canonical_form(w):
-  """return the canonical form of the cyclic word w"""
+  """return the canonical form of the cyclic word w (i.e. [multiplier, word])"""
+  W = cyc_red(w)
+  wLen = len(W)
+  for possible_period in xrange(1, wLen):
+    if wLen % possible_period != 0:
+      continue
+    its_bad = False
+    for j in xrange(possible_period, wLen, possible_period):
+      if W[j:j+possible_period] != W[:possible_period]:
+        its_bad = True
+        break
+    if its_bad:
+      continue
+    else:
+      break
+  if its_bad:
+    possible_period = wLen
+  #now possible_period is definitely the period
+  multiplier = wLen/possible_period
+  W = W[:possible_period]
+  wLen = possible_period
+  best_index = 0
+  for i in xrange(1, wLen):
+    if W[i:] + W[:i] < W[best_index:] + W[:best_index]:
+      best_index = i
+  return [multiplier, W[best_index:] + W[:best_index]]
   
-
+  
 def powers_needed_to_kernelize(C, g1, g2, n, m):
   """return a list of the powers needed to bring each word into the kernel."""
-  
+  ans = []
+  for w in C:
+    letter_counts = [w.count(g1) - w.count(inverse(g1)), \
+                     w.count(g2) - w.count(inverse(g2)) ]
+    if letter_counts[0] <= 0:
+      letter_counts[0] += n
+    if letter_counts[1] <= 0:
+      letter_counts[1] += m
+    min_pows = ( lcm(n, letter_counts[0])/letter_counts[0], \
+                 lcm(m, letter_counts[1])/letter_counts[1] )
+    ans.append(lcm(*min_pows))
+  return ans
 
-def reduce_chain(C)
+
+def reduce_chain(C):
   """returns [p/q, D], where C = p/q * D, and D is in canonical form."""
+  new_chain = [ [], [] ]
+  for i in xrange(len(C[0])):
+    weight, w = C[0][i], C[1][i]
+    cfw = cyclic_canonical_form(w)
+    if cfw[1] in new_chain[1]:
+      new_chain[0][ new_chain[1].index(cfw[1]) ] += cfw[0]*weight
+    else:
+      new_chain[0].append( weight*cfw[0] )
+      new_chain[1].append( cfw[1] )
+    print new_chain, cfw
+
+  multiplier = gcd(new_chain[0])
+  if multiplier != 1:
+    new_chain[0] = [x/multiplier for x in new_chain[0]]
   
+  return [multiplier, new_chain]
   
   
   
 #if C is a list of words, then that's the chain.  it also accepts 
 #[weights, words]
-def lift_chain(C, g1, g2, n, m)
+def lift_chain(C, g1, g2, n, m):
   """lift a chain to one in the kernel.  Returns [p/q,c], where 
   c is the chain, and p/q  is the multiplier (i.e. C is p/q times the 
   projection of c)"""
