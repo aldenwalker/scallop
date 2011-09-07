@@ -234,10 +234,10 @@ int main(int argc, char* argv[]){
 
 	if(argc < 2 || strcmp(argv[1],"-h")==0){
 	  cout << "scallop\n";
-	  cout << "version 2.6 - March 28, 2011\n";
+	  cout << "version 2.7 - September 7, 2011\n";
 	  cout << "by Danny Calegari and Alden Walker\n";
 	  cout << "see the README for details\n";
-		cout << "usage: scallop [-revh, -mn, -s filename, -L[!] filename, -P filename] [i_1]w_1 [i_1]w_2 . . [i_n]w_n for scl(i_1*w_1 + i_2*w_2 + . . + i_n*w_n) \n";
+		cout << "usage: scallop [-revhq, -mn, -s filename, -L[!] filename, -P filename] [i_1]w_1 [i_1]w_2 . . [i_n]w_n for scl(i_1*w_1 + i_2*w_2 + . . + i_n*w_n) \n";
 		cout << "options:\n\t-s filename :\tdraw the components of an extremal surface, each to \n";
 		cout <<                      "\t\t\ta different file and print generators for the \n";
 		cout <<                      "\t\t\timage of the fundamental group\n";
@@ -248,6 +248,7 @@ int main(int argc, char* argv[]){
     cout << "\t-mn : advanced: use polygons with up to n edges\n";
 		cout << "\t-v : verbose output\n";
 		cout << "\t-h : print this message\n";
+    cout << "\t-q : quiet output (print only the scl)\n";
 		return(0);
 	};
 	
@@ -259,6 +260,9 @@ int main(int argc, char* argv[]){
     switch (argv[chainStart][1]) {
       case 'v':
         VERBOSE = 1;
+        break;
+      case 'q':
+        VERBOSE = -1;
         break;
       case 's':
         DRAW = 1;
@@ -357,7 +361,8 @@ int main(int argc, char* argv[]){
 	  maxjun = 2*lettersSeen.size(); //i.e. maxjun is twice the rank
 	} else {
 	  maxjun = overridedMaxjun;
-	  cout << "Overriding max polygon sides to " << maxjun << "\n";
+    if (VERBOSE >= 0) 
+      cout << "Overriding max polygon sides to " << maxjun << "\n";
 	}
 	
 	//make sure the words are cyclically reduced
@@ -469,20 +474,24 @@ int main(int argc, char* argv[]){
     }
   }  
   ostringstream weightString;
-	cout << "scl ( ";
-	for(i=0;i<WORD;i++){
-	  weightString.str("");
-	  if (weight[i] != 1) {
-	    weightString << weight[i];
-	  }
-		if(i==0){
-			cout << weightString.str() << w[0] << " ";
-		} else {
-			cout << "+ " << weightString.str() << w[i] << " "; 
-		};
-	};
-	cout << ") = ";
-	cout << scl << " = "  << scl.get_d() << "\n";
+  if (VERBOSE >= 0) {
+    cout << "scl ( ";
+    for(i=0;i<WORD;i++){
+      weightString.str("");
+      if (weight[i] != 1) {
+        weightString << weight[i];
+      }
+      if(i==0){
+        cout << weightString.str() << w[0] << " ";
+      } else {
+        cout << "+ " << weightString.str() << w[i] << " "; 
+      };
+    };
+    cout << ") = ";
+    cout << scl << " = "  << scl.get_d() << "\n";
+  } else {
+    cout << scl << "\n";
+  }
 	
 	//The vector<>'s should get deconstructed when their scope ends?
 	

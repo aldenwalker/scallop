@@ -1,4 +1,7 @@
-Version 2.6 - MArch 28, 2011 by Alden:
+Version 2.7 - September 7, 2011 by Alden:
+  - Added -q quiet option and free cyclic group python script
+
+Version 2.6 - March 28, 2011 by Alden:
   - added polyhedron output
 
 Version 2.5 - March 8, 2011 by Alden:

@@ -31,7 +31,7 @@ of B_1(F), where F is a free group.
 -----
 Current version: 
 -----
-2.6 - March 28, 2011
+2.7 - September 7, 2011
 
 -----
 Theory:
@@ -44,7 +44,7 @@ Danny Calegari, scl, MSJ Memoirs 20. Mathematical Society of Japan, Tokyo, 2009
 -----
 Usage:
 -----
-	scallop [-r -e -v -h -mn -s filename [-L[!] filename] [-P filename] ] [i_1]w_1 [i_2]w_2 . . [i_n]w_n
+	scallop [-r -e -v -h -q -mn -s filename [-L[!] filename] [-P filename] ] [i_1]w_1 [i_2]w_2 . . [i_n]w_n
 
 where each i_j is an integer and w_j is a word in a free group, and where 
 the formal sum of the w_i is in B_1(F).  The free group is defined implicitly 
@@ -65,6 +65,7 @@ exact rational output
    in a separate file.  Scallop also outputs a .fg (fatgraph) file, which 
    can be input to wallop (see Alden's website)
 -h prints help
+-q prints only the answer
 -mn uses polygons with up to n sides (this can potentially fix some of the rigor problems below)
 -L[!] filename causes scallop to output the linear program into the files
       filename.A, .b, and .c, being the matrix, vector, and objectve function, 
