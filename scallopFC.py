@@ -43,7 +43,7 @@ def scl(C, do5=False, timeout=1e8, rational=False):
         return -3.0
       except:
         return -4.0
-    time.sleep(0.1)      
+    time.sleep(0.01)      
   scaout, scaerr = sca.communicate()
   s = scaout
   if '/' in s:
@@ -120,6 +120,8 @@ def write_gen(g, n, m):
 
 def rewrite_word(w, g1, g2, n, m):
   """rewrite a word in the kernel in terms of gens.  no simplification."""
+  if len(w) == 0:
+    return ''
   #first, convert the word to a list of powers
   pows = [[w[0].lower(), 0]]
   wLen = len(w)
@@ -136,6 +138,14 @@ def rewrite_word(w, g1, g2, n, m):
       else:
         pows.append( [w[i].lower(), -1] )
     i += 1
+  
+  #print pows
+  #make all the powers positive
+  for i in xrange(len(pows)):
+    if pows[i][0] == g1:
+      pows[i][1] %= n
+    else:
+      pows[i][1] %= m
   
   #scan through and remove any errant zero powers
   while True:
@@ -166,6 +176,9 @@ def rewrite_word(w, g1, g2, n, m):
     else:
       break
           
+  
+  if len(pows) == 0:
+    return ''
   
   #now go through from the beginning and pull off the generators
   W = []  #denotes the gens, (i,j,I), where I=0 means no inverse, I=1 means inverse
@@ -216,6 +229,8 @@ def cyclic_canonical_form(w):
   """return the canonical form of the cyclic word w (i.e. [multiplier, word])"""
   W = cyc_red(w)
   wLen = len(W)
+  if wLen == 0 or wLen == 1:
+    return [1,w]
   its_bad = True
   for possible_period in xrange(1, wLen):
     if wLen % possible_period != 0:
@@ -248,9 +263,9 @@ def powers_needed_to_kernelize(C, g1, g2, n, m):
   for w in C:
     letter_counts = [w.count(g1) - w.count(inverse(g1)), \
                      w.count(g2) - w.count(inverse(g2)) ]
-    if letter_counts[0] <= 0:
+    while letter_counts[0] <= 0:
       letter_counts[0] += n
-    if letter_counts[1] <= 0:
+    while letter_counts[1] <= 0:
       letter_counts[1] += m
     min_pows = ( lcm(n, letter_counts[0])/letter_counts[0], \
                  lcm(m, letter_counts[1])/letter_counts[1] )
@@ -263,6 +278,8 @@ def reduce_chain(C):
   new_chain = [ [], [] ]
   for i in xrange(len(C[0])):
     weight, w = C[0][i], C[1][i]
+    if w == '':
+      continue
     cfw = cyclic_canonical_form(w)
     if cfw[1] in new_chain[1]:
       new_chain[0][ new_chain[1].index(cfw[1]) ] += cfw[0]*weight
@@ -271,6 +288,9 @@ def reduce_chain(C):
       new_chain[1].append( cfw[1] )
     #print new_chain, cfw
 
+  if len(new_chain[0]) == 0:
+    return [1, [[],[]]]
+  
   multiplier = gcd(new_chain[0])
   if multiplier != 1:
     new_chain[0] = [x/multiplier for x in new_chain[0]]
@@ -327,8 +347,11 @@ def scl_FC(C, g1, g2, n, m, quiet=False):
       multiplier, c = lift_chain([ [1 for i in xrange(len(C))], C ], g1, g2, n, m)
   else:
     multiplier, c = lift_chain( [ [1], [C] ], g1, g2, n, m)
+  if len(c[0]) == 0:
+    return 0
   if not quiet:
     print "Running: scallop " + ' + '.join([ str(c[0][i]) + c[1][i]  for i in xrange(len(c[0]))] )
+    sys.stdout.flush()
   s = scl(c)
   return multiplier * s
 
