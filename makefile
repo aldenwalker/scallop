@@ -1,8 +1,8 @@
 CC=g++
-CFLAGS=-O3 #-g -pg -Wall
+CFLAGS=-g -pg -Wall
 IFLAGS=-I/sw/include
 LDFLAGS=-L/sw/lib -lglpk -lgmp
-all: scallop
+all: scallop scyllop
 
 scallop.o: scallop.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c scallop.cc
@@ -22,6 +22,14 @@ lp.o: lp.cc
 io.o: io.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c io.cc
 
+scyllop.o: scyllop.cc
+	$(CC) $(CFLAGS) $(IFLAGS) -c scyllop.cc
+	
+scyllop_lp.o:	scyllop_lp.cc
+	$(CC) $(CFLAGS) $(IFLAGS) -c scyllop_lp.cc
+	
+scyllop_classes.o: scyllop_classes.cc
+	$(CC) $(CFLAGS) $(IFLAGS) -c scyllop_classes.cc
 
 .PHONY: exlp-package
 exlp-package: 
@@ -29,6 +37,9 @@ exlp-package:
 
 scallop: exlp-package scallop.o word.o draw.o rational.o lp.o io.o
 	$(CC) $(CFLAGS) -o scallop scallop.o word.o draw.o rational.o lp.o io.o exlp-package/*.o $(LDFLAGS)
+
+scyllop: exlp-package scyllop.o rational.o scyllop_lp.o scyllop_classes.o
+	$(CC) $(CFLAGS) -o scyllop scyllop.o scyllop_lp.o scyllop_classes.o rational.o exlp-package/*.o $(LDFLAGS)
 
 
 clean: 
