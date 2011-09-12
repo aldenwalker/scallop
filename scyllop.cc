@@ -14,10 +14,58 @@
 #include "scyllop_lp.h"
 #include "rational.h"
 
-
+/*****************************************************************************
+ * make the list of multiarcs -- each multiarc is for a different group, and 
+ * each one is made up of a collection (possibly including duplicates) of 
+ * chunks, where the total number of letters is the order of the group.  
+ * only the cyclic order in the multiarc matters.  
+ * ***************************************************************************/
 void compute_multiarcs(CyclicProduct &G, Chain &C, std::vector<Multiarc> &arcs) {
+  std::vector<char> gens = G.gen_list();
+  std::vector<int> orders = G.order_list();
+  int i,j,k;
+  int num_groups = gens.size();
+  std::vector<ChainChunk> group_chunks(0);
+  std::string word;
+  ChainChunk temp_chunk;
+  Multiset chunk_selection;
   
-}
+  arcs.resize(0);
+  
+  for (i=0; i<num_groups; i++) {
+    
+    //create a list of chunks in that group
+    group_chunks.resize(0);
+    for (j=0; j<C.num_words(); j++) {
+      word = C[j];
+      temp.word = j;
+      k=0;
+      while (k<word.size()) {
+        while (word[k] != gens[i]) {
+          k++;
+        }
+        temp.start_index = k;
+        while (word[k] == gens[i]) {
+          k++;
+        }
+        temp.len = k - temp.start_index;
+        group_chunks.push_back(temp);
+      }
+    }
+    
+    //now go through and create all possible multiarcs; we may assume that the
+    //smallest index is first
+    for (first_index=0; first_index<group_chunks.size(); first_index++) {
+      chunk_selection = Multiset(orders[i], first_index, group_chunks.size());
+      do {
+        //try this chunk slection
+        
+      } while (1 != chunk_selection.next());
+    }
+    
+  }
+
+} 
 
 void compute_polys(CyclicProduct &G, 
                    Chain &C, 

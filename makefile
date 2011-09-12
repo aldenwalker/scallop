@@ -43,6 +43,7 @@ scyllop: exlp-package scyllop.o rational.o scyllop_lp.o scyllop_classes.o
 
 
 clean: 
+	rm scyllop
 	rm scallop
 	rm *.o
 	cd exlp-package; rm *.o
