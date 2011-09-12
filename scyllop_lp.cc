@@ -8,7 +8,7 @@
 
 void scyllop_lp(CyclicProduct& G, 
                 Chain& C, 
-                std::vector<Multiarc>& arcs, 
+                std::vector<std::vector<Multiarc> >& arcs, 
                 std::vector<Polygon>& polys, 
                 rational* scl, 
                 std::vector<rational>* solution_vector, 

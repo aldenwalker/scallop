@@ -9,6 +9,32 @@
 #include <string>
 #include <vector>
 
+
+/*****************************************************************************
+ * a letter in a chain
+ * ***************************************************************************/
+struct ChainLetter {
+  int word;
+  int index;
+};
+
+/*****************************************************************************
+ * A multiarc
+ * ***************************************************************************/
+struct Multiarc {
+  int group;
+  std::vector<ChainLetter> letters;
+};
+
+/*****************************************************************************
+ * a poylgon
+ * ***************************************************************************/
+struct Polygon {
+  std::vector<int> arcs;
+};
+
+
+
 /*****************************************************************************
 * A free product of cyclic groups
 * ****************************************************************************/
@@ -41,47 +67,43 @@ class Chain {
   
   public:
     Chain(void);
-    Chain(char** input, int num_strings);
+    Chain(CyclicProduct* G, char** input, int num_strings);
     ~Chain(void);
     
     std::vector<std::string> word_list(void);
     std::vector<int> weights_list(void);
+    //std::vector<std::vector<ChainChunk> > chunk_list(void);
     int num_words(void);
     std::string operator[](int index);    //get a word
+    //void print_chunks(std::ostream &os);
     
     friend std::ostream &operator<<(std::ostream &os, Chain &C);
     
   private:
+    CyclicProduct* G;
     std::vector<std::string> words;
     std::vector<int> weights;
+    std::vector<std::vector<ChainChunk> > chunks;
     
 };
 
 
-/*****************************************************************************
- * a letter in a chain
- * ***************************************************************************/
-struct ChainChunk {
-  int word;
-  int start_index;
-  int len;
-};
+
 
 /*****************************************************************************
- * A multiarc
+ * a multiset
  * ***************************************************************************/
-struct Multiarc {
-  int group;
-  std::vector<ChainChunk> letters;
+class Multiset {
+  public:
+    Multiset();
+    Multiset(int len, int Min, int Max_plus_one);
+    int next(void);
+    std::vector<int>* get_list(void);
+  private:
+    std::vector<int> L;
+    int min;
+    int max_plus_one;
 };
-
-/*****************************************************************************
- * a poylgon
- * ***************************************************************************/
-struct Polygon {
-  std::vector<int> arcs;
-};
-
 
 
 
