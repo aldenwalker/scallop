@@ -13,9 +13,10 @@
 /*****************************************************************************
  * a letter in a chain
  * ***************************************************************************/
-struct ChainLetter {
+struct ChainChunk {
   int word;
-  int index;
+  int start_index;
+  int len;
 };
 
 /*****************************************************************************
@@ -23,7 +24,7 @@ struct ChainLetter {
  * ***************************************************************************/
 struct Multiarc {
   int group;
-  std::vector<ChainLetter> letters;
+  std::vector<ChainChunk> letters;
 };
 
 /*****************************************************************************
@@ -63,7 +64,7 @@ class CyclicProduct {
 /*****************************************************************************
  * A chain   
  * ***************************************************************************/
-class Chain {
+class Chain { 
   
   public:
     Chain(void);
@@ -72,10 +73,10 @@ class Chain {
     
     std::vector<std::string> word_list(void);
     std::vector<int> weights_list(void);
-    //std::vector<std::vector<ChainChunk> > chunk_list(void);
+    std::vector<std::vector<ChainChunk> > chunk_list(void);
     int num_words(void);
     std::string operator[](int index);    //get a word
-    //void print_chunks(std::ostream &os);
+    void print_chunks(std::ostream &os);
     
     friend std::ostream &operator<<(std::ostream &os, Chain &C);
     

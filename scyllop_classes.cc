@@ -160,7 +160,7 @@ Chain::Chain(CyclicProduct* G_in, char** input, int num_strings) {
     }
   }
   
-  /*
+  
   //now compute the chunks -- note we may assume that a chunk starts the word
   chunks.resize(words.size());
   for (i=0; i<(int)words.size(); i++) {
@@ -195,7 +195,7 @@ Chain::Chain(CyclicProduct* G_in, char** input, int num_strings) {
       j++;
     }
   }
-  */
+  
 }
 
 Chain::~Chain(void) {
@@ -212,12 +212,12 @@ std::vector<int> Chain::weights_list(void) {
   return ans;
 }
 
-/*
+
 std::vector<std::vector<ChainChunk> > Chain::chunk_list(void) {
   std::vector<std::vector<ChainChunk> > ans = chunks;
   return ans;
 }
-*/
+
 
 int Chain::num_words(void) {
   return words.size();
@@ -227,7 +227,6 @@ std::string Chain::operator[](int index) {
   return words[index];
 }
 
-/*
 void Chain::print_chunks(std::ostream &os) {
   int i,j;
   for (i=0; i<(int)chunks.size(); i++) {
@@ -237,7 +236,7 @@ void Chain::print_chunks(std::ostream &os) {
     os << "\n";
   }
 }
-*/
+
 
 std::ostream &operator<<(std::ostream &os, Chain &C) {
   int i;

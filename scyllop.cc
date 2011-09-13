@@ -25,33 +25,30 @@ void compute_multiarcs(CyclicProduct &G, Chain &C, std::vector<std::vector<Multi
   std::vector<int> orders = G.order_list();
   int i,j,k;
   int num_groups = gens.size();
-  std::vector<ChainLetter> group_letters(0);
+  std::vector<std::vector<ChainChunk> > chain_chunks(0);
+  std::vector<ChainChunk> group_chunks(0);
   std::string word;
-  Multiset letter_selection;
-  ChainLetter temp;
+  Multiset chunk_selection;
+  ChainChunk temp;
+  int first_index;
   
   arcs.resize(num_groups);
   
   for (i=0; i<num_groups; i++) {
     
-    //create a list of letters in that group
-    group_letters.resize(0);
-    for (j=0; j<C.num_words(); j++) {
-      word = C[j];
-      temp.word = j;
-      for (k=0; k<word.size(); k++) {
-        if (gens[i] == word[k]) {
-          temp.index = k;
-          group_letters[i].push_back(temp);
-        }
-      }
-    }
+    //create a list of chunks in that group
+    //note that we already have a list of maximal chunks -- we only need to 
+    //go through and get all the possible chunks
+    group_chunks.resize(0);
+    for (j=0; j<chain_chunks.size(); j++) {
+      for (k=0; k<chain_chunks[j].size(); k++) {
+        //
     
     //now go through and create all possible multiarcs; we may assume that the
     //smallest index is first
     arcs[i].resize(0);
-    for (first_index=0; first_index<group_chunks.size(); first_index++) {
-      chunk_selection = Multiset(orders[i], first_index, group_letters.size());
+    for (first_index=0; first_index<(int)group_chunks.size(); first_index++) {
+      chunk_selection = Multiset(orders[i], first_index, group_chunks.size());
       do {
         //try this chunk slection
         
@@ -90,7 +87,8 @@ int main(int argc, char* argv[]) {
     //handle arguments (none yet)
   }
   
-  CyclicProduct G(std::string(argv[current_arg]));                               //create the group
+  std::string G_in = std::string(argv[current_arg]);
+  CyclicProduct G(G_in);                                                         //create the group
   current_arg++;
   
   Chain C(&G, &argv[current_arg], argc-current_arg);                              //process the chain arguments
@@ -100,6 +98,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Group: " << G << "\n";
   std::cout << "Chain: " << C << "\n";
+  C.print_chunks(std::cout);
   std::cout.flush();
   
   //compute_multiarcs(G, C, arcs);                                                 //calls arcs and polys by reference
