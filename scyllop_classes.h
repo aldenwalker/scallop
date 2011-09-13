@@ -11,12 +11,23 @@
 
 
 /*****************************************************************************
- * a letter in a chain
+ * a chunk in a chain
  * ***************************************************************************/
 struct ChainChunk {
   int word;
+  int group;
   int start_index;
   int len;
+};
+
+/*****************************************************************************
+ * a letter in a chain
+ * ***************************************************************************/
+struct ChainLetter {
+  int word;
+  int index;
+  char letter;
+  int group;
 };
 
 /*****************************************************************************
@@ -24,14 +35,24 @@ struct ChainChunk {
  * ***************************************************************************/
 struct Multiarc {
   int group;
-  std::vector<ChainChunk> letters;
+  std::vector<int> letters;
 };
+
+/****************************************************************************
+ * an edge
+ ****************************************************************************/
+struct Edge {
+  bool blank;
+  int first;
+  int last;
+};
+
 
 /*****************************************************************************
  * a poylgon
  * ***************************************************************************/
 struct Polygon {
-  std::vector<int> arcs;
+  std::vector<int> edges;
 };
 
 
@@ -49,6 +70,8 @@ class CyclicProduct {
     std::vector<char> gen_list(void);        //return the generator list
     std::vector<int> order_list(void);       //return the list of orders (0=inf)
     int gen_order(char gen);                 //return the order of the given generator
+    int gen_index(char gen);                 //return the number of the gen
+    int num_groups(void);
     
     void cyc_red(std::string* S);                 //cyclically reduce a string
     
@@ -74,6 +97,9 @@ class Chain {
     std::vector<std::string> word_list(void);
     std::vector<int> weights_list(void);
     std::vector<std::vector<ChainChunk> > chunk_list(void);
+    std::vector<std::vector<int> > group_letter_list(void);
+    std::vector<std::vector<ChainLetter> > chain_letter_list(void);
+    int next_letter(int n);
     int num_words(void);
     std::string operator[](int index);    //get a word
     void print_chunks(std::ostream &os);
@@ -85,6 +111,8 @@ class Chain {
     std::vector<std::string> words;
     std::vector<int> weights;
     std::vector<std::vector<ChainChunk> > chunks;
+    std::vector<std::vector<int> > group_letters;
+    std::vector<std::vector<ChainLetter> > chain_letters;
     
 };
 
