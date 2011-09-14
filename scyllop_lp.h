@@ -17,6 +17,6 @@ void scyllop_lp(CyclicProduct& G,
                 rational* scl, 
                 std::vector<rational>* solution_vector, 
                 scyllop_lp_solver solver, 
-                int VERBOSE); 
+                bool VERBOSE); 
 
 #endif 

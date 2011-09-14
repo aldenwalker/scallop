@@ -96,6 +96,7 @@ void compute_multiarcs(CyclicProduct &G, Chain &C, std::vector<std::vector<Multi
  * compute the edges.  there are two kinds -- real edges, which must come from
  * multiarcs, and are given by any pair that can appear there, and blank
  * arcs.  These are given by *all* pairs of letters.
+ * *except*, blank edges cannot be consecutive letters
  *****************************************************************************/
 void compute_edges(CyclicProduct &G, Chain &C, std::vector<Edge> &edges) {
   int i,j;
@@ -109,7 +110,9 @@ void compute_edges(CyclicProduct &G, Chain &C, std::vector<Edge> &edges) {
     for (j=0; j<num_letters; j++) {
       temp_edge.last = j;
       temp_edge.blank = true;
-      edges.push_back(temp_edge);
+      if (C.next_letter(i) != j) {
+        edges.push_back(temp_edge);
+      }
       if (chain_letters[i].group == chain_letters[j].group) {
         temp_edge.blank = false;
         if (orders[chain_letters[i].group] == 0) {
@@ -183,6 +186,9 @@ void compute_polys(CyclicProduct &G,
       //find the blank edges to fill in
       temp1 = edges[temp_poly.edges[0]].last;
       temp2 = edges[temp_poly.edges[2]].first;
+      if (temp2 == C.next_letter(temp1)) {
+        continue;
+      }
       for (k=0; k<(int)blank_edges_beginning_with[temp1].size(); k++) {
         if (edges[ blank_edges_beginning_with[temp1][k] ].last == temp2) {
           temp_poly.edges[1] = blank_edges_beginning_with[temp1][k];
@@ -191,6 +197,9 @@ void compute_polys(CyclicProduct &G,
       }
       temp1 = edges[temp_poly.edges[2]].last;
       temp2 = edges[temp_poly.edges[0]].first;
+      if (temp2 == C.next_letter(temp1)) {
+        continue;
+      }
       for (k=0; k<(int)blank_edges_beginning_with[temp1].size(); k++) {
         if (edges[ blank_edges_beginning_with[temp1][k] ].last == temp2) {
           temp_poly.edges[3] = blank_edges_beginning_with[temp1][k];
@@ -201,13 +210,13 @@ void compute_polys(CyclicProduct &G,
     }
   }
   
-  std::cout << "I am done with the 2-blank polys\n";
-  for (i=0; i<(int)polys.size(); i++) {
-    for (j=0; j<(int)polys[i].edges.size(); j++) {
-      std::cout << polys[i].edges[j] << ",";
-    }
-    std::cout << "\n";
-  }
+  //std::cout << "I am done with the 2-blank polys\n";
+  //for (i=0; i<(int)polys.size(); i++) {
+  //  for (j=0; j<(int)polys[i].edges.size(); j++) {
+  //    std::cout << polys[i].edges[j] << ",";
+  //  }
+  //  std::cout << "\n";
+  //}
       
   //now the ones with 1 or no blank edges.  Here we just go through all 
   //possibilities, using only real edges.  Note we may assume that 
@@ -221,12 +230,12 @@ void compute_polys(CyclicProduct &G,
   current_edges[0] = 0;
   while (true) {
     
-    std::cout << "Current attempted polygon:\n";
-    for (i=0; i<current_len; i++) {
-      std::cout << real_edges_beginning_with[current_beginning_letters[i]][current_edges[i]] << " ";
-    }
-    std::cout << "\n";
-    std::cout.flush();
+    //std::cout << "Current attempted polygon:\n";
+    //for (i=0; i<current_len; i++) {
+    //  std::cout << real_edges_beginning_with[current_beginning_letters[i]][current_edges[i]] << " ";
+    //}
+    //std::cout << "\n";
+    //std::cout.flush();
     
     if (current_len > 1) {
       //check if it's allowed to close up
@@ -310,6 +319,10 @@ void compute_polys(CyclicProduct &G,
       poly_len = (int)temp_poly.edges.size();
       for (j=0; j<poly_len; j++) {
         temp1 = edges[ temp_poly.edges[j] ].last;
+        if (edges[ temp_poly.edges[(j+2)%poly_len] ].first
+            == C.next_letter(temp1)) {
+          continue;
+        }
         for (k=0; k<(int)blank_edges_beginning_with[temp1].size(); k++) {
           if (edges[ blank_edges_beginning_with[temp1][k] ].last == 
               edges[ temp_poly.edges[(j+2)%poly_len] ].first) {
@@ -415,8 +428,8 @@ int main(int argc, char* argv[]) {
   print_polys(std::cout, edges, polys);
   
   rational scl;
-  std::vector<rational> solution_vector(polys.size());                           //run the LP
-  scyllop_lp(G, C, arcs, edges, polys, &scl, &solution_vector, GLPK_DOUBLE, 0); 
+  std::vector<rational> solution_vector(0);                           //run the LP
+  scyllop_lp(G, C, arcs, edges, polys, &scl, &solution_vector, GLPK_DOUBLE, true); 
   
   std::cout << "scl( " << C << ") = " << scl << " = " << scl.get_d() << "\n";    //output the answer
   
