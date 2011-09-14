@@ -226,6 +226,7 @@ void compute_polys(CyclicProduct &G,
       std::cout << real_edges_beginning_with[current_beginning_letters[i]][current_edges[i]] << " ";
     }
     std::cout << "\n";
+    std::cout.flush();
     
     if (current_len > 1) {
       //check if it's allowed to close up
@@ -248,6 +249,7 @@ void compute_polys(CyclicProduct &G,
         for (i=0; i<current_len; i++) {
           temp_poly.edges[i] = real_edges_beginning_with[current_beginning_letters[i]][current_edges[i]];
         }
+        std::cout << "Pushed it!\n";
         polys.push_back(temp_poly);
       }
     }
@@ -262,9 +264,9 @@ void compute_polys(CyclicProduct &G,
                     ].last;
       temp2 = C.next_letter(temp1);
       current_beginning_letters[current_len] = temp2;
-      std::cout << "Trying to extend with beginning letter " << temp2 << "\n";
+      //std::cout << "Trying to extend with beginning letter " << temp2 << "\n";
       for (i=0; i<(int)real_edges_beginning_with[temp2].size(); i++) {
-        if (edges[real_edges_beginning_with[temp2][i]].last > current_beginning_letters[0]) {
+        if (real_edges_beginning_with[temp2][i] > real_edges_beginning_with[current_beginning_letters[0]][current_edges[0]]) {
           break;
         }
       }
@@ -282,7 +284,7 @@ void compute_polys(CyclicProduct &G,
       i--;
     }
     if (i==-1) {
-      if (current_beginning_letters[0] == current_len-1) {
+      if (current_beginning_letters[0] == (int)chain_letters.size()-1) {
         break;
       } else {
         current_beginning_letters[0]++;
@@ -345,7 +347,7 @@ void print_edges(std::ostream &os, std::vector<Edge> &edges) {
   int i;
   os << "Edges: \n";
   for (i=0; i<(int)edges.size(); i++) {
-    os << "(" << edges[i].first << "," << edges[i].last << ")";
+    os << i << ": (" << edges[i].first << "," << edges[i].last << ")";
     if (edges[i].blank) {
       os << "b";
     }
@@ -414,7 +416,7 @@ int main(int argc, char* argv[]) {
   
   rational scl;
   std::vector<rational> solution_vector(polys.size());                           //run the LP
-  scyllop_lp(G, C, arcs, polys, &scl, &solution_vector, GLPK_DOUBLE, 0); 
+  scyllop_lp(G, C, arcs, edges, polys, &scl, &solution_vector, GLPK_DOUBLE, 0); 
   
   std::cout << "scl( " << C << ") = " << scl << " = " << scl.get_d() << "\n";    //output the answer
   
