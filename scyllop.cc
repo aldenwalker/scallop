@@ -28,15 +28,13 @@
 void compute_multiarcs(CyclicProduct &G, Chain &C, std::vector<std::vector<Multiarc> > &arcs) {
   std::vector<char> gens = G.gen_list();
   std::vector<int> orders = G.order_list();
-  std::vector<string> words = C.word_list();
   int i,j,k;
   int num_groups = gens.size();
   std::vector<std::vector<int> > group_letters = C.group_letter_list();
   std::vector<ChainLetter> chain_letters = C.chain_letter_list();
-  std::string word;
+  std::vector<int> current_possible_letters;
   Multiset letter_selection;
   Multiarc temp_marc;
-  Chainletter temp;
   int first_index;
   
   arcs.resize(num_groups);
@@ -57,17 +55,38 @@ void compute_multiarcs(CyclicProduct &G, Chain &C, std::vector<std::vector<Multi
       }
     }
     
+    if (orders[i] == 0) {
+      continue;
+    }
     //now the harder ones -- all groups of exactly the order of the group, 
     //all of the same type (inverse or not)
-    for (first_index=0; first_index<(int)group_letters[i].size(); first_index++) {
-      chunk_selection = Multiset(orders[i], first_index, group_chunks.size());
-      do {
-        //try this chunk slection
-        
-      } while (1 != chunk_selection.next());
+    //first, the regulars
+    int inverses;
+    for (inverses=0; inverses<2; inverses++) {
+      current_possible_letters.resize(0);
+      temp_marc.letters.resize(orders[i]);
+      for (j=0; j<(int)group_letters[i].size(); j++) {
+        if ( (!inverses && islower(chain_letters[group_letters[i][j]].letter))
+            || (inverses && isupper(chain_letters[group_letters[i][j]].letter)) ) {
+          current_possible_letters.push_back(group_letters[i][j]);
+        }
+      }
+      if ((int)current_possible_letters.size() == 0) {
+        continue;
+      }
+      for (first_index=0; first_index<(int)group_letters[i].size(); first_index++) {
+        letter_selection = Multiset(orders[i]-1, first_index, current_possible_letters.size());
+        temp_marc.letters[0] = current_possible_letters[first_index];
+        do {
+          for (j=0; j<orders[i]-1; j++) {
+            temp_marc.letters[j+1] = current_possible_letters[letter_selection[j]];
+          }
+          arcs[i].push_back(temp_marc);
+        } while (1 != letter_selection.next());
+      }
     }
     
-  }
+  }//end of loop through the groups
 
 } 
 
@@ -79,10 +98,10 @@ void compute_multiarcs(CyclicProduct &G, Chain &C, std::vector<std::vector<Multi
  * arcs.  These are given by *all* pairs of letters.
  *****************************************************************************/
 void compute_edges(CyclicProduct &G, Chain &C, std::vector<Edge> &edges) {
-  int i,j,k;
+  int i,j;
   std::vector<ChainLetter> chain_letters = C.chain_letter_list();
   std::vector<int> orders = G.order_list();
-  int num_letters = chain_letters.size();
+  int num_letters = (int)chain_letters.size();
   edges.resize(0);
   Edge temp_edge;
   for (i=0; i<num_letters; i++) {
@@ -116,12 +135,13 @@ void compute_edges(CyclicProduct &G, Chain &C, std::vector<Edge> &edges) {
  *****************************************************************************/
 void compute_polys(CyclicProduct &G, 
                    Chain &C, 
-                   std:vector<Edge> &edges, 
+                   std::vector<Edge> &edges, 
                    std::vector<Polygon> &polys) {
-  int i,j;
-  int num_edges = edge.size();
+  int i,j,k;
+  int num_edges = (int)edges.size();
   int num_real_edges;
   int num_blank_edges;
+  int temp1, temp2;
   Polygon temp_poly;
   std::vector<int> word_lens(C.num_words());
   std::vector<int> real_edges(0);
@@ -134,13 +154,13 @@ void compute_polys(CyclicProduct &G,
     word_lens[i] = C[i].size();
   }
   
-  for (i=0; i<chain_letters.size(); i++) {
+  for (i=0; i<(int)chain_letters.size(); i++) {
     real_edges_beginning_with[i].resize(0);
     blank_edges_beginning_with[i].resize(0);
   }
   
   for (i=0; i<num_edges; i++) {
-    if (edges[i].blank == true) {
+    if (edges[i].blank) {
       blank_edges.push_back(i);
       blank_edges_beginning_with[edges[i].first].push_back(i);
     } else {
@@ -157,26 +177,36 @@ void compute_polys(CyclicProduct &G,
   //real edges, and that's it.  
   temp_poly.edges.resize(4);
   for (i=0; i<num_real_edges; i++) {
-    temp_poly.edges[0] = i;
+    temp_poly.edges[0] = real_edges[i];
     for (j=0; j<num_real_edges; j++) {
-      temp_poly.edges[2] = j;
+      temp_poly.edges[2] = real_edges[j];
       //find the blank edges to fill in
-      for (k=0; k<blank_edges_beginning_with[temp_poly.edges[0]].size(); k++) {
-        if (edges[ blank_edges_beginning_with[temp_poly.edges[0]][k] ].last 
-            == edges[ temp_poly.edges[2] ].first) {
-          temp_poly.edges[1] = blank_edges_beginning_with[temp_poly.edges[0]][k];
+      temp1 = edges[temp_poly.edges[0]].last;
+      temp2 = edges[temp_poly.edges[2]].first;
+      for (k=0; k<(int)blank_edges_beginning_with[temp1].size(); k++) {
+        if (edges[ blank_edges_beginning_with[temp1][k] ].last == temp2) {
+          temp_poly.edges[1] = blank_edges_beginning_with[temp1][k];
           break;
         }
       }
-      for (k=0; k<blank_edges_beginning_with[temp_poly.edges[2]].size(); k++) {
-        if (edges[ blank_edges_beginning_with[temp_poly.edges[2]][k] ].last 
-            == edges[ temp_poly.edges[0] ].first) {
-          temp_poly.edges[3] = blank_edges_beginning_with[temp_poly.edges[2]][k];
+      temp1 = edges[temp_poly.edges[2]].last;
+      temp2 = edges[temp_poly.edges[0]].first;
+      for (k=0; k<(int)blank_edges_beginning_with[temp1].size(); k++) {
+        if (edges[ blank_edges_beginning_with[temp1][k] ].last == temp2) {
+          temp_poly.edges[3] = blank_edges_beginning_with[temp1][k];
           break;
         }
       }
       polys.push_back(temp_poly);
     }
+  }
+  
+  std::cout << "I am done with the 2-blank polys\n";
+  for (i=0; i<(int)polys.size(); i++) {
+    for (j=0; j<(int)polys[i].edges.size(); j++) {
+      std::cout << polys[i].edges[j] << ",";
+    }
+    std::cout << "\n";
   }
       
   //now the ones with 1 or no blank edges.  Here we just go through all 
@@ -186,11 +216,17 @@ void compute_polys(CyclicProduct &G,
   std::vector<int> current_beginning_letters(4);    //this records the first letters of the arc choices
   std::vector<int> current_edges(4);                //this records where we are in the lists real_edges_beginning_with
   int current_len;                                  //this records the current length
-  int temp1, temp2;
   current_len = 1;
   current_beginning_letters[0] = 0;
   current_edges[0] = 0;
   while (true) {
+    
+    std::cout << "Current attempted polygon:\n";
+    for (i=0; i<current_len; i++) {
+      std::cout << real_edges_beginning_with[current_beginning_letters[i]][current_edges[i]] << " ";
+    }
+    std::cout << "\n";
+    
     if (current_len > 1) {
       //check if it's allowed to close up
       temp1 = edges[ 
@@ -206,9 +242,7 @@ void compute_polys(CyclicProduct &G,
       if (temp2 != current_beginning_letters[0]) {
         std::cout << "Badness in polygons creation\n";
       }
-      if (chain_letters[temp1].word == chain_letters[temp2].word
-          && ((chain_letters[temp1].index+1)%word_lens[chain_letters[temp1].word]
-              == chain_letters[temp2].index)) {
+      if (C.next_letter(temp1) == temp2) {
         //it does close up, so add it
         temp_poly.edges.resize(current_len);
         for (i=0; i<current_len; i++) {
@@ -226,13 +260,15 @@ void compute_polys(CyclicProduct &G,
                          [current_beginning_letters[current_len-1]]
                          [current_edges[current_len-1]]
                     ].last;
-      current_beginning_letters[current_len] = C.next_letter(temp1);
-      for (i=0; i<real_edges_beginning_with[temp1].size(); i++) {
-        if (edges[real_edges_beginning_with[temp1][i]].last > current_beginning_letters[0]) {
+      temp2 = C.next_letter(temp1);
+      current_beginning_letters[current_len] = temp2;
+      std::cout << "Trying to extend with beginning letter " << temp2 << "\n";
+      for (i=0; i<(int)real_edges_beginning_with[temp2].size(); i++) {
+        if (edges[real_edges_beginning_with[temp2][i]].last > current_beginning_letters[0]) {
           break;
         }
       }
-      if (i < real_edges_beginning_with[temp1].size()) {
+      if (i < (int)real_edges_beginning_with[temp2].size()) {
         current_edges[current_len] = i;
         current_len++;
         continue;
@@ -242,11 +278,11 @@ void compute_polys(CyclicProduct &G,
     }
     //if we get here, we need to advance the index current_len-1           
     i = current_len-1;
-    while (i >=0 && current_edges[i] == real_edges_beginning_with[current_beginning_letters[i]].size()-1) {
+    while (i >=0 && current_edges[i] == (int)real_edges_beginning_with[current_beginning_letters[i]].size()-1) {
       i--;
     }
     if (i==-1) {
-      if (current_beginning_letters[0] == num_letters-1) {
+      if (current_beginning_letters[0] == current_len-1) {
         break;
       } else {
         current_beginning_letters[0]++;
@@ -272,7 +308,7 @@ void compute_polys(CyclicProduct &G,
       poly_len = (int)temp_poly.edges.size();
       for (j=0; j<poly_len; j++) {
         temp1 = edges[ temp_poly.edges[j] ].last;
-        for (k=0; k<(int)blank_edges_beginning_with[temp1].size; k++) {
+        for (k=0; k<(int)blank_edges_beginning_with[temp1].size(); k++) {
           if (edges[ blank_edges_beginning_with[temp1][k] ].last == 
               edges[ temp_poly.edges[(j+2)%poly_len] ].first) {
             break;
@@ -286,10 +322,52 @@ void compute_polys(CyclicProduct &G,
     }
   }
   
-  
-  
 }
 
+
+
+void print_multiarcs(std::ostream &os, std::vector<std::vector<Multiarc> > &arcs) {
+  int i,j,k;
+  os << "Multiarcs:\n";
+  for (i=0; i<(int)arcs.size(); i++) {
+    os << "Group " << i << ":\n";
+    for (j=0; j<(int)arcs[i].size(); j++) {
+      os << "(";
+      for (k=0; k<(int)arcs[i][j].letters.size(); k++) {
+        os << arcs[i][j].letters[k] << ",";
+      }
+      os << ")\n";
+    }
+  }
+}
+
+void print_edges(std::ostream &os, std::vector<Edge> &edges) {
+  int i;
+  os << "Edges: \n";
+  for (i=0; i<(int)edges.size(); i++) {
+    os << "(" << edges[i].first << "," << edges[i].last << ")";
+    if (edges[i].blank) {
+      os << "b";
+    }
+    os << "\n";
+  }
+}
+
+void print_polys(std::ostream &os, std::vector<Edge> &edges, std::vector<Polygon> &polys) {
+  int i,j;
+  os << "Polygons: \n";
+  for (i=0; i<(int)polys.size(); i++) {
+    os << "(";
+    for (j=0; j<(int)polys[i].edges.size(); j++) {
+      os << polys[i].edges[j];
+      if (edges[polys[i].edges[j]].blank) {
+        os << "!";
+      }
+      os << ",";
+    }
+    os << ")\n";
+  }
+}
 
 int main(int argc, char* argv[]) {
   int current_arg = 1;
@@ -314,15 +392,25 @@ int main(int argc, char* argv[]) {
   Chain C(&G, &argv[current_arg], argc-current_arg);                              //process the chain arguments
   
   std::vector<std::vector<Multiarc> > arcs(0);
+  std::vector<Edge> edges(0);
   std::vector<Polygon> polys(0);
 
   std::cout << "Group: " << G << "\n";
   std::cout << "Chain: " << C << "\n";
   C.print_chunks(std::cout);
-  std::cout.flush();
   
-  //compute_multiarcs(G, C, arcs);                                                 //calls arcs and polys by reference
-  compute_polys(G, C, arcs, polys);
+  std::cout << "Letters:\n";
+  C.print_letters(std::cout);
+  
+  std::cout << "Group letters:\n";
+  C.print_group_letters(std::cout);
+  
+  compute_multiarcs(G, C, arcs);                                                 //calls arcs and polys by reference
+  print_multiarcs(std::cout, arcs);
+  compute_edges(G, C, edges);
+  print_edges(std::cout, edges);
+  compute_polys(G, C, edges, polys);
+  print_polys(std::cout, edges, polys);
   
   rational scl;
   std::vector<rational> solution_vector(polys.size());                           //run the LP

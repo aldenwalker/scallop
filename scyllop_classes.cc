@@ -61,6 +61,7 @@ int CyclicProduct::gen_order(char gen) {
       return orders[i];
     }
   }
+  std::cout << "Couldn't find " << gen_to_find << "\n";
   return -1;
 }
 
@@ -161,9 +162,13 @@ Chain::Chain(CyclicProduct* G_in, char** input, int num_strings) {
   for (i=0; i<(int)words.size(); i++) {
     j=0;
     while ( true ) {
+      if (j >= (int)words[i].size()) {
+        break;
+      }
       order = (*G).gen_order(words[i][j]);
       if (j+order >= (int)words[i].size() ) {
-        break;
+        j++;
+        continue;
       }
       if (order == 0) {
         j++;
@@ -176,7 +181,6 @@ Chain::Chain(CyclicProduct* G_in, char** input, int num_strings) {
       }
     }
   }
-  
   
   //now compute the chunks -- note we may assume that a chunk starts the word
   chunks.resize(words.size());
@@ -227,9 +231,11 @@ Chain::Chain(CyclicProduct* G_in, char** input, int num_strings) {
       temp_letter.letter = words[i][j];
       temp_letter.group = (*G).gen_index(words[i][j]);
       chain_letters.push_back(temp_letter);
-      group_letters[ (*G).gen_index(words[i][j]) ].push_back(chain_letters[chain_letters.size()-1]);
+      group_letters[ (*G).gen_index(words[i][j]) ].push_back(chain_letters.size()-1);
     }
   }
+  
+  
 }
 
 Chain::~Chain(void) {
@@ -257,8 +263,8 @@ std::vector<std::vector<int> > Chain::group_letter_list(void) {
   return ans;
 }
 
-std::vector<std::vector<ChainLetter> > Chain::chain_letter_list(void) {
-  std::vector<std::vector<ChainLetter> > ans = chain_letters;
+std::vector<ChainLetter> Chain::chain_letter_list(void) {
+  std::vector<ChainLetter> ans = chain_letters;
   return ans;
 }
 
@@ -293,13 +299,24 @@ void Chain::print_chunks(std::ostream &os) {
   }
 }
 
+
+void Chain::print_letters(std::ostream &os) {
+  int i;
+  for (i=0; i<(int)chain_letters.size(); i++) {
+    os << i << ": (" << chain_letters[i].word << "," 
+                     << chain_letters[i].index << ","
+                     << chain_letters[i].letter << ")\n";
+  }
+}
+
 void Chain::print_group_letters(std::ostream &os) {
   int i,j;
   for (i=0; i<(*G).num_groups(); i++) {
-    for (j=0; j<group_letters[i].size(); j++) {
-      os << "(" << group_letters[i][j].word << "," 
-         << group_letters[i][j].index << "," 
-         << group_letters[i][j].letter << "),"
+    os << "Group " << i << ":\n";
+    for (j=0; j<(int)group_letters[i].size(); j++) {
+      os << "(" << chain_letters[group_letters[i][j]].word << "," 
+         << chain_letters[group_letters[i][j]].index << "," 
+         << chain_letters[group_letters[i][j]].letter << "),";
     }
     os << "\n";
   }
@@ -308,7 +325,7 @@ void Chain::print_group_letters(std::ostream &os) {
 
 std::ostream &operator<<(std::ostream &os, Chain &C) {
   int i;
-  int len = C.words.size();
+  int len = (int)C.words.size();
   for (i=0; i<len; i++) {
     os << C.weights[i] << C.words[i] << " ";
   }
@@ -322,12 +339,18 @@ Multiset::Multiset() {
   L = std::vector<int>(0);
   min = 0;
   max_plus_one = 0;
+  len = 0;
 }
 
-Multiset::Multiset(int len, int Min, int Max_plus_one) {
-  L = std::vector<int>(len, Min);
+Multiset::Multiset(int Len, int Min, int Max_plus_one) {
+  L = std::vector<int>(Len, Min);
   min = Min;
   max_plus_one = Max_plus_one;
+  len = Len;
+}
+
+int Multiset::operator[](int index) {
+  return L[index];
 }
 
 std::vector<int>* Multiset::get_list(void) {
@@ -335,8 +358,34 @@ std::vector<int>* Multiset::get_list(void) {
 }
 
 int Multiset::next(void) {
-  return 1;
+  int i = len-1;
+  int j;
+  i=len-1;
+  while (i>=0 && L[i] == max_plus_one-1) {
+    i--;
+  }
+  if (i==-1) {
+    return 1;
+  }
+  L[i]++;
+  for (j=i+1; j<len; j++) {
+    L[j] = min;
+  }
+  return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
   
 
 

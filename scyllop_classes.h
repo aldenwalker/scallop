@@ -98,11 +98,13 @@ class Chain {
     std::vector<int> weights_list(void);
     std::vector<std::vector<ChainChunk> > chunk_list(void);
     std::vector<std::vector<int> > group_letter_list(void);
-    std::vector<std::vector<ChainLetter> > chain_letter_list(void);
+    std::vector<ChainLetter> chain_letter_list(void);
     int next_letter(int n);
     int num_words(void);
     std::string operator[](int index);    //get a word
     void print_chunks(std::ostream &os);
+    void print_letters(std::ostream &os);
+    void print_group_letters(std::ostream &os);
     
     friend std::ostream &operator<<(std::ostream &os, Chain &C);
     
@@ -112,7 +114,7 @@ class Chain {
     std::vector<int> weights;
     std::vector<std::vector<ChainChunk> > chunks;
     std::vector<std::vector<int> > group_letters;
-    std::vector<std::vector<ChainLetter> > chain_letters;
+    std::vector<ChainLetter> chain_letters;
     
 };
 
@@ -128,9 +130,11 @@ class Multiset {
     Multiset(int len, int Min, int Max_plus_one);
     int next(void);
     std::vector<int>* get_list(void);
+    int operator[](int index);
   private:
     std::vector<int> L;
     int min;
+    int len;
     int max_plus_one;
 };
 
