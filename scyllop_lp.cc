@@ -34,6 +34,12 @@ void scyllop_lp(CyclicProduct& G,
 	std::vector<double> ar(0); 
   int i,j,k,l,m,n;          
   
+  int num_edge_pairs;
+  int num_polys;
+  int num_multiarcs;
+  
+  std::vector<std::string> words = C.word_list();
+  std::vector<int> weghts = C.weights_list();
   std::vector<ChainLetter> chain_letters = C.chain_letter_list();
   std::vector<std::vector<int> > real_edges_beginning_with(chain_letters.size());
   std::vector<std::vector<int> > blank_edges_beginning_with(chain_letters.size());
@@ -74,21 +80,59 @@ void scyllop_lp(CyclicProduct& G,
       stripped_arcs.push_back(temp_arc);
     }
   }
+  
+  //now, we need to make the edge pairs
+  //note that for real edges, the edge (i,j) is paired with (j,i)
+  //for fake edges, (i,j) is paired with (j-1, i+1)
+  std::vector<std::pair<int, int> > edge_pairs(0);
+  std::pair<int, int> temp_pair;
+  std::vector<int> which_edge_pair(edges.size(),-1);
+  int paired_edge;
+  for (i=0; i<(int)edges.size(); i++) {
+    if (which_edge_pair[i] != -1) {
+      continue;
+    }
+    if (edges[i].blank) {
+      temp1 = C.prev_letter(edges[i].last);
+      temp2 = C.next_letter(edges[i].first);
+      for (j=0; j<(int)blank_edges_beginning_with[temp1].size(); j++) {
+        if (edges[ blank_edges_beginning_with[temp1][k] ].last == temp2) {
+          break;
+        }
+      }
+      paired_edge = blank_edges_beginning_with[temp1][k];
     
+    } else {
+      temp1 = edges[i].last;
+      temp2 = edges[i].first;
+      for (j=0; j<(int)real_edges_beginning_with[temp1].size(); j++) {
+        if (edges[ real_edges_beginning_with[temp1][k] ].last == temp2) {
+          break;
+        }
+      }
+      paired_edge = real_edges_beginning_with[temp1][k];
+    }
+    //it will always be the case that the paired edge is larger than i
+    temp_pair.first = i;
+    temp_pair.second = paired_edge;
+    which_edge_pair[i] = edge_pairs.size();
+    which_edge_pair[paired_edge] = edge_pairs.size();
+    edge_pairs.push_back(temp_pair);
+  }
+  
+  
+  num_edge_pairs = edge_pairs.size();
+  num_polys = polys.size();
+  num_multiarcs = stripped_arcs.size();
     
   if (VERBOSE == 1) {
     std::cout << "Started linear programming setup\n";
   }
   
-  /*
+  
   if (solver == GLPK_DOUBLE || solver == GLPK_EXACT) {   
 	  glp_prob *lp;
     glp_smcp parm;
-	
-	  //the maximum possible matrix size is polygon_list_length*((arc_list_length/2)+WORD)
-	  ia.reserve(polygon_list_length*((arc_list_length/2)+numWords));
-	  ja.reserve(polygon_list_length*((arc_list_length/2)+numWords));
-	  ar.reserve(polygon_list_length*((arc_list_length/2)+numWords));
 	
 	  lp = glp_create_prob();
 	  glp_init_smcp(&parm);
@@ -98,17 +142,22 @@ void scyllop_lp(CyclicProduct& G,
 	  glp_set_prob_name(lp, "scl");
 	  glp_set_obj_dir(lp,GLP_MIN);
 	
-	  glp_add_rows(lp, (arc_list_length/2) + numWords );
-	  for(i=1;i<=arc_list_length/2;i++){
+	  glp_add_rows(lp, num_edge_pairs + numWords );
+	  for(i=1; i<=num_edge_pairs; i++){
 		  glp_set_row_bnds(lp,i, GLP_FX, 0.0, 0.0);
-	  };
+	  }
 	
 	  // boundary condition
-	  for(i=0;i<numWords;i++){
-		  glp_set_row_bnds(lp, ((arc_list_length)/2)+1+i, GLP_FX, w[i].size()*weight[i], w[i].size()*weight[i]);	
-	  };
+	  for(i=0; i<(int)words.size(); i++){
+		  glp_set_row_bnds(lp, 
+                       num_edge_pairs+i+1, 
+                       GLP_FX, 
+                       words[i].size()*weights[i], 
+                       words[i].size()*weights[i]);	
+	  }
 	
-	  glp_add_cols(lp, polygon_list_length);
+	  glp_add_cols(lp, num_polys + num_multiarcs);
+    //START HERE
 	  for(i=1;i<=polygon_list_length;i++){
 		  glp_set_col_bnds(lp,i, GLP_LO, 0.0, 0.0);
 		  glp_set_obj_coef(lp,i, (polygon_list[i-1].size-2));

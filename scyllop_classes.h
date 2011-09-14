@@ -100,6 +100,7 @@ class Chain {
     std::vector<std::vector<int> > group_letter_list(void);
     std::vector<ChainLetter> chain_letter_list(void);
     int next_letter(int n);
+    int prev_letter(int n)
     int num_words(void);
     std::string operator[](int index);    //get a word
     void print_chunks(std::ostream &os);

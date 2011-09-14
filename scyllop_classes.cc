@@ -278,6 +278,17 @@ int Chain::next_letter(int n) {
   }
 }
 
+int Chain::prev_letter(int n) {
+  int word = chain_letters[n].word;
+  int index = chain_letters[n].index;
+  if (index == 0) {
+    return n+words[word].size()-1;
+  } else {
+    return n-1;
+  }
+}
+
+
 int Chain::num_words(void) {
   return words.size();
 }
