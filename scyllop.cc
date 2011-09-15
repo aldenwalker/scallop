@@ -218,13 +218,94 @@ void compute_polys(CyclicProduct &G,
   //  std::cout << "\n";
   //}
       
-  //now the ones with 1 or no blank edges.  Here we just go through all 
+  
+  //now we compute the ones with one blank edge.  We do this by going through 
+  //*all* chains of 2 or 3 real edges.  For each, we fill in the remaining edge
+  //with a blank one
+  std::vector<int> current_beginning_letters(3);    //this records the first letters of the arc choices
+  std::vector<int> current_edges(3);                //this records where we are in the lists real_edges_beginning_with
+  int current_len;                                  //this records the current length
+  current_len = 1;
+  current_beginning_letters[0] = 0;
+  current_edges[0] = 0;
+  while (true) {
+    
+    //std::cout << "Current attempted polygon:\n";
+    //for (i=0; i<current_len; i++) {
+    //  std::cout << real_edges_beginning_with[current_beginning_letters[i]][current_edges[i]] << " ";
+    //}
+    //std::cout << "\n";
+    //std::cout.flush();
+    
+    if (current_len > 1) {
+      //get the beginning letter and ending letter (temp1, temp2) is our new blank edge
+      temp1 = edges[ 
+                    real_edges_beginning_with
+                                   [current_beginning_letters[current_len-1]]
+                                   [current_edges[current_len-1]] 
+                   ].last;
+      temp2 = edges[ 
+                    real_edges_beginning_with
+                                   [current_beginning_letters[0]]
+                                   [current_edges[0]] 
+                    ].first;
+      if (temp2 != current_beginning_letters[0]) {
+        std::cout << "Badness in polygons creation\n";
+      }
+      if (C.next_letter(temp1) != temp2) {  //make sure we're not adding a stupid blank edge
+        temp_poly.edges.resize(current_len);
+        for (i=0; i<current_len; i++) {
+          temp_poly.edges[i] = real_edges_beginning_with[current_beginning_letters[i]][current_edges[i]];
+        }
+        //now add the last edge -- the blank one
+        for (i=0; i<(int)blank_edges_beginning_with[temp1].size(); i++) {
+          if (edges[blank_edges_beginning_with[temp1][i]].last == temp2) {
+            break;
+          }
+        }
+        temp_poly.edges.push_back( blank_edges_beginning_with[temp1][i] );
+        polys.push_back(temp_poly);
+      }
+    }
+    //now we advance it: if the list is shorter than maxmal (3), then add
+    //one on.  otherwise, step back and leave it short
+    if (current_len < 3) { 
+      temp1 = edges[
+                    real_edges_beginning_with
+                         [current_beginning_letters[current_len-1]]
+                         [current_edges[current_len-1]]
+                    ].last;
+      temp2 = C.next_letter(temp1);
+      current_beginning_letters[current_len] = temp2;
+      current_edges[current_len] = 0;
+      current_len++;
+      continue;
+    }
+    //if we get here, we need to advance the index current_len-1           
+    i = current_len-1;
+    while (i >=0 && current_edges[i] == (int)real_edges_beginning_with[current_beginning_letters[i]].size()-1) {
+      i--;
+    }
+    if (i==-1) {
+      if (current_beginning_letters[0] == (int)chain_letters.size()-1) {
+        break;
+      } else {
+        current_beginning_letters[0]++;
+        current_edges[0] = 0;
+        current_len = 1;
+        continue;
+      }
+    }
+    current_edges[i]++;
+    current_len = i+1;
+  }
+  
+  //ALL-REAL
+  //Here we just go through all 
   //possibilities, using only real edges.  Note we may assume that 
   //the polygon starts on a minimal letter
-  int num_two_blank_polys = polys.size();
-  std::vector<int> current_beginning_letters(4);    //this records the first letters of the arc choices
-  std::vector<int> current_edges(4);                //this records where we are in the lists real_edges_beginning_with
-  int current_len;                                  //this records the current length
+  current_beginning_letters.resize(4);    //this records the first letters of the arc choices
+  current_edges.resize(4);                //this records where we are in the lists real_edges_beginning_with
   current_len = 1;
   current_beginning_letters[0] = 0;
   current_edges[0] = 0;
@@ -307,6 +388,7 @@ void compute_polys(CyclicProduct &G,
   }
       
   
+  /*
   //OK we have made all the polys with two blanks, and all the polys with no 
   //blanks.  Now we go through, and to all the polys with length 3 or 4, we convert
   //each of the edges in turn into a blank one
@@ -336,6 +418,7 @@ void compute_polys(CyclicProduct &G,
       }
     }
   }
+  */
   
 }
 
