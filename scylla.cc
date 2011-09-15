@@ -11,139 +11,241 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "scyllop_classes.h"
+#include "scylla_classes.h"
 #include "rational.h"
-#include "scyllop_lp.h"
+#include "scylla_lp.h"
+
 
 /*****************************************************************************
- * make the list of multiarcs -- each multiarc is for a different group, and 
- * each one is made up of a collection (possibly including duplicates) of 
- * chunks, where the total number of letters is the order of the group.  
- * only the cyclic order in the multiarc matters.  
- *
- * The current thinking is that the arcs come in three kinds: positive, inverse, 
- * and matched pairs.  Also, wlog we may make all the multiarcs have the maximal
- * number of sides (no fussing with chunks)
+ * Make the list of group polygons and rectangles. 
  * ***************************************************************************/
-void compute_multiarcs(CyclicProduct &G, Chain &C, std::vector<std::vector<Multiarc> > &arcs) {
-  std::vector<char> gens = G.gen_list();
-  std::vector<int> orders = G.order_list();
-  int i,j,k;
-  int num_groups = gens.size();
+void compute_group_polygons_and_rectangles(Chain &C, 
+                                           InterfaceEdgeList &IEL,
+                                           std::vector<GroupEdgeList> &GEL,
+                                           std::vector<std::vector<GroupPolygon> > &GP,
+                                           std::vector<std::vector<GroupRectangle> > &GR) {
+  int i;
+  CyclicProduct* G = C.group();
+  int num_groups = (*G).num_groups();
   std::vector<std::vector<int> > group_letters = C.group_letter_list();
-  std::vector<ChainLetter> chain_letters = C.chain_letter_list();
-  std::vector<int> current_possible_letters;
+  std::vector<int> orders = C.order_list();
   Multiset letter_selection;
+  std::vector<int> regular_letters;
+  std::vecctor<int> inverse_letters;
+  std::vector<Multiarc> regular_multiarcs;
+  std::vector<Multiarc> inverse_multiarcs;
   Multiarc temp_marc;
-  int first_index;
+  GroupRectangle temp_group_rect;
+  GroupPolygon temp_group_poly;
   
   arcs.resize(num_groups);
+  GP.resize(num_groups);
+  GR.resize(num_groups);
   
   for (i=0; i<num_groups; i++) {
-    temp_marc.group = i;
-    arcs[i].resize(0);
-    //first, the easy ones -- the pairs of inverses
+    regular_letters.resize(0);
+    inverse_letters.resize(0);
     for (j=0; j<(int)group_letters[i].size(); j++) {
-      for (k=j+1; k<(int)group_letters[i].size(); k++) {
-        if (chain_letters[group_letters[i][j]].letter != 
-            chain_letters[group_letters[i][k]].letter) {    //they're the same group, so inverse if not the same letter
-          temp_marc.letters.resize(2);
-          temp_marc.letters[0] = group_letters[i][j];
-          temp_marc.letters[1] = group_letters[i][k];
-          arcs[i].push_back(temp_marc);
+      if ( isupper(chain_letters[group_letters[i][j]].letter) ) {
+        inverse_letters.push_back(group_letters[i][j]);
+      } else {
+        regular_letters.push_back(group_letters[i][j]);
+      }
+    }
+    
+    //get the regulars (non-inverse)
+    letter_selection = Multiset(orders[i]-1, 0, regular_letters.size());
+    regular_multiarcs.resize(0);
+    do {
+      for (j=0; j<orders[i]-1; j++) {
+        temp_marc.letters[j] = regular_letters[letter_selection[j]];
+      }
+      regular_multiarcs.push_back(temp_marc);
+    } while (1 != letter_selection.next());
+    
+    //get the inverse multiarcs
+    letter_selection = Multiset(orders[i]-1, 0, inverse_letters.size());
+    inverse_multiarcs.resize(0);
+    do {
+      for (j=0; j<orders[i]-1; j++) {
+        temp_marc.letters[j] = inverse_letters[letter_selection[j]];
+      }
+      inverse_multiarcs.push_back(temp_marc);
+    } while (1 != letter_selection.next());    
+    
+    //now assemble the group rectangles and group polygons
+    //first, let's do the rectangles
+    temp_group_rect.group = i;
+    temp_group_rect.edges.resize(2);
+    GR[i].resize(0);
+    for (j=0; j<(int)regular_letters.size(); j++) {
+      for (k=0; k<(int)inverse_letters.size(); k++) {
+        temp_group_rect.edges[0] = IEL.get_index_from_group_side(regular_letters[j], inverse_letters[k]);
+        temp_group_rect.edges[1] = IEL.get_index_from_group_side(inverse_letters[k], regular_letters[j]);
+        GR[i].push_back(temp_group_rect);
+      }
+    }
+
+    //now we do the group rectangles 
+    //these either have one or two multiarc sides.  first, the ones with a 
+    //single multiarc side
+    GP[i].resize(0);
+    temp_group_poly.group = i;
+    temp_group_poly.sides.resize(1);
+    temp_group_poly.edges.resize(1);
+    for (j=0; j<(int)regular_multiarcs.size(); j++) {
+      temp_group_poly.sides[0] = regular_multiarcs[j];
+      for (k=0; k<(int)GEL.regular_edges.size(); k++) {
+        temp_group_poly.edges[0] = GEL[i].regular_edges[k];
+        GP.push_back(temp_group_poly);
+      }
+    }
+    for (j=0; j<(int)inverse_multiarcs.size(); j++) {
+      temp_group_poly.sides[0] = inverse_multiarcs[j];
+      for (k=0; k<(int)GEL.inverse_edges.size(); k++) {
+        temp_group_poly.edges[0] = GEL[i].inverse_edges[k];
+        GP.push_back(temp_group_poly);
+      }
+    }
+    
+    //now the ones with two multiarc sides
+    temp_group_poly.sides.resize(2);
+    temp_group_poly.edges.resize(2);
+    for (j=0; j<(int)regular_multiarcs.size(); j++) { //first multiarc
+      temp_group_poly.sides[0] = regular_multiarcs[j];
+      for (k=0; k<(int)regular_multiarcs.size(); k++) { //second multiarc
+        temp_group_poly.sides[0] = regular_multiarcs[k];
+        for (m=0; m<(int)GEL.regular_edges.size(); m++) { //first side (between multiarc 0 and 1)
+          temp_group_poly.edges[0] = GEL[i].regular_edges[m];
+          for (n=0; n<(int)GEL.regular_edges.size(); n++) {
+            temp_group_poly.edges[1] = GEL[i].regular_edges[n];
+            GP.push_back(temp_group_poly);
+          }
+        }
+      }
+    }
+    for (j=0; j<(int)inverse_multiarcs.size(); j++) { //first multiarc
+      temp_group_poly.sides[0] = inverse_multiarcs[j];
+      for (k=0; k<(int)inverse_multiarcs.size(); k++) { //second multiarc
+        temp_group_poly.sides[0] = inverse_multiarcs[k];
+        for (m=0; m<(int)GEL.inverse_edges.size(); m++) { //first side (between multiarc 0 and 1)
+          temp_group_poly.edges[0] = GEL[i].inverse_edges[m];
+          for (n=0; n<(int)GEL.inverse_edges.size(); n++) {
+            temp_group_poly.edges[1] = GEL[i].inverse_edges[n];
+            GP.push_back(temp_group_poly);
+          }
         }
       }
     }
     
-    if (orders[i] == 0) {
-      continue;
-    }
-    //now the harder ones -- all groups of exactly the order of the group, 
-    //all of the same type (inverse or not)
-    //first, the regulars
-    int inverses;
-    for (inverses=0; inverses<2; inverses++) {
-      current_possible_letters.resize(0);
-      temp_marc.letters.resize(orders[i]);
-      for (j=0; j<(int)group_letters[i].size(); j++) {
-        if ( (!inverses && islower(chain_letters[group_letters[i][j]].letter))
-            || (inverses && isupper(chain_letters[group_letters[i][j]].letter)) ) {
-          current_possible_letters.push_back(group_letters[i][j]);
-        }
-      }
-      if ((int)current_possible_letters.size() == 0) {
-        continue;
-      }
-      for (first_index=0; first_index<(int)group_letters[i].size(); first_index++) {
-        letter_selection = Multiset(orders[i]-1, first_index, current_possible_letters.size());
-        temp_marc.letters[0] = current_possible_letters[first_index];
-        do {
-          for (j=0; j<orders[i]-1; j++) {
-            temp_marc.letters[j+1] = current_possible_letters[letter_selection[j]];
-          }
-          arcs[i].push_back(temp_marc);
-        } while (1 != letter_selection.next());
-      }
-    }
-    
-  }//end of loop through the groups
-
-} 
-
-
-
-/*****************************************************************************
- * compute the edges.  there are two kinds -- real edges, which must come from
- * multiarcs, and are given by any pair that can appear there, and blank
- * arcs.  These are given by *all* pairs of letters.
- * *except*, blank edges cannot be consecutive letters
- *****************************************************************************/
-void compute_edges(CyclicProduct &G, Chain &C, std::vector<Edge> &edges) {
-  int i,j;
-  std::vector<ChainLetter> chain_letters = C.chain_letter_list();
-  std::vector<int> orders = G.order_list();
-  int num_letters = (int)chain_letters.size();
-  edges.resize(0);
-  Edge temp_edge;
-  for (i=0; i<num_letters; i++) {
-    temp_edge.first = i;
-    for (j=0; j<num_letters; j++) {
-      temp_edge.last = j;
-      temp_edge.blank = true;
-      if (C.next_letter(i) != j) {
-        edges.push_back(temp_edge);
-      }
-      if (chain_letters[i].group == chain_letters[j].group) {
-        temp_edge.blank = false;
-        if (orders[chain_letters[i].group] == 0) {
-          if (chain_letters[i].letter != chain_letters[j].letter) { //must be inverses
-            edges.push_back(temp_edge);
-          }
-        } else {
-          edges.push_back(temp_edge);
-        }
-      }
-    }
-  }
+  }  
+  
 }
 
 
 
 
-
-
 /*****************************************************************************
- * compute the list of polys.  these come in two types: those with blank
- * edges, and those without
+ * compute the list of polys. 
  *****************************************************************************/
-void compute_polys(CyclicProduct &G, 
-                   Chain &C, 
-                   std::vector<Edge> &edges, 
-                   std::vector<Polygon> &polys) {
+void compute_polys(Chain &C, 
+                   InterfaceEdgeList &IEL, 
+                   CentralEdgeList &CEL,
+                   std::vector<CentralPolygon> &CP) {
   int i,j,k;
-  int num_edges = (int)edges.size();
+  
+  CentralPolygon temp_central_poly;
+  
+  CP.resize(0);
+  temp_central_poly.edges.resize(4);
+  temp_central_poly.interface.resize(4);
+  
+  //first, we go through everything with two central edges
+  //for this, all we have to do is enumerate everything with 
+  //2 interface edges, and that's it
+  for (i=0; i<4; i++) {
+    temp_central_poly.interface[i] = (i%2 == 0 ? true : false);
+  }
+  for (i=0; i<(int)IEL.edges.size(); i++) {
+    temp_central_poly.edges[0] = i;
+    for (j=0; j<(int)IEL.edges.size(); j++) {
+      temp_central_poly.edges[2] = j;
+      temp_central_poly.edges[1] = CEL.get_index( IEL[i].last, IEL[j].first );
+      temp_central_poly.edges[3] = CEL.get_index( IEL[j].last, IEL[i].first );
+      CP.push_back(temp_central_poly);
+    }
+  }
+  
+  //now, we go through all guys with 1 central edge
+  //build chains of interface edges; whenever the length is 3, we tack on 
+  //a central edge, and we're done
+  std::vector<int> current_beginning_letters(3);    //this records the first letters of the interface edge choices
+  std::vector<int> current_edges(3);                //this records where we are in the lists real_edges_beginning_with
+  int current_len;                                  //this records the current length
+  current_len = 1;
+  current_beginning_letters[0] = 0;
+  current_edges[0] = 0;
+  int temp_CE_1, temp_CE_2;
+  temp_central_poly.interface[0] = true;
+  temp_central_poly.interface[1] = true;
+  temp_central_poly.interface[2] = true;
+  temp_central_poly.interface[3] = false;
+  while (true) {   
+    if (current_len == 3) {
+      temp_CE_1 = IEL.edges_beginning_with[current_beginning_letters[current_len-1]]
+                                          [current_edges[current_len-1];
+      temp_CE_2 = IEL.edges_beginning_with[current_beginning_letters[0]]
+                                          [current_edges[0]];
+      for (i=0; i<current_len; i++) {
+        temp_central_poly.edges[i] = IEL.edges_beginning_with[current_beginning_letters[i]]
+                                                             [current_edges[0]];
+      }
+      temp_central_poly.edges[3] = CEL.get_index(IEL[temp_CE_1].last, IEL[temp_CE_2].first);
+      CP.push_back(temp_central_poly);
+    }
+    //now we advance it: if the list is shorter than maxmal (3), then add
+    //one on.  otherwise, step back and leave it short
+    if (current_len < 3) { 
+      //START HEREERERERERERERERERRRRRRRRRRRRRRRRRRRRRRRRRRR
+      temp1 = edges[
+                    real_edges_beginning_with
+                         [current_beginning_letters[current_len-1]]
+                         [current_edges[current_len-1]]
+                    ].last;
+      temp2 = C.next_letter(temp1);
+      current_beginning_letters[current_len] = temp2;
+      current_edges[current_len] = 0;
+      current_len++;
+      continue;
+    }
+    //if we get here, we need to advance the index current_len-1           
+    i = current_len-1;
+    while (i >=0 && current_edges[i] == (int)real_edges_beginning_with[current_beginning_letters[i]].size()-1) {
+      i--;
+    }
+    if (i==-1) {
+      if (current_beginning_letters[0] == (int)chain_letters.size()-1) {
+        break;
+      } else {
+        current_beginning_letters[0]++;
+        current_edges[0] = 0;
+        current_len = 1;
+        continue;
+      }
+    }
+    current_edges[i]++;
+    current_len = i+1;
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+  
   int num_real_edges;
-  int num_blank_edges;
   int temp1, temp2;
   Polygon temp_poly;
   std::vector<int> word_lens(C.num_words());

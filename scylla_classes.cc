@@ -5,7 +5,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#include "scyllop_classes.h"
+#include "scylla_classes.h"
 
 
 /*****************************************************************************
@@ -291,6 +291,10 @@ int Chain::prev_letter(int n) {
 
 int Chain::num_words(void) {
   return words.size();
+}
+
+CyclicProduct* Chain::group() {
+  return G;
 }
 
 std::string Chain::operator[](int index) {

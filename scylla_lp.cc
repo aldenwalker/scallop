@@ -2,8 +2,8 @@
 
 #include <glpk.h>
 
-#include "scyllop_lp.h"
-#include "scyllop_classes.h"
+#include "scylla_lp.h"
+#include "scylla_classes.h"
 
 
 

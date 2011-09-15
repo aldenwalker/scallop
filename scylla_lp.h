@@ -1,10 +1,10 @@
-#ifndef SCYLLOP_LP_H
-#define SCYLLOP_LP_H
+#ifndef SCYLLA_LP_H
+#define SCYLLA_LP_H
 
 #include <vector>
 
 #include "rational.h"
-#include "scyllop_classes.h"
+#include "scylla_classes.h"
 
 enum scyllop_lp_solver {GLPK_DOUBLE, GLPK_EXACT, QSOPT_EXACT, EXLP};
 

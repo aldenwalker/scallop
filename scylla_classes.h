@@ -2,8 +2,8 @@
 * Bad form, but all the classes are going in here, because they are small
 ******************************************************************************/
 
-#ifndef SCYLLOP_CLASSES_H
-#define SCYLLOP_CLASSES_H
+#ifndef SCYLLA_CLASSES_H
+#define SCYLLA_CLASSES_H
 
 #include <iostream>
 #include <string>
@@ -30,31 +30,121 @@ struct ChainLetter {
   int group;
 };
 
-/*****************************************************************************
- * A multiarc
- * ***************************************************************************/
-struct Multiarc {
-  int group;
-  std::vector<int> letters;
-};
+
 
 /****************************************************************************
- * an edge
+ * an edge joining two central polygons
  ****************************************************************************/
-struct Edge {
-  bool blank;
+struct CentralEdge {
   int first;
   int last;
 };
 
-
-/*****************************************************************************
- * a poylgon
- * ***************************************************************************/
-struct Polygon {
-  std::vector<int> edges;
+/****************************************************************************
+ * A list of central edges
+ * **************************************************************************/
+class CentralEdgeList {
+  public:
+  CentralEdgeList();
+  
+  void add_edge(int a, int b);
+  int get_index(int a, int b);
+  int get_side(int a, int b);
+  int get_side_with_index(int index, int a, int b)
+  
+  private:
+  std::vector<CentralEdge> L;
+  std::vector<std::vector<int> > edges_beginning_with;
 };
 
+
+/*****************************************************************************
+ * an edge joining a central polygon to a group polygon
+ * these are ALWAYS LISTED FROM THE POLYGON's PERSPECTIVE
+ * ***************************************************************************/
+struct InterfaceEdge {
+  int first;
+  int last;
+};
+
+/****************************************************************************
+ * a list of interface edges
+ * **************************************************************************/
+class InterfaceEdgeList {
+  public:
+  InterfaceEdgeList();
+  void add_polygon_edge(int a, int b);
+  void get_index_from_poly_side(int a, int b);
+  void get_index_from_group_side(int a, int b);
+  
+  //private:
+  std::vector<InterfaceEdge> edges;
+  std::vector<std:vector<int> > edges_beginning_with;
+};
+
+/*****************************************************************************
+ * an edge between group polygons
+ * ***************************************************************************/
+struct GroupEdge {
+  int first;
+  int last;
+};
+
+/****************************************************************************
+ * a list of group edges
+ * **************************************************************************/
+class GroupEdgeList {
+  public:
+  GroupEdgeList();
+  void add_edge(int a, int b);
+  void get_index(int a, int b);
+  void get_side(int a, int b);
+  void get_side_with_index(int index, int a, int b);
+  
+//private
+  std::vector<GroupEdge> list;
+  std::vector<int> regular_edges;
+  std::vector<int> inverse_edges;
+  std::vector<std::vector<int> > edges_beginning_with;
+};
+
+
+
+/*****************************************************************************
+ * a central polygon  (this is a list of interface and polygon edges)
+ * ***************************************************************************/
+struct CentralPolygon {
+  std::vector<int> edges;
+  std::vector<bool> interface;
+  int chi_times_2(CentralEdgeList &CEL, InterfaceEdgeList &IEL);
+};
+
+
+/****************************************************************************
+ * a group multiarc
+ * **************************************************************************/
+struct Multiarc {
+  std::vector<int> letters;
+};
+
+/****************************************************************************
+ * a group polygon
+ * **************************************************************************/
+struct GroupPolygon {
+  int group;
+  std::vector<Multiarc> sides;
+  std::vector<int> edges;
+  int chi_times_2(GroupEdgeList &GEL, InterfaceEdgeList &IEL);
+};
+
+/****************************************************************************
+ * a group rectangle
+ * **************************************************************************/
+struct GroupRectangle {
+  int group;
+  std::vector<int> edges;
+};
+ 
 
 
 /*****************************************************************************
@@ -102,6 +192,7 @@ class Chain {
     int next_letter(int n);
     int prev_letter(int n);
     int num_words(void);
+    CyclicProduct* group();
     std::string operator[](int index);    //get a word
     void print_chunks(std::ostream &os);
     void print_letters(std::ostream &os);

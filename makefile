@@ -22,14 +22,14 @@ lp.o: lp.cc
 io.o: io.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c io.cc
 
-scyllop.o: scyllop.cc
+scylla.o: scylla.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c scyllop.cc
 	
-scyllop_lp.o:	scyllop_lp.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c scyllop_lp.cc
+scylla_lp.o:	scylla_lp.cc
+	$(CC) $(CFLAGS) $(IFLAGS) -c scylla_lp.cc
 	
-scyllop_classes.o: scyllop_classes.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c scyllop_classes.cc
+scylla_classes.o: scylla_classes.cc
+	$(CC) $(CFLAGS) $(IFLAGS) -c scylla_classes.cc
 
 .PHONY: exlp-package
 exlp-package: 
@@ -38,12 +38,12 @@ exlp-package:
 scallop: exlp-package scallop.o word.o draw.o rational.o lp.o io.o
 	$(CC) $(CFLAGS) -o scallop scallop.o word.o draw.o rational.o lp.o io.o exlp-package/*.o $(LDFLAGS)
 
-scyllop: exlp-package scyllop.o rational.o scyllop_lp.o scyllop_classes.o
-	$(CC) $(CFLAGS) -o scyllop scyllop.o scyllop_lp.o scyllop_classes.o rational.o exlp-package/*.o $(LDFLAGS)
+scyllop: exlp-package scylla.o rational.o scylla_lp.o scylla_classes.o
+	$(CC) $(CFLAGS) -o scylla scylla.o scylla_lp.o scylla_classes.o rational.o exlp-package/*.o $(LDFLAGS)
 
 
 clean: 
-	rm scyllop
+	rm scylla
 	rm scallop
 	rm *.o
 	cd exlp-package; rm *.o
