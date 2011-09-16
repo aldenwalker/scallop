@@ -9,11 +9,13 @@
 enum scyllop_lp_solver {GLPK_DOUBLE, GLPK_EXACT, QSOPT_EXACT, EXLP};
 
 
-void scyllop_lp(CyclicProduct& G, 
-                Chain& C, 
-                std::vector<std::vector<Multiarc> > &arcs, 
-                std::vector<Edge> &edges,
-                std::vector<Polygon> &polys, 
+void scyllop_lp(Chain& C, 
+                std::vector<GroupEdgeList> &GEL, 
+                InterfaceEdgeList &IEL ,
+                CentralEdgeList &CEL, 
+                std::vector<std::vector<GroupPolygon> > &GP,
+                std::vector<std::vector<GroupRectangle> > &GR,
+                std::vector<CentralPolygon> &CP,
                 rational* scl, 
                 std::vector<rational>* solution_vector, 
                 scyllop_lp_solver solver, 

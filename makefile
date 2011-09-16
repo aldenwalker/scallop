@@ -23,7 +23,7 @@ io.o: io.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c io.cc
 
 scylla.o: scylla.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c scyllop.cc
+	$(CC) $(CFLAGS) $(IFLAGS) -c scylla.cc
 	
 scylla_lp.o:	scylla_lp.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c scylla_lp.cc

@@ -32,113 +32,6 @@ struct ChainLetter {
 
 
 
-/****************************************************************************
- * an edge joining two central polygons
- ****************************************************************************/
-struct CentralEdge {
-  int first;
-  int last;
-};
-
-/****************************************************************************
- * A list of central edges
- * **************************************************************************/
-struct CentralEdgeList {
-  CentralEdgeList();
-  CentralEdgeList(Chain &C);
-  
-  int get_index(int a, int b);
-  CentralEdge operator[](int index);
-  
-  std::vector<CentralEdge> edges;
-  std::vector<std::vector<int> > edges_beginning_with;
-};
-
-
-/*****************************************************************************
- * an edge joining a central polygon to a group polygon
- * these are ALWAYS LISTED FROM THE POLYGON's PERSPECTIVE
- * ***************************************************************************/
-struct InterfaceEdge {
-  int first;
-  int last;
-};
-
-/****************************************************************************
- * a list of interface edges
- * **************************************************************************/
-struct InterfaceEdgeList {
-  InterfaceEdgeList();
-  InterfaceEdgeList(Chain &C);
-  void get_index_from_poly_side(int a, int b);
-  void get_index_from_group_side(int a, int b);
-  InterfaceEdge operator[](int index);
-  
-  std::vector<InterfaceEdge> edges;
-  std::vector<std:vector<int> > edges_beginning_with;
-};
-
-/*****************************************************************************
- * an edge between group polygons
- * ***************************************************************************/
-struct GroupEdge {
-  int first;
-  int last;
-};
-
-/****************************************************************************
- * a list of group edges
- * **************************************************************************/
-struct GroupEdgeList {
-  GroupEdgeList();
-  GroupEdgeList(Chain &C);
-  void get_index(int a, int b);
-  
-  std::vector<GroupEdge> edges;
-  std::vector<std::vector<int> > edges_beginning_with;
-  std::vector<int> regular_edges;
-  std::vector<int> inverse_edges;
-};
-
-
-
-/*****************************************************************************
- * a central polygon  (this is a list of interface and polygon edges)
- * ***************************************************************************/
-struct CentralPolygon {
-  std::vector<int> edges;
-  std::vector<bool> interface;
-  int chi_times_2(CentralEdgeList &CEL, InterfaceEdgeList &IEL);
-};
-
-
-/****************************************************************************
- * a group multiarc
- * **************************************************************************/
-struct Multiarc {
-  std::vector<int> letters;
-};
-
-/****************************************************************************
- * a group polygon
- * **************************************************************************/
-struct GroupPolygon {
-  int group;
-  std::vector<Multiarc> sides;
-  std::vector<int> edges;
-  int chi_times_2(GroupEdgeList &GEL, InterfaceEdgeList &IEL);
-};
-
-/****************************************************************************
- * a group rectangle
- * **************************************************************************/
-struct GroupRectangle {
-  int group;
-  std::vector<int> edges;
-};
- 
-
-
 /*****************************************************************************
 * A free product of cyclic groups
 * ****************************************************************************/
@@ -190,7 +83,148 @@ struct Chain {
 std::ostream &operator<<(std::ostream &os, Chain &C);
 
 
+/****************************************************************************
+ * an edge joining two central polygons
+ ****************************************************************************/
+struct CentralEdge {
+  int first;
+  int last;
+};
 
+/****************************************************************************
+ * A list of central edges
+ * **************************************************************************/
+struct CentralEdgeList {
+  CentralEdgeList();
+  CentralEdgeList(Chain &C);
+  
+  int get_index(int a, int b);
+  CentralEdge operator[](int index);
+  void print(std::ostream &os);
+  
+  std::vector<CentralEdge> edges;
+  std::vector<std::vector<int> > edges_beginning_with;
+};
+
+
+/*****************************************************************************
+ * an edge joining a central polygon to a group polygon
+ * these are ALWAYS LISTED FROM THE POLYGON's PERSPECTIVE
+ * ***************************************************************************/
+struct InterfaceEdge {
+  int first;
+  int last;
+};
+
+/****************************************************************************
+ * a list of interface edges
+ * **************************************************************************/
+struct InterfaceEdgeList {
+  InterfaceEdgeList();
+  InterfaceEdgeList(Chain &C);
+  int get_index_from_poly_side(int a, int b);
+  int get_index_from_group_side(int a, int b);
+  InterfaceEdge operator[](int index);
+  void print(std::ostream &os);
+  
+  std::vector<InterfaceEdge> edges;
+  std::vector<std::vector<int> > edges_beginning_with;
+};
+
+/*****************************************************************************
+ * an edge between group polygons
+ * ***************************************************************************/
+struct GroupEdge {
+  int first;
+  int last;
+};
+
+/****************************************************************************
+ * a list of group edges
+ * **************************************************************************/
+struct GroupEdgeList {
+  GroupEdgeList();
+  GroupEdgeList(Chain &C, int group_index);
+  int get_index(int a, int b);
+  void print(std::ostream &os);
+  GroupEdge operator[](int index);
+  
+  int group;
+  std::vector<GroupEdge> edges;
+  std::vector<std::vector<int> > edges_beginning_with;
+  std::vector<int> regular_edges;
+  std::vector<int> inverse_edges;
+};
+
+/****************************************************************************
+ * an edge pair
+ * **************************************************************************/
+enum EDGE_TYPE {SCYLLA_EDGE_CENTRAL, SCYLLA_EDGE_INTERFACE, SCYLLA_EDGE_GROUP};
+struct EdgePair {
+  EDGE_TYPE edge_type;
+  int group;
+  int first;
+  int second;
+};
+
+
+/*****************************************************************************
+ * a central polygon  (this is a list of interface and polygon edges)
+ * ***************************************************************************/
+struct CentralPolygon {
+  std::vector<int> edges;
+  std::vector<bool> interface;
+  int chi_times_2(Chain &C, CentralEdgeList &CEL, InterfaceEdgeList &IEL);
+};
+
+std::ostream &operator<<(std::ostream &os, CentralPolygon &CP);
+
+/****************************************************************************
+ * a group multiarc
+ * **************************************************************************/
+struct Multiarc {
+  std::vector<int> letters;
+};
+
+/****************************************************************************
+ * a group polygon
+ * **************************************************************************/
+struct GroupPolygon {
+  int group;
+  std::vector<Multiarc> sides;
+  std::vector<int> edges;
+  int chi_times_2(Chain &C, GroupEdgeList &GEL, InterfaceEdgeList &IEL);
+  void get_ia_etc_for_edges(Chain &C, 
+                            InterfaceEdgeList &IEL, 
+                           GroupEdgeList &GEL, 
+                           std::vector<EdgePair> &edge_pairs,
+                           std::vector<int> &group_edge_pairs, 
+                           int &offset, 
+                           std::vector<int> &temp_ia, 
+                           std::vector<int> &temp_ja, 
+                           std::vector<int> &temp_ar);
+  void get_ia_etc_for_words(Chain &C, 
+                            InterfaceEdgeList &IEL, 
+                            GroupEdgeList &GEL, 
+                            std::vector<EdgePair> &edge_pairs,
+                            std::vector<int> &group_edge_pairs, 
+                            int &offset, 
+                            std::vector<int> &temp_ia, 
+                            std::vector<int> &temp_ja, 
+                            std::vector<int> &temp_ar);
+};
+
+std::ostream &operator<<(std::ostream &os, GroupPolygon &GP);
+
+/****************************************************************************
+ * a group rectangle
+ * **************************************************************************/
+struct GroupRectangle {
+  int first;
+  int last;
+};
+ 
+std::ostream &operator<<(std::ostream &os, GroupRectangle &GR);
 
 
 /*****************************************************************************
