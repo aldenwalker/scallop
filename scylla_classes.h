@@ -43,16 +43,13 @@ struct CentralEdge {
 /****************************************************************************
  * A list of central edges
  * **************************************************************************/
-class CentralEdgeList {
-public:
+struct CentralEdgeList {
   CentralEdgeList();
   CentralEdgeList(Chain &C);
   
-  void add_edge(int a, int b);
   int get_index(int a, int b);
   CentralEdge operator[](int index);
   
-  //private:
   std::vector<CentralEdge> edges;
   std::vector<std::vector<int> > edges_beginning_with;
 };
@@ -70,15 +67,13 @@ struct InterfaceEdge {
 /****************************************************************************
  * a list of interface edges
  * **************************************************************************/
-class InterfaceEdgeList {
-  public:
+struct InterfaceEdgeList {
   InterfaceEdgeList();
   InterfaceEdgeList(Chain &C);
-  void add_polygon_edge(int a, int b);
   void get_index_from_poly_side(int a, int b);
   void get_index_from_group_side(int a, int b);
+  InterfaceEdge operator[](int index);
   
-  //private:
   std::vector<InterfaceEdge> edges;
   std::vector<std:vector<int> > edges_beginning_with;
 };
@@ -94,17 +89,15 @@ struct GroupEdge {
 /****************************************************************************
  * a list of group edges
  * **************************************************************************/
-class GroupEdgeList {
-  public:
+struct GroupEdgeList {
   GroupEdgeList();
   GroupEdgeList(Chain &C);
   void get_index(int a, int b);
   
-//private
-  std::vector<GroupEdge> list;
+  std::vector<GroupEdge> edges;
+  std::vector<std::vector<int> > edges_beginning_with;
   std::vector<int> regular_edges;
   std::vector<int> inverse_edges;
-  std::vector<std::vector<int> > edges_beginning_with;
 };
 
 
@@ -149,67 +142,53 @@ struct GroupRectangle {
 /*****************************************************************************
 * A free product of cyclic groups
 * ****************************************************************************/
-class CyclicProduct {
+struct CyclicProduct {
+  CyclicProduct(void);
+  CyclicProduct(std::string input);
+  ~CyclicProduct(void);
+
+  int gen_order(char gen);                 //return the order of the given generator
+  int index_order(int index);
+  int gen_index(char gen);                 //return the number of the gen
+  int num_groups(void);
   
-  public:
-    CyclicProduct(void);
-    CyclicProduct(std::string input);
-    ~CyclicProduct(void);
-  
-    std::vector<char> gen_list(void);        //return the generator list
-    std::vector<int> order_list(void);       //return the list of orders (0=inf)
-    int gen_order(char gen);                 //return the order of the given generator
-    int index_order(int index);
-    int gen_index(char gen);                 //return the number of the gen
-    int num_groups(void);
+  void cyc_red(std::string* S);                 //cyclically reduce a string
     
-    void cyc_red(std::string* S);                 //cyclically reduce a string
-    
-    friend std::ostream &operator<<(std::ostream &os, CyclicProduct &G);
-  
-  private:
-    std::vector<char> gens;
-    std::vector<int> orders;
+  std::vector<char> gens;
+  std::vector<int> orders;
     
 };
-
+std::ostream &operator<<(std::ostream &os, CyclicProduct &G);
 
 /*****************************************************************************
  * A chain   
  * ***************************************************************************/
-class Chain { 
+struct Chain { 
+  Chain(void);
+  Chain(CyclicProduct* G, char** input, int num_strings);
+
+  int next_letter(int n);
+  int prev_letter(int n);
+  int num_words(void);
+  int num_letters();
+  std::string operator[](int index);    //get a word
+  void print_chunks(std::ostream &os);
+  void print_letters(std::ostream &os);
+  void print_group_letters(std::ostream &os);
   
-  public:
-    Chain(void);
-    Chain(CyclicProduct* G, char** input, int num_strings);
-    ~Chain(void);
-    
-    std::vector<std::string> word_list(void);
-    std::vector<int> weights_list(void);
-    std::vector<std::vector<ChainChunk> > chunk_list(void);
-    std::vector<std::vector<int> > group_letter_list(void);
-    std::vector<ChainLetter> chain_letter_list(void);
-    int next_letter(int n);
-    int prev_letter(int n);
-    int num_words(void);
-    int num_letters();
-    CyclicProduct* group();
-    std::string operator[](int index);    //get a word
-    void print_chunks(std::ostream &os);
-    void print_letters(std::ostream &os);
-    void print_group_letters(std::ostream &os);
-    
-    friend std::ostream &operator<<(std::ostream &os, Chain &C);
-    
-  private:
-    CyclicProduct* G;
-    std::vector<std::string> words;
-    std::vector<int> weights;
-    std::vector<std::vector<ChainChunk> > chunks;
-    std::vector<std::vector<int> > group_letters;
-    std::vector<ChainLetter> chain_letters;
+  CyclicProduct* G;
+  std::vector<std::string> words;
+  std::vector<int> weights;
+  std::vector<std::vector<ChainChunk> > chunks;
+  std::vector<std::vector<int> > group_letters;
+  std::vector<ChainLetter> chain_letters;
+  std::vector<std::vector<int> > regular_letters;
+  std::vector<std::vector<int> > inverse_letters;
     
 };
+
+std::ostream &operator<<(std::ostream &os, Chain &C);
+
 
 
 

@@ -33,50 +33,35 @@ void compute_group_polygons_and_rectangles(Chain &C,
                                            std::vector<std::vector<GroupPolygon> > &GP,
                                            std::vector<std::vector<GroupRectangle> > &GR) {
   int i;
-  CyclicProduct* G = C.group();
-  int num_groups = (*G).num_groups();
-  std::vector<std::vector<int> > group_letters = C.group_letter_list();
-  std::vector<int> orders = (*G).order_list();
+  int num_groups = (C.G)->num_groups();
   Multiset letter_selection;
-  std::vector<int> regular_letters;
-  std::vecctor<int> inverse_letters;
   std::vector<Multiarc> regular_multiarcs;
   std::vector<Multiarc> inverse_multiarcs;
   Multiarc temp_marc;
   GroupRectangle temp_group_rect;
   GroupPolygon temp_group_poly;
   
-  arcs.resize(num_groups);
   GP.resize(num_groups);
   GR.resize(num_groups);
   
   for (i=0; i<num_groups; i++) {
-    regular_letters.resize(0);
-    inverse_letters.resize(0);
-    for (j=0; j<(int)group_letters[i].size(); j++) {
-      if ( isupper(chain_letters[group_letters[i][j]].letter) ) {
-        inverse_letters.push_back(group_letters[i][j]);
-      } else {
-        regular_letters.push_back(group_letters[i][j]);
-      }
-    }
     
     //get the regulars (non-inverse)
-    letter_selection = Multiset(orders[i]-1, 0, regular_letters.size());
+    letter_selection = Multiset((C.G)->orders[i]-1, 0, C.regular_letters[i].size());
     regular_multiarcs.resize(0);
     do {
-      for (j=0; j<orders[i]-1; j++) {
-        temp_marc.letters[j] = regular_letters[letter_selection[j]];
+      for (j=0; j<(C.G)->orders[i]-1; j++) {
+        temp_marc.letters[j] = C.regular_letters[i][letter_selection[j]];
       }
       regular_multiarcs.push_back(temp_marc);
     } while (1 != letter_selection.next());
     
     //get the inverse multiarcs
-    letter_selection = Multiset(orders[i]-1, 0, inverse_letters.size());
+    letter_selection = Multiset((C.G)->orders[i]-1, 0, C.inverse_letters[i].size());
     inverse_multiarcs.resize(0);
     do {
-      for (j=0; j<orders[i]-1; j++) {
-        temp_marc.letters[j] = inverse_letters[letter_selection[j]];
+      for (j=0; j<(C.G)->orders[i]-1; j++) {
+        temp_marc.letters[j] = C.inverse_letters[i][letter_selection[j]];
       }
       inverse_multiarcs.push_back(temp_marc);
     } while (1 != letter_selection.next());    
@@ -86,15 +71,17 @@ void compute_group_polygons_and_rectangles(Chain &C,
     temp_group_rect.group = i;
     temp_group_rect.edges.resize(2);
     GR[i].resize(0);
-    for (j=0; j<(int)regular_letters.size(); j++) {
-      for (k=0; k<(int)inverse_letters.size(); k++) {
-        temp_group_rect.edges[0] = IEL.get_index_from_group_side(regular_letters[j], inverse_letters[k]);
-        temp_group_rect.edges[1] = IEL.get_index_from_group_side(inverse_letters[k], regular_letters[j]);
+    for (j=0; j<(int)C.regular_letters[i].size(); j++) {
+      for (k=0; k<(int)C.inverse_letters[i].size(); k++) {
+        temp_group_rect.edges[0] = IEL.get_index_from_group_side(C.regular_letters[i][j], 
+                                                                 C.inverse_letters[i][k]);
+        temp_group_rect.edges[1] = IEL.get_index_from_group_side(C.inverse_letters[i][k], 
+                                                                 C.regular_letters[i][j]);
         GR[i].push_back(temp_group_rect);
       }
     }
 
-    //now we do the group rectangles 
+    //now we do the group polygons 
     //these either have one or two multiarc sides.  first, the ones with a 
     //single multiarc side
     GP[i].resize(0);
@@ -122,7 +109,7 @@ void compute_group_polygons_and_rectangles(Chain &C,
     for (j=0; j<(int)regular_multiarcs.size(); j++) { //first multiarc
       temp_group_poly.sides[0] = regular_multiarcs[j];
       for (k=0; k<(int)regular_multiarcs.size(); k++) { //second multiarc
-        temp_group_poly.sides[0] = regular_multiarcs[k];
+        temp_group_poly.sides[1] = regular_multiarcs[k];
         for (m=0; m<(int)GEL.regular_edges.size(); m++) { //first side (between multiarc 0 and 1)
           temp_group_poly.edges[0] = GEL[i].regular_edges[m];
           for (n=0; n<(int)GEL.regular_edges.size(); n++) {
@@ -135,7 +122,7 @@ void compute_group_polygons_and_rectangles(Chain &C,
     for (j=0; j<(int)inverse_multiarcs.size(); j++) { //first multiarc
       temp_group_poly.sides[0] = inverse_multiarcs[j];
       for (k=0; k<(int)inverse_multiarcs.size(); k++) { //second multiarc
-        temp_group_poly.sides[0] = inverse_multiarcs[k];
+        temp_group_poly.sides[1] = inverse_multiarcs[k];
         for (m=0; m<(int)GEL.inverse_edges.size(); m++) { //first side (between multiarc 0 and 1)
           temp_group_poly.edges[0] = GEL[i].inverse_edges[m];
           for (n=0; n<(int)GEL.inverse_edges.size(); n++) {
