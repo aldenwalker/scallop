@@ -52,6 +52,10 @@ int CyclicProduct::num_groups(void) {
   return gens.size();
 }
 
+int CyclicProduct::index_order(int index) {
+  return orders[index];
+}
+
 int CyclicProduct::gen_order(char gen) {
   int i;
   int len = gens.size();
@@ -293,6 +297,10 @@ int Chain::num_words(void) {
   return words.size();
 }
 
+int Chain::num_letters() {
+  return chain_letters.size();
+}
+
 CyclicProduct* Chain::group() {
   return G;
 }
@@ -347,6 +355,133 @@ std::ostream &operator<<(std::ostream &os, Chain &C) {
   return os;
 }
 
+
+
+
+
+
+/****************************************************************************
+ * make a list of all the central edges
+ * note the central edges can be anything
+ * the edge is the letter just before it, and the letter just after
+ ****************************************************************************/
+CentralEdgeList::CentralEdgeList() {
+  edges.resize(0);
+  edges_beginning_with.resize(0);
+}
+
+CentralEdgeList::CentralEdgeList(Chain &C) {
+  int i,j;
+  int num_letters = C.num_letters();
+  CentralEdge temp_central_edge;
+  edges.resize(0);
+  edges_beginning_with.resize(num_letters);
+  for (i=0; i<num_letters; i++) {
+    edges_beginning_with[i].resize(0);
+    temp_central_edge.first = i;
+    for (j=0; j<num_letters; j++) {
+      temp_central_edge.last = j;
+      edges.push_back(temp_central_edge);
+      edges_beginning_with[i].push_back(edges.size-1);
+    }
+  }
+}
+
+
+/****************************************************************************
+ * make a list of all the interface edges
+ * note these are (1) any gen with any inverse (2) any (non)inverse gen 
+ * with another (non) inverse gen (assuming order > 0)
+ * these are from the POLYGON's PERSPECTIVE
+ ****************************************************************************/
+InterfaceEdgeList::InterfaceEdgeList() {
+  edges.resize(0);
+  edges_beginning_with.resize(0);
+}
+
+InterfaceEdgeList::InterfaceEdgeList(Chain &C) {
+  int i,j;
+  int num_groups = (*(C.group())).num_groups;
+  std::vector<std::vector<int> > group_letters = C.group_letter_list();
+  std::vector<int> regular_letters;
+  std::vector<int> inverse_letters;
+  std::vector<int> orders = (*(C.group())).order_list();
+  InterfaceEdge temp_interface_edge;
+  edges.resize(0);
+  edges_beginning_with.resize(C.num_letters());
+  
+  for (i=0; i<num_groups; i++) {
+    regular_letters.resize(0);
+    inverse_letters.resize(0);
+    for (j=0; j<(int)group_letters[i].size(); j++) {
+      if ( isupper(chain_letters[group_letters[i][j]].letter) ) {
+        inverse_letters.push_back(group_letters[i][j]);
+      } else {
+        regular_letters.push_back(group_letters[i][j]);
+      }
+    }
+    
+    //just match every letter with every possible inverse
+    for (j=0; j<(int)regular_letters.size(); j++) {
+      for (k=0; k<(int)inverse_letters.size(); k++) {
+        temp_interface_edge.first = regular_letters[i];
+        temp_interface_edge.last = inverse_letters[j];
+        edges.push_back(temp_interface_edge);
+        edges_beginning_with[regular_letters[i]].push_back(edges.size()-1);
+        temp_interface_edge.first = inverse_letters[j];
+        temp_interface_edge.last = regular_letters[i];
+        edges.push_back(temp_interface_edge);
+        edges_beginning_with[inverse_letters[j]].push_back(edges.size()-1);
+      }
+    }
+    
+    //now match every letter with every one of the same form (if order > 0)
+    if (orders[i] == 0) {
+      continue;
+    }
+    for (j=0; j<(int)regular_letters.size(); j++) {
+      temp_interface_edge.first = regular_letters[j];
+      for (k=0; k<(int)regular_letters.size(); k++) {
+        temp_interface_edge.last = regular_letters[k];
+        edges.push_back(temp_interface_edge);
+        edges_beginning_with[regular_letters[j]].push_back(edges.size()-1);
+      }
+    }
+    for (j=0; j<(int)inverse_letters.size(); j++) {
+      temp_interface_edge.first = inverse_letters[j];
+      for (k=0; k<(int)inverse_letters.size(); k++) {
+        temp_interface_edge.last = inverse_letters[k];
+        edges.push_back(temp_interface_edge);
+        edges_beginning_with[inverse_letters[j]].push_back(edges.size()-1);
+      }
+    }
+  }
+}
+
+
+/****************************************************************************
+ * make a list of all the group edges
+ ****************************************************************************/
+GroupEdgeList::GroupEdgeList() {
+  edges.resize(0);
+  edges_beginning_with.resize(0);
+}
+
+GroupEdgeList::GroupEdgeList(Chain &C, int group_index) {
+  CyclicProduct* G = C.group();
+  int order = (*G).index_order(index);
+  edges.resize(0);
+  regular_edges.resize(0);
+  inverse_edges.resize(0);
+  edges_beginning_with.resize(0);
+  if (order == 0) {
+    return;
+  }
+  std::vector<std::vector<int> > group_letters = C.group_letter_list();
+  std::vector<int> regular_letters;
+  std::vector<int> inverse_letters;
+  
+//HERERE
 
 
 

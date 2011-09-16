@@ -16,6 +16,14 @@
 #include "scylla_lp.h"
 
 
+
+
+
+
+
+
+
+
 /*****************************************************************************
  * Make the list of group polygons and rectangles. 
  * ***************************************************************************/
@@ -28,7 +36,7 @@ void compute_group_polygons_and_rectangles(Chain &C,
   CyclicProduct* G = C.group();
   int num_groups = (*G).num_groups();
   std::vector<std::vector<int> > group_letters = C.group_letter_list();
-  std::vector<int> orders = C.order_list();
+  std::vector<int> orders = (*G).order_list();
   Multiset letter_selection;
   std::vector<int> regular_letters;
   std::vecctor<int> inverse_letters;
@@ -97,14 +105,14 @@ void compute_group_polygons_and_rectangles(Chain &C,
       temp_group_poly.sides[0] = regular_multiarcs[j];
       for (k=0; k<(int)GEL.regular_edges.size(); k++) {
         temp_group_poly.edges[0] = GEL[i].regular_edges[k];
-        GP.push_back(temp_group_poly);
+        GP[i].push_back(temp_group_poly);
       }
     }
     for (j=0; j<(int)inverse_multiarcs.size(); j++) {
       temp_group_poly.sides[0] = inverse_multiarcs[j];
       for (k=0; k<(int)GEL.inverse_edges.size(); k++) {
         temp_group_poly.edges[0] = GEL[i].inverse_edges[k];
-        GP.push_back(temp_group_poly);
+        GP[i].push_back(temp_group_poly);
       }
     }
     
@@ -119,7 +127,7 @@ void compute_group_polygons_and_rectangles(Chain &C,
           temp_group_poly.edges[0] = GEL[i].regular_edges[m];
           for (n=0; n<(int)GEL.regular_edges.size(); n++) {
             temp_group_poly.edges[1] = GEL[i].regular_edges[n];
-            GP.push_back(temp_group_poly);
+            GP[i].push_back(temp_group_poly);
           }
         }
       }
@@ -132,7 +140,7 @@ void compute_group_polygons_and_rectangles(Chain &C,
           temp_group_poly.edges[0] = GEL[i].inverse_edges[m];
           for (n=0; n<(int)GEL.inverse_edges.size(); n++) {
             temp_group_poly.edges[1] = GEL[i].inverse_edges[n];
-            GP.push_back(temp_group_poly);
+            GP[i].push_back(temp_group_poly);
           }
         }
       }
@@ -182,10 +190,10 @@ void compute_polys(Chain &C,
   std::vector<int> current_beginning_letters(3);    //this records the first letters of the interface edge choices
   std::vector<int> current_edges(3);                //this records where we are in the lists real_edges_beginning_with
   int current_len;                                  //this records the current length
+  int temp_CE_1, temp_CE_2, temp_CE_3, temp_letter;
   current_len = 1;
   current_beginning_letters[0] = 0;
   current_edges[0] = 0;
-  int temp_CE_1, temp_CE_2;
   temp_central_poly.interface[0] = true;
   temp_central_poly.interface[1] = true;
   temp_central_poly.interface[2] = true;
@@ -193,12 +201,12 @@ void compute_polys(Chain &C,
   while (true) {   
     if (current_len == 3) {
       temp_CE_1 = IEL.edges_beginning_with[current_beginning_letters[current_len-1]]
-                                          [current_edges[current_len-1];
+                                          [current_edges[current_len-1]];
       temp_CE_2 = IEL.edges_beginning_with[current_beginning_letters[0]]
                                           [current_edges[0]];
       for (i=0; i<current_len; i++) {
         temp_central_poly.edges[i] = IEL.edges_beginning_with[current_beginning_letters[i]]
-                                                             [current_edges[0]];
+                                                             [current_edges[i]];
       }
       temp_central_poly.edges[3] = CEL.get_index(IEL[temp_CE_1].last, IEL[temp_CE_2].first);
       CP.push_back(temp_central_poly);
@@ -206,21 +214,17 @@ void compute_polys(Chain &C,
     //now we advance it: if the list is shorter than maxmal (3), then add
     //one on.  otherwise, step back and leave it short
     if (current_len < 3) { 
-      //START HEREERERERERERERERERRRRRRRRRRRRRRRRRRRRRRRRRRR
-      temp1 = edges[
-                    real_edges_beginning_with
-                         [current_beginning_letters[current_len-1]]
-                         [current_edges[current_len-1]]
-                    ].last;
-      temp2 = C.next_letter(temp1);
-      current_beginning_letters[current_len] = temp2;
+      temp_CE_1 = IEL.edges_beginning_with[current_beginning_letters[current_len-1]]
+                                          [current_edges[current_len-1]];
+      temp_letter = C.next_letter( IEL[temp_CE_1].last );
+      current_beginning_letters[current_len] = temp_letter;
       current_edges[current_len] = 0;
       current_len++;
       continue;
     }
-    //if we get here, we need to advance the index current_len-1           
+    //if we're here, then the length is 3, so advance to the next one
     i = current_len-1;
-    while (i >=0 && current_edges[i] == (int)real_edges_beginning_with[current_beginning_letters[i]].size()-1) {
+    while (i>=0 && current_edges[i] == (int)IEL.edges_beginning_with[current_beginning_letters[i]].size()) {
       i--;
     }
     if (i==-1) {
@@ -232,247 +236,51 @@ void compute_polys(Chain &C,
         current_len = 1;
         continue;
       }
-    }
+    } 
     current_edges[i]++;
     current_len = i+1;
   }
+                 
   
-  
-  
-  
-  
-  
-  
-  
-  
-  int num_real_edges;
-  int temp1, temp2;
-  Polygon temp_poly;
-  std::vector<int> word_lens(C.num_words());
-  std::vector<int> real_edges(0);
-  std::vector<int> blank_edges(0);
-  std::vector<ChainLetter> chain_letters = C.chain_letter_list();
-  std::vector<std::vector<int> > real_edges_beginning_with(chain_letters.size());
-  std::vector<std::vector<int> > blank_edges_beginning_with(chain_letters.size());
-  
-  for (i=0; i<C.num_words(); i++) {
-    word_lens[i] = C[i].size();
-  }
-  
-  for (i=0; i<(int)chain_letters.size(); i++) {
-    real_edges_beginning_with[i].resize(0);
-    blank_edges_beginning_with[i].resize(0);
-  }
-  
-  for (i=0; i<num_edges; i++) {
-    if (edges[i].blank) {
-      blank_edges.push_back(i);
-      blank_edges_beginning_with[edges[i].first].push_back(i);
-    } else {
-      real_edges.push_back(i);
-      real_edges_beginning_with[edges[i].first].push_back(i);
-    }
-  }
-  num_real_edges = real_edges.size();
-  num_blank_edges = blank_edges.size();
-  
-  polys.resize(0);
-  
-  //the ones with two blank edges are easy, since we simply pick any two 
-  //real edges, and that's it.  
-  temp_poly.edges.resize(4);
-  for (i=0; i<num_real_edges; i++) {
-    temp_poly.edges[0] = real_edges[i];
-    for (j=0; j<num_real_edges; j++) {
-      temp_poly.edges[2] = real_edges[j];
-      //find the blank edges to fill in
-      temp1 = edges[temp_poly.edges[0]].last;
-      temp2 = edges[temp_poly.edges[2]].first;
-      if (temp2 == C.next_letter(temp1)) {
-        continue;
-      }
-      for (k=0; k<(int)blank_edges_beginning_with[temp1].size(); k++) {
-        if (edges[ blank_edges_beginning_with[temp1][k] ].last == temp2) {
-          temp_poly.edges[1] = blank_edges_beginning_with[temp1][k];
-          break;
-        }
-      }
-      temp1 = edges[temp_poly.edges[2]].last;
-      temp2 = edges[temp_poly.edges[0]].first;
-      if (temp2 == C.next_letter(temp1)) {
-        continue;
-      }
-      for (k=0; k<(int)blank_edges_beginning_with[temp1].size(); k++) {
-        if (edges[ blank_edges_beginning_with[temp1][k] ].last == temp2) {
-          temp_poly.edges[3] = blank_edges_beginning_with[temp1][k];
-          break;
-        }
-      }
-      polys.push_back(temp_poly);
-    }
-  }
-  
-  //std::cout << "I am done with the 2-blank polys\n";
-  //for (i=0; i<(int)polys.size(); i++) {
-  //  for (j=0; j<(int)polys[i].edges.size(); j++) {
-  //    std::cout << polys[i].edges[j] << ",";
-  //  }
-  //  std::cout << "\n";
-  //}
-      
-  
-  //now we compute the ones with one blank edge.  We do this by going through 
-  //*all* chains of 2 or 3 real edges.  For each, we fill in the remaining edge
-  //with a blank one
-  std::vector<int> current_beginning_letters(3);    //this records the first letters of the arc choices
-  std::vector<int> current_edges(3);                //this records where we are in the lists real_edges_beginning_with
-  int current_len;                                  //this records the current length
+  //now we search for all interface-edge polygons
   current_len = 1;
   current_beginning_letters[0] = 0;
   current_edges[0] = 0;
-  while (true) {
-    
-    //std::cout << "Current attempted polygon:\n";
-    //for (i=0; i<current_len; i++) {
-    //  std::cout << real_edges_beginning_with[current_beginning_letters[i]][current_edges[i]] << " ";
-    //}
-    //std::cout << "\n";
-    //std::cout.flush();
-    
-    if (current_len > 1) {
-      //get the beginning letter and ending letter (temp1, temp2) is our new blank edge
-      temp1 = edges[ 
-                    real_edges_beginning_with
-                                   [current_beginning_letters[current_len-1]]
-                                   [current_edges[current_len-1]] 
-                   ].last;
-      temp2 = edges[ 
-                    real_edges_beginning_with
-                                   [current_beginning_letters[0]]
-                                   [current_edges[0]] 
-                    ].first;
-      if (temp2 != current_beginning_letters[0]) {
-        std::cout << "Badness in polygons creation\n";
-      }
-      if (C.next_letter(temp1) != temp2) {  //make sure we're not adding a stupid blank edge
-        temp_poly.edges.resize(current_len);
+  temp_central_poly.interface[0] = true;
+  temp_central_poly.interface[1] = true;
+  temp_central_poly.interface[2] = true;
+  temp_central_poly.interface[3] = true;
+  while (true) {   
+    if (current_len == 4) {
+      temp_CE_1 = IEL.edges_beginning_with[current_beginning_letters[current_len-1]]
+                                          [current_edges[current_len-1]];
+      temp_CE_2 = IEL.edges_beginning_with[current_beginning_letters[0]]
+                                          [current_edges[0]];
+      temp_CE_3 = IEL.get_index(C.next_letter( IEL[temp_CE_1].last ),
+                                C.prev_letter( IEL[temp_CE_2].first ) );
+      if (temp_CE_3 != -1) {
         for (i=0; i<current_len; i++) {
-          temp_poly.edges[i] = real_edges_beginning_with[current_beginning_letters[i]][current_edges[i]];
+          temp_central_poly.edges[i] = IEL.edges_beginning_with[current_beginning_letters[i]]
+                                                               [current_edges[i]];
         }
-        //now add the last edge -- the blank one
-        for (i=0; i<(int)blank_edges_beginning_with[temp1].size(); i++) {
-          if (edges[blank_edges_beginning_with[temp1][i]].last == temp2) {
-            break;
-          }
-        }
-        temp_poly.edges.push_back( blank_edges_beginning_with[temp1][i] );
-        polys.push_back(temp_poly);
-      }
-    }
-    //now we advance it: if the list is shorter than maxmal (3), then add
-    //one on.  otherwise, step back and leave it short
-    if (current_len < 3) { 
-      temp1 = edges[
-                    real_edges_beginning_with
-                         [current_beginning_letters[current_len-1]]
-                         [current_edges[current_len-1]]
-                    ].last;
-      temp2 = C.next_letter(temp1);
-      current_beginning_letters[current_len] = temp2;
-      current_edges[current_len] = 0;
-      current_len++;
-      continue;
-    }
-    //if we get here, we need to advance the index current_len-1           
-    i = current_len-1;
-    while (i >=0 && current_edges[i] == (int)real_edges_beginning_with[current_beginning_letters[i]].size()-1) {
-      i--;
-    }
-    if (i==-1) {
-      if (current_beginning_letters[0] == (int)chain_letters.size()-1) {
-        break;
-      } else {
-        current_beginning_letters[0]++;
-        current_edges[0] = 0;
-        current_len = 1;
-        continue;
-      }
-    }
-    current_edges[i]++;
-    current_len = i+1;
-  }
-  
-  //ALL-REAL
-  //Here we just go through all 
-  //possibilities, using only real edges.  Note we may assume that 
-  //the polygon starts on a minimal letter
-  current_beginning_letters.resize(4);    //this records the first letters of the arc choices
-  current_edges.resize(4);                //this records where we are in the lists real_edges_beginning_with
-  current_len = 1;
-  current_beginning_letters[0] = 0;
-  current_edges[0] = 0;
-  while (true) {
-    
-    //std::cout << "Current attempted polygon:\n";
-    //for (i=0; i<current_len; i++) {
-    //  std::cout << real_edges_beginning_with[current_beginning_letters[i]][current_edges[i]] << " ";
-    //}
-    //std::cout << "\n";
-    //std::cout.flush();
-    
-    if (current_len > 1) {
-      //check if it's allowed to close up
-      temp1 = edges[ 
-                    real_edges_beginning_with
-                                   [current_beginning_letters[current_len-1]]
-                                   [current_edges[current_len-1]] 
-                   ].last;
-      temp2 = edges[ 
-                    real_edges_beginning_with
-                                   [current_beginning_letters[0]]
-                                   [current_edges[0]] 
-                    ].first;
-      if (temp2 != current_beginning_letters[0]) {
-        std::cout << "Badness in polygons creation\n";
-      }
-      if (C.next_letter(temp1) == temp2) {
-        //it does close up, so add it
-        temp_poly.edges.resize(current_len);
-        for (i=0; i<current_len; i++) {
-          temp_poly.edges[i] = real_edges_beginning_with[current_beginning_letters[i]][current_edges[i]];
-        }
-        std::cout << "Pushed it!\n";
-        polys.push_back(temp_poly);
+        temp_central_poly.edges[3] = temp_CE_3;
+        CP.push_back(temp_central_poly);
       }
     }
     //now we advance it: if the list is shorter than maxmal (4), then add
     //one on.  otherwise, step back and leave it short
-    //note when we extend it, make sure the index is larger than current_beginning
     if (current_len < 4) { 
-      temp1 = edges[
-                    real_edges_beginning_with
-                         [current_beginning_letters[current_len-1]]
-                         [current_edges[current_len-1]]
-                    ].last;
-      temp2 = C.next_letter(temp1);
-      current_beginning_letters[current_len] = temp2;
-      //std::cout << "Trying to extend with beginning letter " << temp2 << "\n";
-      for (i=0; i<(int)real_edges_beginning_with[temp2].size(); i++) {
-        if (real_edges_beginning_with[temp2][i] > real_edges_beginning_with[current_beginning_letters[0]][current_edges[0]]) {
-          break;
-        }
-      }
-      if (i < (int)real_edges_beginning_with[temp2].size()) {
-        current_edges[current_len] = i;
-        current_len++;
-        continue;
-      } else {
-        //do nothing, we will have to advance this index
-      }
+      temp_CE_1 = IEL.edges_beginning_with[current_beginning_letters[current_len-1]]
+                                          [current_edges[current_len-1]];
+      temp_letter = C.next_letter( IEL[temp_CE_1].last );
+      current_beginning_letters[current_len] = temp_letter;
+      current_edges[current_len] = 0;
+      current_len++;
+      continue;
     }
-    //if we get here, we need to advance the index current_len-1           
+    //if we're here, then the length is 3, so advance to the next one
     i = current_len-1;
-    while (i >=0 && current_edges[i] == (int)real_edges_beginning_with[current_beginning_letters[i]].size()-1) {
+    while (i>=0 && current_edges[i] == (int)IEL.edges_beginning_with[current_beginning_letters[i]].size()) {
       i--;
     }
     if (i==-1) {
@@ -484,45 +292,17 @@ void compute_polys(Chain &C,
         current_len = 1;
         continue;
       }
-    }
+    } 
     current_edges[i]++;
     current_len = i+1;
   }
-      
-  
-  /*
-  //OK we have made all the polys with two blanks, and all the polys with no 
-  //blanks.  Now we go through, and to all the polys with length 3 or 4, we convert
-  //each of the edges in turn into a blank one
-  int old_number_of_polys = (int)polys.size();
-  int poly_len;
-  int edge_backup;
-  for (i=num_two_blank_polys; i<old_number_of_polys; i++) {
-    if (polys[i].edges.size() > 2) {
-      temp_poly.edges = polys[i].edges;
-      poly_len = (int)temp_poly.edges.size();
-      for (j=0; j<poly_len; j++) {
-        temp1 = edges[ temp_poly.edges[j] ].last;
-        if (edges[ temp_poly.edges[(j+2)%poly_len] ].first
-            == C.next_letter(temp1)) {
-          continue;
-        }
-        for (k=0; k<(int)blank_edges_beginning_with[temp1].size(); k++) {
-          if (edges[ blank_edges_beginning_with[temp1][k] ].last == 
-              edges[ temp_poly.edges[(j+2)%poly_len] ].first) {
-            break;
-          }
-        }
-        edge_backup = temp_poly.edges[(j+1)%poly_len];
-        temp_poly.edges[(j+1)%poly_len] = blank_edges_beginning_with[temp1][k];
-        polys.push_back(temp_poly);
-        temp_poly.edges[(j+1)%poly_len] = edge_backup;
-      }
-    }
-  }
-  */
   
 }
+
+
+
+
+
 
 
 

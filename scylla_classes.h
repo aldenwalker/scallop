@@ -44,16 +44,16 @@ struct CentralEdge {
  * A list of central edges
  * **************************************************************************/
 class CentralEdgeList {
-  public:
+public:
   CentralEdgeList();
+  CentralEdgeList(Chain &C);
   
   void add_edge(int a, int b);
   int get_index(int a, int b);
-  int get_side(int a, int b);
-  int get_side_with_index(int index, int a, int b)
+  CentralEdge operator[](int index);
   
-  private:
-  std::vector<CentralEdge> L;
+  //private:
+  std::vector<CentralEdge> edges;
   std::vector<std::vector<int> > edges_beginning_with;
 };
 
@@ -73,6 +73,7 @@ struct InterfaceEdge {
 class InterfaceEdgeList {
   public:
   InterfaceEdgeList();
+  InterfaceEdgeList(Chain &C);
   void add_polygon_edge(int a, int b);
   void get_index_from_poly_side(int a, int b);
   void get_index_from_group_side(int a, int b);
@@ -96,10 +97,8 @@ struct GroupEdge {
 class GroupEdgeList {
   public:
   GroupEdgeList();
-  void add_edge(int a, int b);
+  GroupEdgeList(Chain &C);
   void get_index(int a, int b);
-  void get_side(int a, int b);
-  void get_side_with_index(int index, int a, int b);
   
 //private
   std::vector<GroupEdge> list;
@@ -160,6 +159,7 @@ class CyclicProduct {
     std::vector<char> gen_list(void);        //return the generator list
     std::vector<int> order_list(void);       //return the list of orders (0=inf)
     int gen_order(char gen);                 //return the order of the given generator
+    int index_order(int index);
     int gen_index(char gen);                 //return the number of the gen
     int num_groups(void);
     
@@ -192,6 +192,7 @@ class Chain {
     int next_letter(int n);
     int prev_letter(int n);
     int num_words(void);
+    int num_letters();
     CyclicProduct* group();
     std::string operator[](int index);    //get a word
     void print_chunks(std::ostream &os);
