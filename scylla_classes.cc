@@ -574,6 +574,7 @@ int GroupPolygon::chi_times_2(Chain &C, GroupEdgeList &GEL, InterfaceEdgeList &I
   int i,j;
   int temp_letter_1, temp_letter_2;
   int sum=0;
+  //std::cout << "computing chi for group polygon " << *this << " in group " << group << "\n";
   for (i=0; i<(int)sides.size(); i++) {
     //compute all the interface edges in the side
     temp_letter_1 = GEL[edges[(i+(edges.size()-1))%edges.size()]].last;
@@ -595,10 +596,11 @@ int GroupPolygon::chi_times_2(Chain &C, GroupEdgeList &GEL, InterfaceEdgeList &I
     }
     
     //and the group edge on the edge
-    if (C.next_letter(GEL[edges[i]].first) != GEL[edges[i]].last) {
+    if ( GEL[edges[i]].first != GEL[edges[i]].last) {
       sum++;
     }
   }
+  //std::cout << "returning " << 2-sum << "\n";
   return 2 - sum;
 }
 
@@ -649,7 +651,7 @@ void GroupPolygon::get_ia_etc_for_edges(Chain &C,
     //and the group edge on the edge
     temp_letter_1 = GEL[edges[i]].first;
     temp_letter_2 = GEL[edges[i]].last;
-    if (C.next_letter(temp_letter_1) != temp_letter_2) {
+    if ( temp_letter_1 != temp_letter_2) {
       temp_index = GEL.get_index(temp_letter_1, temp_letter_2);
       temp_pair_index = group_edge_pairs[temp_index];
       temp_ia.push_back(temp_pair_index+1);
@@ -708,7 +710,7 @@ std::ostream &operator<<(std::ostream &os, GroupPolygon &GP) {
 }
 
 std::ostream &operator<<(std::ostream &os, GroupRectangle &GR) {
-  os << "GR: " << GR.first << " " << GR.last << "\n";
+  os << "GR: " << GR.first << " " << GR.last;
   return os;
 }
 

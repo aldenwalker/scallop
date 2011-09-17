@@ -314,44 +314,58 @@ void compute_central_polys(Chain &C,
 
 
 
-void print_central_polys(std::vector<CentralPolygon> &CP, std::ostream &os) {
+void print_central_polys(std::vector<CentralPolygon> &CP, std::ostream &os, int level) {
   int i,j;
   os << "Central polygons: (" << CP.size() << "):\n"; 
-  for (i=0; i<(int)CP.size(); i++) {
-    os << i << ": ";
-    for (j=0; j<(int)CP[i].edges.size(); j++) {
-      os << CP[i].edges[j];
-      if (CP[i].interface[j]) {
-        os << "i";
-      } else {
-        os << "c";
+  if (level == 0) {
+    os << "(" << CP.size() << " polygons hidden)\n";
+  } else {
+    for (i=0; i<(int)CP.size(); i++) {
+      os << i << ": ";
+      for (j=0; j<(int)CP[i].edges.size(); j++) {
+        os << CP[i].edges[j];
+        if (CP[i].interface[j]) {
+          os << "i";
+        } else {
+          os << "c";
+        }
+        os << " ";
       }
-      os << " ";
+      os << "\n";
     }
-    os << "\n";
   }
 }
 
+
 void print_group_rectangles_and_polys(std::vector<std::vector<GroupRectangle> > &GR,
                                       std::vector<std::vector<GroupPolygon> > &GP,
-                                      std::ostream &os) {
+                                      std::ostream &os,
+                                      int level) {
   int i,j,k,l;
   for (i=0; i<(int)GP.size(); i++) {
     os << "Group " << i << " rectangles:\n";
-    for (j=0; j<(int)GR[i].size(); j++) {
-      os << j << ": " << GR[i][j].first << " " << GR[i][j].last << "\n";
+    if (level == 0) {
+      os << "(" << GR[i].size() << " rectangles hidden)\n";
+    } else {
+      for (j=0; j<(int)GR[i].size(); j++) {
+        os << j << ": " << GR[i][j].first << " " << GR[i][j].last << "\n";
+      }
     }
     os << "Group " << i << " polygons:\n";
-    for (j=0; j<(int)GP[i].size(); j++) {
-      os << j << ": ";
-      for (k=0; k<(int)GP[i][j].sides.size(); k++) {
-        os << "(";
-        for (l=0; l<(int)GP[i][j].sides[k].letters.size(); l++) {
-          os << GP[i][j].sides[k].letters[l] << " ";
+    if (level == 0) {
+      os << "(" << GP[i].size() << " polygons hidden)\n";
+    } else {
+      for (j=0; j<(int)GP[i].size(); j++) {
+        os << j << ": ";
+        for (k=0; k<(int)GP[i][j].sides.size(); k++) {
+          os << "(";
+          for (l=0; l<(int)GP[i][j].sides[k].letters.size(); l++) {
+            os << GP[i][j].sides[k].letters[l] << " ";
+          }
+          os << ") " << GP[i][j].edges[k] << " ";
         }
-        os << ") " << GP[i][j].edges[k] << " ";
+        os << "\n";
       }
-      os << "\n";
     }
   }
 }
@@ -405,16 +419,12 @@ int main(int argc, char* argv[]) {
   
   std::vector<CentralPolygon> CP;
   compute_central_polys(C, IEL, CEL, CP);
-  print_central_polys(CP, std::cout);
-  
-  std::cout << "printed\n";
-  std::cout.flush();
+  print_central_polys(CP, std::cout, 0);
   
   std::vector<std::vector<GroupRectangle> > GR;
   std::vector<std::vector<GroupPolygon> > GP;
   compute_group_polygons_and_rectangles(C, IEL, GEL, GP, GR);
-  std::cout << "computed\n"; std::cout.flush();
-  print_group_rectangles_and_polys(GR, GP, std::cout);
+  print_group_rectangles_and_polys(GR, GP, std::cout, 0);
   
    
   rational scl;

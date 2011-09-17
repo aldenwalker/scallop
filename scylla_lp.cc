@@ -151,7 +151,7 @@ void scyllop_lp(Chain &C,
 	  glp_add_rows(lp, edge_pairs.size() + C.num_words() );
 	  for(i=0; i<(int)edge_pairs.size(); i++){
 		  glp_set_row_bnds(lp, i+1, GLP_FX, 0.0, 0.0);
-      std::cout << "Set row " << i << " bounded to " << 0 << "\n";
+      //std::cout << "Set row " << i << " bounded to " << 0 << "\n";
 	  }
 	  for(i=0; i<(int)C.words.size(); i++){
 		  glp_set_row_bnds(lp, 
@@ -159,7 +159,7 @@ void scyllop_lp(Chain &C,
                        GLP_FX, 
                        C.words[i].size()*C.weights[i], 
                        C.words[i].size()*C.weights[i]);	
-      std::cout << "Set row " << edge_pairs.size()+i+1 << " bounded to " << C.words[i].size()*C.weights[i] << "\n";
+      //std::cout << "Set row " << edge_pairs.size()+i+1 << " bounded to " << C.words[i].size()*C.weights[i] << "\n";
 	  }
     
     //COLS
@@ -172,7 +172,7 @@ void scyllop_lp(Chain &C,
 	  for(i=0; i<(int)CP.size(); i++){
 		  glp_set_col_bnds(lp, i+1, GLP_LO, 0.0, 0.0);
 		  glp_set_obj_coef(lp, i+1, -CP[i].chi_times_2(C, CEL, IEL));
-      std::cout << "Set objective " << i << " to " << -CP[i].chi_times_2(C, CEL, IEL) << "\n";
+      //std::cout << "Set objective " << i+1 << " to " << -CP[i].chi_times_2(C, CEL, IEL) << "\n";
 	  }
     offset = CP.size();
     for (i=0; i<(C.G)->num_groups(); i++) {
@@ -184,7 +184,7 @@ void scyllop_lp(Chain &C,
       for (j=0; j<(int)GP[i].size(); j++) {
         glp_set_col_bnds(lp, offset+1, GLP_LO, 0.0, 0.0);
         glp_set_obj_coef(lp, offset+1, -GP[i][j].chi_times_2(C, GEL[i], IEL));
-        std::cout << "Set objective " << i << " to " << -CP[i].chi_times_2(C, CEL, IEL) << "\n";
+        //std::cout << "Set objective " << offset+1 << " to " << -GP[i][j].chi_times_2(C, GEL[i], IEL) << "\n";
         offset++;
       }      
     }
@@ -240,7 +240,7 @@ void scyllop_lp(Chain &C,
         ja.push_back(temp_ja[j]);
         ia.push_back(temp_ia[j]);
         ar.push_back(temp);
-        std::cout << "Put " << temp_ia[j] << ", " << temp_ja[j] << ", " << temp << ".\n";
+        //std::cout << "Put " << temp_ia[j] << ", " << temp_ja[j] << ", " << temp << ".\n";
       }
     }
     
@@ -264,7 +264,7 @@ void scyllop_lp(Chain &C,
         ja.push_back(col+1);
         ar.push_back(-1);
         offset++;
-        std::cout << "Put " << row+1 << ", " << col+1 << ", " << -1 << ".\n";
+        //std::cout << "Put " << row+1 << ", " << col+1 << ", " << -1 << ".\n";
       }
       
       for (m=0; m<(int)GP[i].size(); m++) {
@@ -288,7 +288,7 @@ void scyllop_lp(Chain &C,
           ja.push_back(temp_ja[j]);
           ia.push_back(temp_ia[j]);
           ar.push_back(temp);
-          std::cout << "Put " << temp_ia[j] << ", " << temp_ja[j] << ", " << temp << ".\n";
+          //std::cout << "Put " << temp_ia[j] << ", " << temp_ja[j] << ", " << temp << ".\n";
         }
       }
     }
@@ -309,16 +309,16 @@ void scyllop_lp(Chain &C,
           ia.push_back(word_1 + edge_pairs.size() + 1);
           ja.push_back(offset + 1);
           ar.push_back(2);
-          std::cout << "Put " << word_1 + edge_pairs.size() + 1 << ", " << offset+1 << ", " << 2 << ".\n";
+          //std::cout << "Put " << word_1 + edge_pairs.size() + 1 << ", " << offset+1 << ", " << 2 << ".\n";
         } else {
           ia.push_back(word_1 + edge_pairs.size() + 1);
           ja.push_back(offset + 1);
           ar.push_back(1);
-          std::cout << "Put " << word_1 + edge_pairs.size() + 1 << ", " << offset+1 << ", " << 1 << ".\n";
+          //std::cout << "Put " << word_1 + edge_pairs.size() + 1 << ", " << offset+1 << ", " << 1 << ".\n";
           ia.push_back(word_2 + edge_pairs.size() + 1);
           ja.push_back(offset + 1);
           ar.push_back(1);
-          std::cout << "Put " << word_2 + edge_pairs.size() + 1 << ", " << offset+1 << ", " << 1 << ".\n";
+          //std::cout << "Put " << word_2 + edge_pairs.size() + 1 << ", " << offset+1 << ", " << 1 << ".\n";
         }
         offset++;
       }
@@ -343,7 +343,7 @@ void scyllop_lp(Chain &C,
           ja.push_back(temp_ja[j]);
           ia.push_back(temp_ia[j]);
           ar.push_back(temp);
-          std::cout << "Put " << temp_ia[j] << ", " << temp_ja[j] << ", " << temp << ".\n";
+          //std::cout << "Put " << temp_ia[j] << ", " << temp_ja[j] << ", " << temp << ".\n";
         }
       }
     }
@@ -375,10 +375,10 @@ void scyllop_lp(Chain &C,
         }
         std::cout << (*solution_vector)[i] << " * " << CP[i] << "\n";
       }
-      offset = 0;
+      offset = CP.size();
       for (i=0; i<(C.G)->num_groups(); i++) {
         for (j=0; j<(int)GR[i].size(); j++) {
-          if ((*solution_vector)[i] == rational(0,1)) {
+          if ((*solution_vector)[offset] == rational(0,1)) {
             offset++;
             continue;
           }
@@ -386,7 +386,7 @@ void scyllop_lp(Chain &C,
           offset++;
         }
         for (j=0; j<(int)GP[i].size(); j++) {
-          if ((*solution_vector)[i] == rational(0,1)) {
+          if ((*solution_vector)[offset] == rational(0,1)) {
             offset++;
             continue;
           } 
