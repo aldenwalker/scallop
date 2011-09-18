@@ -186,7 +186,10 @@ struct GroupTooth {
   int position;
   int first;
   int last;
+  int chi_times_2(Chain &C);
 };
+
+std::ostream &operator<<(std::ostream &os, GroupTooth &GT);
 
 /****************************************************************************
  * These are really just special group polygons designated to face the teeth
@@ -195,7 +198,10 @@ struct GroupTooth {
 struct GroupMouth {
   int first;
   int last;
+  int chi_times_2(Chain &C);
 };
+
+std::ostream &operator<<(std::ostream &os, GroupMouth &GM);
 
 /****************************************************************************
  * a group polygon -- these are really just squares with all incident 
@@ -204,7 +210,7 @@ struct GroupMouth {
 struct GroupPolygon {
   int group;
   std::vector<int> edges;
-  int chi_times_2(Chain &C, GroupEdgeList &GEL, InterfaceEdgeList &IEL);
+  int chi_times_2(GroupEdgeList &GEL);
   void get_ia_etc_for_edges(Chain &C, 
                             InterfaceEdgeList &IEL, 
                            GroupEdgeList &GEL, 
@@ -248,6 +254,7 @@ class Multiset {
     int next(void);
     std::vector<int>* get_list(void);
     int operator[](int index);
+    void set_index(int index, int val);
   private:
     std::vector<int> L;
     int min;

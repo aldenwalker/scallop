@@ -540,6 +540,7 @@ void GroupEdgeList::print(std::ostream &os) {
 
 
 
+
 int CentralPolygon::chi_times_2(Chain &C, CentralEdgeList &CEL, InterfaceEdgeList &IEL) {
   int i;
   int sum=0;
@@ -570,33 +571,34 @@ std::ostream &operator<<(std::ostream &os, CentralPolygon &CP) {
   return os;
 }
 
-int GroupPolygon::chi_times_2(Chain &C, GroupEdgeList &GEL, InterfaceEdgeList &IEL) {
+
+int GroupTooth::chi_times_2(Chain &C) {
+  if (C.next_letter(first) == last) {
+    return 0;
+  } else {
+    return -1;
+  }
+}
+
+int GroupMouth::chi_times_2(Chain &C) {
+  if (C.next_letter(last) == first) {
+    return 2;
+  } else {
+    return 1;
+  }
+}
+
+
+int GroupPolygon::chi_times_2(GroupEdgeList &GEL) {
   int i,j;
   int temp_letter_1, temp_letter_2;
   int sum=0;
   //std::cout << "computing chi for group polygon " << *this << " in group " << group << "\n";
-  for (i=0; i<(int)sides.size(); i++) {
+  for (i=0; i<(int)edges.size(); i++) {
     //compute all the interface edges in the side
-    temp_letter_1 = GEL[edges[(i+(edges.size()-1))%edges.size()]].last;
-    temp_letter_2 = sides[i].letters[0];
-    if (C.next_letter( temp_letter_1 ) != temp_letter_2) {
-      sum++;
-    }
-    for (j=0; j<(int)sides[i].letters.size()-1; j++) {
-      temp_letter_1 = sides[i].letters[j];
-      temp_letter_2 = sides[i].letters[j+1];
-      if (C.next_letter( temp_letter_1 ) != temp_letter_2) {
-        sum++;
-      }
-    }
-    temp_letter_1 = sides[i].letters[sides[i].letters.size()-1];
-    temp_letter_2 = GEL[edges[i]].first;
-    if (C.next_letter( temp_letter_1 ) != temp_letter_2) {
-      sum++;
-    }
-    
-    //and the group edge on the edge
-    if ( GEL[edges[i]].first != GEL[edges[i]].last) {
+    temp_letter_1 = GEL[edges[i]].first;
+    temp_letter_2 = GEL[edges[i]].last;
+    if (temp_letter_1 != temp_letter_2) {
       sum++;
     }
   }
@@ -715,6 +717,15 @@ std::ostream &operator<<(std::ostream &os, GroupRectangle &GR) {
 }
 
 
+std::ostream &operator<<(std::ostream &os, GroupTooth &GT) {
+  os << "GT: " << GT.first << " " << GT.last;
+  return os;
+}
+
+std::ostream &operator<<(std::ostream &os, GrouMouth &GM) {
+  os << "GM: " << GM.first << " " << GM.last;
+  return os;
+}
 
 
 
@@ -763,7 +774,9 @@ int Multiset::next(void) {
 }
 
 
-
+void Multiset::set_index(int index, int val) {
+  L[index] = val;
+}
 
 
 

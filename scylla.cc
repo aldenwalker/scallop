@@ -41,6 +41,7 @@ void compute_group_teeth_mouths_polygons_and_rectangles(Chain &C,
   GroupPolygon temp_group_poly;
   GroupTooth temp_group_tooth;
   GroupMouth temp_group_mouth;
+  int temp_letter_1, temp_letter_2;
   
   GP.resize(num_groups);
   GR.resize(num_groups);
@@ -88,23 +89,49 @@ void compute_group_teeth_mouths_polygons_and_rectangles(Chain &C,
     GM[i].resize(0);
     for (j=0; j<(int)C.regular_letters[i].size(); j++) {
       temp_group_mouth.first = C.regular_letters[i][j];
-      for (k=0; k<(int)C.regular_letters[i].size(); k++ {
+      for (k=0; k<(int)C.regular_letters[i].size(); k++) {
         temp_group_mouth.last = C.regular_letters[i][k];
         GM[i].push_back(temp_group_mouth);
       }
     }    
     for (j=0; j<(int)C.inverse_letters[i].size(); j++) {
       temp_group_mouth.first = C.inverse_letters[i][j];
-      for (k=0; k<(int)C.inverse_letters[i].size(); k++ {
+      for (k=0; k<(int)C.inverse_letters[i].size(); k++) {
         temp_group_mouth.last = C.inverse_letters[i][k];
         GM[i].push_back(temp_group_mouth);
       }
     }
     
     //now the group internal polygons -- note there can be just any four letters
-    //on the corners.  
+    //on the corners, though we require there to be at least one nontrivial edge
+    GP[i].resize(0);
+    temp_group_poly.edges.resize(4);
+    temp_group_poly.group = i;
+    Multiset letter_selection(4, 0, C.regular_letters[i].size());
+    do {
+      if (letter_selection[0] == letter_selection[1]) {
+        continue;                                       //this is a waste of time
+      }
+      for (j=0; j<4; j++) {
+        temp_letter_1 = C.regular_letters[i][letter_selection[j]];
+        temp_letter_2 = C.regular_letters[i][letter_selection[(j+1)%4]];
+        temp_group_poly.edges[j] = GEL[i].get_index(temp_letter_1, temp_letter_2);
+      }
+      GP[i].push_back(temp_group_poly);
+    } while (1 != letter_selection.next());
     
-    
+    letter_selection = Multiset(4, 0, C.inverse_letters[i].size());
+    do {
+      if (letter_selection[0] == letter_selection[1]) {
+        continue;                                       //this is a waste of time
+      }
+      for (j=0; j<4; j++) {
+        temp_letter_1 = C.inverse_letters[i][letter_selection[j]];
+        temp_letter_2 = C.inverse_letters[i][letter_selection[(j+1)%4]];
+        temp_group_poly.edges[j] = GEL[i].get_index(temp_letter_1, temp_letter_2);
+      }
+      GP[i].push_back(temp_group_poly);
+    } while (1 != letter_selection.next());
     
   }  
   
@@ -305,10 +332,12 @@ void print_central_polys(std::vector<CentralPolygon> &CP, std::ostream &os, int 
 }
 
 
-void print_group_rectangles_and_polys(std::vector<std::vector<GroupRectangle> > &GR,
-                                      std::vector<std::vector<GroupPolygon> > &GP,
-                                      std::ostream &os,
-                                      int level) {
+void print_group_teeth_mouths_polys_and_rectangles(std::vector<std::vector<GroupTooth> > &GT,
+                                                  std::vector<std::vector<GroupMouth> > &GM,
+                                                  std::vector<std::vector<GroupRectangle> > &GR,
+                                                  std::vector<std::vector<GroupPolygon> > &GP,
+                                                  std::ostream &os,
+                                                  int level) {
   int i,j,k,l;
   for (i=0; i<(int)GP.size(); i++) {
     os << "Group " << i << " rectangles:\n";
@@ -319,18 +348,30 @@ void print_group_rectangles_and_polys(std::vector<std::vector<GroupRectangle> > 
         os << j << ": " << GR[i][j].first << " " << GR[i][j].last << "\n";
       }
     }
+    os << "Group " << i << " teeth:\n";
+    if (level == 0) {
+      os << "(" << GT[i].size() << " hidden)\n";
+    } else {
+      for (j=0; j<(int)GT[i].size(); j++) {
+        os << j << ": " << GT[i][j].first << " " << GT[i][j].last << "\n";
+      }
+    }
+    os << "Group " << i << " mouths:\n";
+    if (level == 0) {
+      os << "(" << GM[i].size() << " hidden)\n";
+    } else {
+      for (j=0; j<(int)GT[i].size(); j++) {
+        os << j << ": " << GM[i].first << " " << GM[i].last << "\n";
+      }
+    }
     os << "Group " << i << " polygons:\n";
     if (level == 0) {
       os << "(" << GP[i].size() << " polygons hidden)\n";
     } else {
       for (j=0; j<(int)GP[i].size(); j++) {
         os << j << ": ";
-        for (k=0; k<(int)GP[i][j].sides.size(); k++) {
-          os << "(";
-          for (l=0; l<(int)GP[i][j].sides[k].letters.size(); l++) {
-            os << GP[i][j].sides[k].letters[l] << " ";
-          }
-          os << ") " << GP[i][j].edges[k] << " ";
+        for (k=0; k<(int)GP[i][j].edges.size(); k++) {
+          os << GP[i][j].edges[k] << " ";
         }
         os << "\n";
       }
@@ -389,15 +430,17 @@ int main(int argc, char* argv[]) {
   compute_central_polys(C, IEL, CEL, CP);
   print_central_polys(CP, std::cout, 0);
   
+  std::vector<std::vector<GroupTooth> > GT;
+  std::vector<std::vector<GroupMouth> > GM;
   std::vector<std::vector<GroupRectangle> > GR;
   std::vector<std::vector<GroupPolygon> > GP;
-  compute_group_polygons_and_rectangles(C, IEL, GEL, GP, GR);
-  print_group_rectangles_and_polys(GR, GP, std::cout, 0);
+  compute_group_teeth_mouths_polygons_and_rectangles(C, IEL, GEL, GT, GM, GP, GR);
+  print_group_teeth_mouths_polys_and_rectangles(GT, GM, GR, GP, std::cout, 0);
   
    
   rational scl;
   std::vector<rational> solution_vector(0);                           //run the LP
-  scyllop_lp(C, GEL, IEL, CEL, GP, GR, CP, &scl, &solution_vector, GLPK_DOUBLE, true); 
+  scyllop_lp(C, GEL, IEL, CEL, GT, GM, GP, GR, CP, &scl, &solution_vector, GLPK_DOUBLE, true); 
   
   std::cout << "scl( " << C << ") = " << scl << " = " << scl.get_d() << "\n";    //output the answer
   
