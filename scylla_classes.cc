@@ -556,6 +556,41 @@ int CentralPolygon::chi_times_2(Chain &C, CentralEdgeList &CEL, InterfaceEdgeLis
   return 2 - sum;
 }
 
+void CentralPolygon::compute_ia_etc_for_edges(Chain &C,
+                                              InterfaceEdgeList &IEL,
+                                              CentralEdgeList &CEL,
+                                              std::vector<EdgePair> &edge_pairs,
+                                              std::vector<int> &central_edge_pairs,
+                                              std::vector<int> &temp_ia,
+                                              std::vector<int> &temp_ja,
+                                              std::vector<ing> &temp_ar) {
+  int i,j,col,row,val;
+  for (j=0; j<(int)edges.size(); j++) {
+    if (CP[i].interface[j]) {
+      if (C.next_letter( IEL[edges[j]].last ) == IEL[edges[j]].first ) {         //don't restrict edges like this
+        continue;
+      }
+      row = edges[j];
+      val = 1;
+    } else {
+      if (C.next_letter( CEL[edges[j]].first ) == CEL[edges[j]].last) {   //nor these edges
+        continue;
+      }
+      row = central_edge_pairs[edges[j]];
+      if (edge_pairs[row].first == edges[j]) { 
+        val = 1;
+      } else {
+        val = -1;
+      }
+    } 
+    temp_ja.push_back(col+1);
+    temp_ia.push_back(row+1);
+    temp_ar.push_back(val);
+  }
+}  
+  
+  
+
 std::ostream &operator<<(std::ostream &os, CentralPolygon &CP) {
   int j;
   os << "CP: ";
@@ -710,6 +745,26 @@ std::ostream &operator<<(std::ostream &os, GroupPolygon &GP) {
   }
   return os;
 }
+
+
+void GroupRectangle::compute_ia_etc_for_edges(int &offset, 
+                                              std::vector<int> &ia, 
+                                              std::vector<int> &ja, 
+                                              std::vector<int> &ar) {
+  int row,col;
+  col = offset;
+  row = first;
+  ia.push_back(row+1);
+  ja.push_back(col+1);
+  ar.push_back(-1);
+
+  row = last;
+  ia.push_back(row+1);
+  ja.push_back(col+1);
+  ar.push_back(-1);
+}
+
+
 
 std::ostream &operator<<(std::ostream &os, GroupRectangle &GR) {
   os << "GR: " << GR.first << " " << GR.last;

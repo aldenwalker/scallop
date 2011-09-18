@@ -18,6 +18,33 @@ extern "C" {
 #include "exlp-package/mylib.h"
 }
 
+/***************************************************************************
+ a helper function to collect duplicates
+ ***************************************************************************/
+void collect_dups_and_push(std::vector<int> temp_ia,
+                          std::vector<int> temp_ja,
+                          std::vector<int> temp_ar,
+                          std::vector<int> ia,
+                          std::vector<int> ja,
+                          std::vector<int> ar) {
+  int j,k;
+  for (j=0; j<(int)temp_ia.size(); j++) {
+    if (temp_ar[j] == 0) {
+      continue;
+    }
+    temp = 0;
+    for (k=0; k<(int)temp_ia.size(); k++) {
+      if (temp_ia[k] == temp_ia[j]) {
+        temp += temp_ar[k];
+        temp_ar[k] = 0;
+      }
+    }
+    ja.push_back(temp_ja[j]);
+    ia.push_back(temp_ia[j]);
+    ar.push_back(temp);
+    //std::cout << "Put " << temp_ia[j] << ", " << temp_ja[j] << ", " << temp << ".\n";
+  }
+}
 
 
 /****************************************************************************
@@ -32,29 +59,32 @@ extern "C" {
  * Note that some rows won't have any restrictions
  * 
  * ***************************************************************************/
-void scyllop_lp(Chain &C, 
-                std::vector<GroupEdgeList> &GEL, 
-                InterfaceEdgeList &IEL,
-                CentralEdgeList &CEL, 
-                std::vector<std::vector<GroupPolygon> > &GP,
-                std::vector<std::vector<GroupRectangle> > &GR,
-                std::vector<CentralPolygon> &CP,
-                rational* scl, 
-                std::vector<rational>* solution_vector, 
-                scyllop_lp_solver solver, 
-                bool VERBOSE) {
+void scylla_lp(Chain& C, 
+               std::vector<GroupEdgeList> &GEL, 
+               InterfaceEdgeList &IEL ,
+               CentralEdgeList &CEL, 
+               std::vector<CentralPolygon> &CP,
+               std::vector<std::vector<GroupTooth> > &GT,
+               std::vector<std::vector<GroupMouth> > &GM,
+               std::vector<std::vector<GroupPolygon> > &GP,
+               std::vector<std::vector<GroupRectangle> > &GR,
+               rational* scl, 
+               std::vector<rational>* solution_vector, 
+               scylla_lp_solver solver, 
+               bool VERBOSE) {
   std::vector<int> ia(0);
 	std::vector<int> ja(0);
 	std::vector<double> ar(0); 
   int i,j,k,m,row, col, val;
   int temp_letter_1, temp_letter_2, word_1, word_2, temp;
-  int num_cols, offset;
+  int num_cols, offset, num rows;
   EdgePair temp_pair;
 
   //this is the master list of all edge pairs
   std::vector<EdgePair> edge_pairs(IEL.edges.size());
   std::vector<int> central_edge_pairs(CEL.edges.size());
   std::vector<std::vector<int> > group_edge_pairs((C.G)->num_groups());
+  std::vector<int> rows_for_letters(0);
   
   //add all the interface edges; note these will have the SAME INDICES, THIS IS IMPORTANT
   for (i=0; i<(int)IEL.edges.size(); i++) {
@@ -147,9 +177,22 @@ void scyllop_lp(Chain &C,
 	  glp_set_prob_name(lp, "scl");
 	  glp_set_obj_dir(lp,GLP_MIN);
 	
+    
+    
     //ROWS
-	  glp_add_rows(lp, edge_pairs.size() + C.num_words() );
-	  for(i=0; i<(int)edge_pairs.size(); i++){
+    //there is a row for (1) each edge pair (2) each word and 
+    //(3) every letter in every position (0,order[i]-1)
+    //first we have to find out how many rows there are
+    num_rows = edge_pairs.size() + words.size();
+    rows_for_letters.resize(C.num_letters());
+    for (i=0; i<C.num_letters(); i++) {
+      rows_for_letters[i] = num_rows;
+      num_rows += (C.G)->orders[C.chain_letters[i].group];
+    }
+    
+	  glp_add_rows(lp, num_rows );
+	  
+    for(i=0; i<(int)edge_pairs.size(); i++){
 		  glp_set_row_bnds(lp, i+1, GLP_FX, 0.0, 0.0);
       //std::cout << "Set row " << i << " bounded to " << 0 << "\n";
 	  }
@@ -161,12 +204,19 @@ void scyllop_lp(Chain &C,
                        C.words[i].size()*C.weights[i]);	
       //std::cout << "Set row " << edge_pairs.size()+i+1 << " bounded to " << C.words[i].size()*C.weights[i] << "\n";
 	  }
+    for(i=edge_pairs.size() + words.size(); i<num_rows; i++){
+		  glp_set_row_bnds(lp, i+1, GLP_FX, 0.0, 0.0);
+      //std::cout << "Set row " << i << " bounded to " << 0 << "\n";
+	  }    
+    
     
     //COLS
     num_cols = CP.size();
     for (i=0; i<(C.G)->num_groups(); i++) {
-      num_cols += GR[i].size();
+      num_cols += GT[i].size();
+      num_cols += GM[i].size();
       num_cols += GP[i].size();
+      num_cols += GR[i].size();
     }
 	  glp_add_cols(lp, num_cols);
 	  for(i=0; i<(int)CP.size(); i++){
@@ -176,17 +226,27 @@ void scyllop_lp(Chain &C,
 	  }
     offset = CP.size();
     for (i=0; i<(C.G)->num_groups(); i++) {
-      for (j=0; j<(int)GR[i].size(); j++) {
+      for (j=0; j<(int)GT[i].size(); j++) {
         glp_set_col_bnds(lp, offset+1, GLP_LO, 0.0, 0.0);
-        glp_set_obj_coef(lp, offset+1, 0);
+        glp_set_obj_coef(lp, offset+1, -GT[i][j].chi_times_2(C));
+        offset++;
+      }
+      for (j=0; j<(int)GM[i].size(); j++) {
+        glp_set_col_bnds(lp, offset+1, GLP_LO, 0.0, 0.0);
+        glp_set_obj_coef(lp, offset+1, -GM[i][j].chi_times_2(C));
         offset++;
       }
       for (j=0; j<(int)GP[i].size(); j++) {
         glp_set_col_bnds(lp, offset+1, GLP_LO, 0.0, 0.0);
-        glp_set_obj_coef(lp, offset+1, -GP[i][j].chi_times_2(C, GEL[i], IEL));
+        glp_set_obj_coef(lp, offset+1, -GP[i][j].chi_times_2(C, GEL[i]));
         //std::cout << "Set objective " << offset+1 << " to " << -GP[i][j].chi_times_2(C, GEL[i], IEL) << "\n";
         offset++;
-      }      
+      }  
+      for (j=0; j<(int)GR[i].size(); j++) {
+        glp_set_col_bnds(lp, offset+1, GLP_LO, 0.0, 0.0);
+        glp_set_obj_coef(lp, offset+1, 0);
+        offset++;
+      }    
     }
     if (offset != num_cols) {
       std::cout << "wrong number of columns\n";
@@ -203,93 +263,50 @@ void scyllop_lp(Chain &C,
       temp_ar.resize(0);
       col = i;
       
-      for (j=0; j<(int)CP[i].edges.size(); j++) {
-        if (CP[i].interface[j]) {
-          if (C.next_letter( IEL[CP[i].edges[j]].last ) == IEL[CP[i].edges[j]].first ) {         //don't restrict edges like this
-            continue;
-          }
-          row = CP[i].edges[j];
-          val = 1;
-        } else {
-          if (C.next_letter( CEL[CP[i].edges[j]].first ) == CEL[CP[i].edges[j]].last) {   //nor these edges
-            continue;
-          }
-          row = central_edge_pairs[CP[i].edges[j]];
-          if (edge_pairs[row].first == CP[i].edges[j]) { 
-            val = 1;
-          } else {
-            val = -1;
-          }
-        } 
-        temp_ja.push_back(col+1);
-        temp_ia.push_back(row+1);
-        temp_ar.push_back(val);
-      }
-      //now actually insert, after removing dups
-      for (j=0; j<(int)temp_ia.size(); j++) {
-        if (temp_ar[j] == 0) {
-          continue;
-        }
-        temp = 0;
-        for (k=0; k<(int)temp_ia.size(); k++) {
-          if (temp_ia[k] == temp_ia[j]) {
-            temp += temp_ar[k];
-            temp_ar[k] = 0;
-          }
-        }
-        ja.push_back(temp_ja[j]);
-        ia.push_back(temp_ia[j]);
-        ar.push_back(temp);
-        //std::cout << "Put " << temp_ia[j] << ", " << temp_ja[j] << ", " << temp << ".\n";
-      }
+      CP[i].compute_ia_etc_for_edges(C,
+                                     IEL, 
+                                     CEL, 
+                                     edge_pairs, 
+                                     central_edge_pairs,
+                                     temp_ia,
+                                     temp_ja, 
+                                     temp_ar);
+      collect_dups_and_push(temp_ia, temp_ja, temp_ar, ia, ja, ar);
     }
     
     if (VERBOSE) { 
       std::cout << "Loaded central polygon edge constraints\n";
     }     
     
+    //GROUP TEETH MOUTHS POLYS and RECTANGLES
     offset = CP.size();
-    
-    //GROUP RECTANGLES AND POLYS
     for (i=0; i<(C.G)->num_groups(); i++) {
-      for (j=0; j<(int)GR[i].size(); j++) {
-        col = offset;
-        row = GR[i][j].first;
-        ia.push_back(row+1);
-        ja.push_back(col+1);
-        ar.push_back(-1);
-        
-        row = GR[i][j].last;
-        ia.push_back(row+1);
-        ja.push_back(col+1);
-        ar.push_back(-1);
+      for (m=0; m<(int)GT[i].size(); m++) {
+        GT[i][j].compute_ia_etc_for_edges(offset, IEL, rows_for_letters, ia, ja, ar);
         offset++;
-        //std::cout << "Put " << row+1 << ", " << col+1 << ", " << -1 << ".\n";
       }
-      
+      for (m=0; m<(int)GM[i].size(); m++) {
+        GM[i][j].compute_ia_etc_for_edges(offset, 
+                                          GEL[i], 
+                                          edge_pairs, 
+                                          group_edge_pairs[i],
+                                          ia,
+                                          ja,
+                                          ar);
+        offset++;
+      }
       for (m=0; m<(int)GP[i].size(); m++) {
         temp_ia.resize(0);
         temp_ja.resize(0);
         temp_ar.resize(0);
-        GP[i][m].get_ia_etc_for_edges(C, IEL, GEL[i], edge_pairs, group_edge_pairs[i], offset, temp_ia, temp_ja, temp_ar);
+        GP[i][m].compute_ia_etc_for_edges(offset, C, IEL, GEL[i], edge_pairs, group_edge_pairs[i], temp_ia, temp_ja, temp_ar);
+        collect_dups_and_push(temp_ia, temp_ja, temp_ar, ia, ja, ar);
         offset++;
-        //remove duplicates
-        for (j=0; j<(int)temp_ia.size(); j++) {
-          if (temp_ar[j] == 0) {
-            continue;
-          }
-          temp = 0;
-          for (k=0; k<(int)temp_ia.size(); k++) {
-            if (temp_ia[k] == temp_ia[j]) {
-              temp += temp_ar[k];
-              temp_ar[k] = 0;
-            }
-          }
-          ja.push_back(temp_ja[j]);
-          ia.push_back(temp_ia[j]);
-          ar.push_back(temp);
-          //std::cout << "Put " << temp_ia[j] << ", " << temp_ja[j] << ", " << temp << ".\n";
-        }
+      }
+      for (j=0; j<(int)GR[i].size(); j++) {
+        GR[i][j].compute_ia_etc_for_edges(offset, ia, ja, ar);
+        offset++;
+        //std::cout << "Put " << row+1 << ", " << col+1 << ", " << -1 << ".\n";
       }
     }
     
@@ -301,7 +318,12 @@ void scyllop_lp(Chain &C,
     //row corresponding to the word for the first letter
     offset = CP.size();
     for (i=0; i<(C.G)->num_groups(); i++) {
+      for (j=0; j<(int)GT[i].size(); j++) {
+      }
+      offset += GM[i].size();
+      offset += GP[i].size();
       for (j=0; j<(int)GR[i].size(); j++) {
+        GR[i][j].compute_ia_etc_for_words(offset, C, IEL, edge_pairs);
         col = offset;
         word_1 = C.chain_letters[IEL.edges[GR[i][j].first].first].word;
         word_2 = C.chain_letters[IEL.edges[GR[i][j].last].first].word;
@@ -321,30 +343,6 @@ void scyllop_lp(Chain &C,
           //std::cout << "Put " << word_2 + edge_pairs.size() + 1 << ", " << offset+1 << ", " << 1 << ".\n";
         }
         offset++;
-      }
-      for (m=0; m<(int)GP[i].size(); m++) {
-        temp_ia.resize(0);
-        temp_ja.resize(0);
-        temp_ar.resize(0);
-        GP[i][m].get_ia_etc_for_words(C, IEL, GEL[i], edge_pairs, group_edge_pairs[i], offset, temp_ia, temp_ja, temp_ar);
-        offset++;
-        //remove duplicates
-        for (j=0; j<(int)temp_ia.size(); j++) {
-          if (temp_ar[j] == 0 ) {
-            continue;
-          }
-          temp = 0;
-          for (k=0; k<(int)temp_ia.size(); k++) {
-            if (temp_ia[k] == temp_ia[j]) {
-              temp += temp_ar[k];
-              temp_ar[k] = 0;
-            }
-          }
-          ja.push_back(temp_ja[j]);
-          ia.push_back(temp_ia[j]);
-          ar.push_back(temp);
-          //std::cout << "Put " << temp_ia[j] << ", " << temp_ja[j] << ", " << temp << ".\n";
-        }
       }
     }
     

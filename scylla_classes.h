@@ -175,6 +175,14 @@ struct CentralPolygon {
   std::vector<int> edges;
   std::vector<bool> interface;
   int chi_times_2(Chain &C, CentralEdgeList &CEL, InterfaceEdgeList &IEL);
+  void compute_ia_etc_for_edges(Chain &C,
+                                InterfaceEdgeList &IEL,
+                                CentralEdgeList &CEL,
+                                std::vector<EdgePair> &edge_pairs,
+                                std::vector<int> &central_edge_pairs,
+                                std::vector<int> &temp_ia,
+                                std::vector<int> &temp_ja,
+                                std::vector<ing> &temp_ar);
 };
 
 std::ostream &operator<<(std::ostream &os, CentralPolygon &CP);
@@ -239,6 +247,10 @@ std::ostream &operator<<(std::ostream &os, GroupPolygon &GP);
 struct GroupRectangle {
   int first;
   int last;
+  void compute_ia_etc_for_edges(int &offset, 
+                                std::vector<int> &temp_ia, 
+                                std::vector<int> &temp_ja, 
+                                std::vector<int> &temp_ar);
 };
  
 std::ostream &operator<<(std::ostream &os, GroupRectangle &GR);
