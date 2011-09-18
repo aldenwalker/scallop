@@ -180,18 +180,29 @@ struct CentralPolygon {
 std::ostream &operator<<(std::ostream &os, CentralPolygon &CP);
 
 /****************************************************************************
- * a group multiarc
+ * a group outside edge (these pair with the interface edges
  * **************************************************************************/
-struct Multiarc {
-  std::vector<int> letters;
+struct GroupTooth {
+  int position;
+  int first;
+  int last;
 };
 
 /****************************************************************************
- * a group polygon
+ * These are really just special group polygons designated to face the teeth
+ * They join the group edge (first, last) (it's not reversed)
+ * **************************************************************************/
+struct GroupMouth {
+  int first;
+  int last;
+};
+
+/****************************************************************************
+ * a group polygon -- these are really just squares with all incident 
+ * edges as group edges -- when computing chi, we must ignore the joined edges
  * **************************************************************************/
 struct GroupPolygon {
   int group;
-  std::vector<Multiarc> sides;
   std::vector<int> edges;
   int chi_times_2(Chain &C, GroupEdgeList &GEL, InterfaceEdgeList &IEL);
   void get_ia_etc_for_edges(Chain &C, 

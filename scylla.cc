@@ -27,53 +27,28 @@
 /*****************************************************************************
  * Make the list of group polygons and rectangles. 
  * ***************************************************************************/
-void compute_group_polygons_and_rectangles(Chain &C, 
-                                           InterfaceEdgeList &IEL,
-                                           std::vector<GroupEdgeList> &GEL,
-                                           std::vector<std::vector<GroupPolygon> > &GP,
-                                           std::vector<std::vector<GroupRectangle> > &GR) {
+void compute_group_teeth_mouths_polygons_and_rectangles(Chain &C, 
+                                                         InterfaceEdgeList &IEL,
+                                                         std::vector<GroupEdgeList> &GEL,
+                                                         std::vector<std::vector<GroupTooth> > &GT,
+                                                         std::vector<std::vector<GroupMouth> > &GM,
+                                                         std::vector<std::vector<GroupPolygon> > &GP,
+                                                         std::vector<std::vector<GroupRectangle> > &GR) {
   int i,j,k,m,n;
   int num_groups = (C.G)->num_groups();
-  Multiset letter_selection;
-  std::vector<Multiarc> regular_multiarcs;
-  std::vector<Multiarc> inverse_multiarcs;
   Multiarc temp_marc;
   GroupRectangle temp_group_rect;
   GroupPolygon temp_group_poly;
+  GroupTooth temp_group_tooth;
+  GroupMouth temp_group_mouth;
   
   GP.resize(num_groups);
   GR.resize(num_groups);
+  GT.resize(num_groups);
+  GM.resize(num_groups);
   
   for (i=0; i<num_groups; i++) {
     
-    regular_multiarcs.resize(0);
-    inverse_multiarcs.resize(0);
-    
-    //get the regulars (non-inverse)
-    if (C.regular_letters[i].size() > 0 && (C.G)->orders[i] > 0) {    
-      temp_marc.letters.resize((C.G)->orders[i]-1);
-      letter_selection = Multiset((C.G)->orders[i]-1, 0, C.regular_letters[i].size());
-      do {
-        for (j=0; j<(C.G)->orders[i]-1; j++) {
-          temp_marc.letters[j] = C.regular_letters[i][letter_selection[j]];
-        }
-        regular_multiarcs.push_back(temp_marc);
-      } while (1 != letter_selection.next());
-    }
-    
-    //get the inverse multiarcs 
-    if (C.inverse_letters[i].size() > 0 && (C.G)->orders[i] > 0) {
-      temp_marc.letters.resize((C.G)->orders[i]-1);
-      letter_selection = Multiset((C.G)->orders[i]-1, 0, C.inverse_letters[i].size());
-      do {
-        for (j=0; j<(C.G)->orders[i]-1; j++) {
-          temp_marc.letters[j] = C.inverse_letters[i][letter_selection[j]];
-        }
-        inverse_multiarcs.push_back(temp_marc);
-      } while (1 != letter_selection.next());    
-    }
-    
-    //now assemble the group rectangles and group polygons
     //first, let's do the rectangles
     GR[i].resize(0);
     for (j=0; j<(int)C.regular_letters[i].size(); j++) {
@@ -86,57 +61,50 @@ void compute_group_polygons_and_rectangles(Chain &C,
       }
     }
 
-    //now we do the group polygons 
-    //these either have one or two multiarc sides.  first, the ones with a 
-    //single multiarc side
-    GP[i].resize(0);
-    temp_group_poly.group = i;
-    temp_group_poly.sides.resize(1);
-    temp_group_poly.edges.resize(1);
-    for (j=0; j<(int)regular_multiarcs.size(); j++) {
-      temp_group_poly.sides[0] = regular_multiarcs[j];
-      for (k=0; k<(int)GEL[i].regular_edges.size(); k++) {
-        temp_group_poly.edges[0] = GEL[i].regular_edges[k];
-        GP[i].push_back(temp_group_poly);
+    //now we make the group teeth
+    GT[i].resize(0);
+    for (j=0; j<(int)C.regular_letters[i].size(); j++) {
+      temp_group_tooth.first = C.regular_letters[i][j];
+      for (k=0; k<(int)C.regular_letters[i].size(); k++) {
+        temp_group_tooth.last = C.regular_letters[i][k];
+        for (m=0; m<(int)(C.G)->orders[i]; m++) {
+          temp_group_tooth.position = m;
+          GT[i].push_back(temp_group_tooth);
+        }
       }
     }
-    for (j=0; j<(int)inverse_multiarcs.size(); j++) {
-      temp_group_poly.sides[0] = inverse_multiarcs[j];
-      for (k=0; k<(int)GEL[i].inverse_edges.size(); k++) {
-        temp_group_poly.edges[0] = GEL[i].inverse_edges[k];
-        GP[i].push_back(temp_group_poly);
+    for (j=0; j<(int)C.inverse_letters[i].size(); j++) {
+      temp_group_tooth.first = C.inverse_letters[i][j];
+      for (k=0; k<(int)C.inverse_letters[i].size(); k++) {
+        temp_group_tooth.last = C.inverse_letters[i][k];
+        for (m=0; m<(int)(C.G)->orders[i]; m++) {
+          temp_group_tooth.position = m;
+          GT[i].push_back(temp_group_tooth);
+        }
       }
     }
     
-    //now the ones with two multiarc sides
-    temp_group_poly.sides.resize(2);
-    temp_group_poly.edges.resize(2);
-    for (j=0; j<(int)regular_multiarcs.size(); j++) { //first multiarc
-      temp_group_poly.sides[0] = regular_multiarcs[j];
-      for (k=0; k<(int)regular_multiarcs.size(); k++) { //second multiarc
-        temp_group_poly.sides[1] = regular_multiarcs[k];
-        for (m=0; m<(int)GEL[i].regular_edges.size(); m++) { //first side (between multiarc 0 and 1)
-          temp_group_poly.edges[0] = GEL[i].regular_edges[m];
-          for (n=0; n<(int)GEL[i].regular_edges.size(); n++) {
-            temp_group_poly.edges[1] = GEL[i].regular_edges[n];
-            GP[i].push_back(temp_group_poly);
-          }
-        }
+    //now the group mouths -- just any pair of letters
+    GM[i].resize(0);
+    for (j=0; j<(int)C.regular_letters[i].size(); j++) {
+      temp_group_mouth.first = C.regular_letters[i][j];
+      for (k=0; k<(int)C.regular_letters[i].size(); k++ {
+        temp_group_mouth.last = C.regular_letters[i][k];
+        GM[i].push_back(temp_group_mouth);
+      }
+    }    
+    for (j=0; j<(int)C.inverse_letters[i].size(); j++) {
+      temp_group_mouth.first = C.inverse_letters[i][j];
+      for (k=0; k<(int)C.inverse_letters[i].size(); k++ {
+        temp_group_mouth.last = C.inverse_letters[i][k];
+        GM[i].push_back(temp_group_mouth);
       }
     }
-    for (j=0; j<(int)inverse_multiarcs.size(); j++) { //first multiarc
-      temp_group_poly.sides[0] = inverse_multiarcs[j];
-      for (k=0; k<(int)inverse_multiarcs.size(); k++) { //second multiarc
-        temp_group_poly.sides[1] = inverse_multiarcs[k];
-        for (m=0; m<(int)GEL[i].inverse_edges.size(); m++) { //first side (between multiarc 0 and 1)
-          temp_group_poly.edges[0] = GEL[i].inverse_edges[m];
-          for (n=0; n<(int)GEL[i].inverse_edges.size(); n++) {
-            temp_group_poly.edges[1] = GEL[i].inverse_edges[n];
-            GP[i].push_back(temp_group_poly);
-          }
-        }
-      }
-    }
+    
+    //now the group internal polygons -- note there can be just any four letters
+    //on the corners.  
+    
+    
     
   }  
   
