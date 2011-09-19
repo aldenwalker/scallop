@@ -564,10 +564,10 @@ void CentralPolygon::compute_ia_etc_for_edges(int col,
                                               std::vector<int> &central_edge_pairs,
                                               std::vector<int> &temp_ia,
                                               std::vector<int> &temp_ja,
-                                              std::vector<ing> &temp_ar) {
-  int i,j,row,val;
+                                              std::vector<int> &temp_ar) {
+  int j,row,val;
   for (j=0; j<(int)edges.size(); j++) {
-    if (CP[i].interface[j]) {
+    if (interface[j]) {
       if (C.next_letter( IEL[edges[j]].last ) == IEL[edges[j]].first ) {         //don't restrict edges like this
         continue;
       }
@@ -612,7 +612,15 @@ std::ostream &operator<<(std::ostream &os, CentralPolygon &CP) {
  group tooth
  ****************************************************************************/
 int GroupTooth::chi_times_2(Chain &C) {
-  if (C.next_letter(first) == last) {
+  int temp_letter_1, temp_letter_2;
+  if (inverse) {
+    temp_letter_1 = C.inverse_letters[group_index][first];
+    temp_letter_2 = C.inverse_letters[group_index][last];
+  } else {
+    temp_letter_1 = C.regular_letters[group_index][first];
+    temp_letter_2 = C.regular_letters[group_index][last];
+  }
+  if (C.next_letter(temp_letter_1) == temp_letter_2) {
     return 0;
   } else {
     return -1;
@@ -622,29 +630,41 @@ int GroupTooth::chi_times_2(Chain &C) {
 void GroupTooth::compute_ia_etc_for_edges(int offset, 
                                           Chain &C,
                                           InterfaceEdgeList &IEL, 
-                                          std::vector<int> rows_for_letters, 
+                                          std::vector<std::vector<std::vector<int> > > &rows_for_letters_in_mouths, 
                                           std::vector<int> &ia, 
                                           std::vector<int> &ja, 
-                                          std::vector<int> &ar) {
+                                          std::vector<double> &ar) {
   int row;
   int col = offset;
   
-  if (C.next_letter(first) != last) { 
-    row = IEL.get_index_from_group_side(first, last);
+  int temp_letter_1, temp_letter_2;
+  if (inverse) {
+    temp_letter_1 = C.inverse_letters[group_index][first];
+    temp_letter_2 = C.inverse_letters[group_index][last];
+  } else {
+    temp_letter_1 = C.regular_letters[group_index][first];
+    temp_letter_2 = C.regular_letters[group_index][last];
+  }
+  
+  if (C.next_letter(temp_letter_1) != temp_letter_2) { 
+    row = IEL.get_index_from_group_side(temp_letter_1, temp_letter_2);
     ia.push_back(row+1);
     ja.push_back(col+1);
     ar.push_back(-1);
+    //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
   }
   
-  row = rows_for_letters[first] + position;
+  row = rows_for_letters_in_mouths[group_index][group_mouth_index][first] + position;
   ia.push_back(row+1);
   ja.push_back(col+1);
   ar.push_back(1);
+  //std::cout << "Pushed " << row+1 << " " << col+1 << " " << 1 << "\n";
   
-  row = rows_for_letters[last] + position+1;
+  row = rows_for_letters_in_mouths[group_index][group_mouth_index][last] + position + 1;
   ia.push_back(row+1);
   ja.push_back(col+1);
   ar.push_back(-1);
+  //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
 }
   
 
@@ -653,16 +673,22 @@ void GroupTooth::compute_ia_etc_for_words(int offset,
                                           Chain &C,
                                           std::vector<int> &ia, 
                                           std::vector<int> &ja, 
-                                          std::vector<int> &ar) {
+                                          std::vector<double> &ar) {
   int col = offset;
-  int row = row_offset + C.chain_letters[first].word;
+  int row;
+  if (inverse) {
+    row = row_offset + C.chain_letters[C.inverse_letters[group_index][first]].word;
+  } else {
+    row = row_offset + C.chain_letters[C.regular_letters[group_index][first]].word;
+  }
   ia.push_back(row+1);
   ja.push_back(col+1);
   ar.push_back(1);
+  //std::cout << "Pushed " << row+1 << " " << col+1 << " " << 1 << "\n";
 }
 
 std::ostream &operator<<(std::ostream &os, GroupTooth &GT) {
-  os << "GT: " << GT.first << " " << GT.last;
+  os << "GT(position " << GT.position << ", mouth " << GT.group_mouth_index << "): " << GT.first << " " << GT.last;
   return os;
 }
 
@@ -678,28 +704,31 @@ int GroupMouth::chi_times_2(Chain &C) {
 }
 
 void GroupMouth::compute_ia_etc_for_edges(int offset,
-                                          int group_index,
                                           Chain &C,
                                           GroupEdgeList &GEL,
-                                          std::vector<int> &rows_for_letters,
+                                          int my_index,
+                                          std::vector<std::vector<std::vector<int> > > &rows_for_letters_in_mouths, 
                                           std::vector<EdgePair> &edge_pairs,
                                           std::vector<int> &group_edge_pairs,
                                           std::vector<int> &ia,
                                           std::vector<int> &ja,
-                                          std::vector<int> &ar) {
-  int i;
+                                          std::vector<double> &ar) {
   int col = offset;
-  int row = rows_for_letters[first] + 0;
+  int row;
   int edge_num;
   int val;
+  row = rows_for_letters_in_mouths[group_index][my_index][first_letter_index] + 0;
   ia.push_back(row+1);
   ja.push_back(col+1);
-  ar.push_back(-1);
+  ar.push_back(-1);  
+  //std::cout << "GM " << my_index << "\n";
+  //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
   
-  row = rows_for_letters[last] + (C.G)->orders[group_index];
+  row = rows_for_letters_in_mouths[group_index][my_index][last_letter_index] + (C.G)->orders[group_index];
   ia.push_back(row+1);
   ja.push_back(col+1);
-  ar.push_back(1);
+  ar.push_back(1);  
+  //std::cout << "Pushed " << row+1 << " " << col+1 << " " << 1 << "\n";
   
   if (last != first) {
     edge_num = GEL.get_index(last, first);
@@ -712,11 +741,13 @@ void GroupMouth::compute_ia_etc_for_edges(int offset,
     ia.push_back(row+1);
     ja.push_back(col+1);
     ar.push_back(val);
+    //std::cout << "Pushed " << row+1 << " " << col+1 << " " << val << "\n";
   }
 }
 
 std::ostream &operator<<(std::ostream &os, GroupMouth &GM) {
-  os << "GM: " << GM.first << " " << GM.last;
+  os << "GM: " << GM.first << "(" << GM.first_letter_index << ") " 
+               << GM.last << "(" << GM.last_letter_index << ")";
   return os;
 }
 
@@ -726,7 +757,7 @@ std::ostream &operator<<(std::ostream &os, GroupMouth &GM) {
  group polygon/square
  ****************************************************************************/
 int GroupPolygon::chi_times_2(GroupEdgeList &GEL) {
-  int i,j;
+  int i;
   int temp_letter_1, temp_letter_2;
   int sum=0;
   //std::cout << "computing chi for group polygon " << *this << " in group " << group << "\n";
@@ -744,16 +775,16 @@ int GroupPolygon::chi_times_2(GroupEdgeList &GEL) {
 
 
 
-void GroupPolygon::get_ia_etc_for_edges(int offset, 
-                                       Chain &C, 
-                                       InterfaceEdgeList &IEL, 
-                                       GroupEdgeList &GEL, 
-                                       std::vector<EdgePair> &edge_pairs,
-                                       std::vector<int> &group_edge_pairs, 
-                                       std::vector<int> &temp_ia, 
-                                       std::vector<int> &temp_ja, 
-                                       std::vector<int> &temp_ar); {
-  int i,j;
+void GroupPolygon::compute_ia_etc_for_edges(int offset, 
+                                             Chain &C, 
+                                             InterfaceEdgeList &IEL, 
+                                             GroupEdgeList &GEL, 
+                                             std::vector<EdgePair> &edge_pairs,
+                                             std::vector<int> &group_edge_pairs, 
+                                             std::vector<int> &temp_ia, 
+                                             std::vector<int> &temp_ja, 
+                                             std::vector<int> &temp_ar) {
+  int i;
   int temp_letter_1, temp_letter_2;
   int temp_index;
   int row;
@@ -807,14 +838,10 @@ void GroupPolygon::get_ia_etc_for_words(Chain &C,
  */
 
 std::ostream &operator<<(std::ostream &os, GroupPolygon &GP) {
-  int k,l;
-  os << "GP: ";
-  for (k=0; k<(int)GP.sides.size(); k++) {
-    os << "(";
-    for (l=0; l<(int)GP.sides[k].letters.size(); l++) {
-      os << GP.sides[k].letters[l] << " ";
-    }
-    os << ") " << GP.edges[k] << " ";
+  int k;
+  os << "GP(" << GP.group << "): ";
+  for (k=0; k<(int)GP.edges.size(); k++) {
+    os << GP.edges[k] << " ";
   }
   return os;
 }
@@ -824,21 +851,23 @@ std::ostream &operator<<(std::ostream &os, GroupPolygon &GP) {
 /****************************************************************************
  group rectangle
  ****************************************************************************/
-void GroupRectangle::compute_ia_etc_for_edges(int &offset, 
+void GroupRectangle::compute_ia_etc_for_edges(int offset, 
                                               std::vector<int> &ia, 
                                               std::vector<int> &ja, 
-                                              std::vector<int> &ar) {
+                                              std::vector<double> &ar) {
   int row,col;
   col = offset;
   row = first;
   ia.push_back(row+1);
   ja.push_back(col+1);
   ar.push_back(-1);
+  //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
 
   row = last;
   ia.push_back(row+1);
   ja.push_back(col+1);
   ar.push_back(-1);
+  //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
 }
 
 void GroupRectangle::compute_ia_etc_for_words(int offset, 
@@ -847,7 +876,7 @@ void GroupRectangle::compute_ia_etc_for_words(int offset,
                                               InterfaceEdgeList &IEL,
                                               std::vector<int> &ia,
                                               std::vector<int> &ja,
-                                              std::vector<int> &ar);
+                                              std::vector<double> &ar) {
   int col = offset;
   int word_1 = C.chain_letters[IEL.edges[first].first].word;
   int word_2 = C.chain_letters[IEL.edges[last].first].word;
@@ -855,16 +884,16 @@ void GroupRectangle::compute_ia_etc_for_words(int offset,
     ia.push_back(word_1 + row_offset + 1);
     ja.push_back(col + 1);
     ar.push_back(2);
-    //std::cout << "Put " << word_1 + edge_pairs.size() + 1 << ", " << offset+1 << ", " << 2 << ".\n";
+    //std::cout << "Put " << word_1 + row_offset + 1 << ", " << col+1 << ", " << 2 << ".\n";
   } else {
     ia.push_back(word_1 + row_offset + 1);
     ja.push_back(col + 1);
     ar.push_back(1);
-    //std::cout << "Put " << word_1 + edge_pairs.size() + 1 << ", " << offset+1 << ", " << 1 << ".\n";
+    //std::cout << "Put " << word_1 + row_offset + 1 << ", " << col+1 << ", " << 1 << ".\n";
     ia.push_back(word_2 + row_offset + 1);
     ja.push_back(col + 1);
     ar.push_back(1);
-    //std::cout << "Put " << word_2 + edge_pairs.size() + 1 << ", " << offset+1 << ", " << 1 << ".\n";
+    //std::cout << "Put " << word_2 + row_offset + 1 << ", " << col+1 << ", " << 1 << ".\n";
   }
 }
 
@@ -907,16 +936,22 @@ int Multiset::next(void) {
   int i = len-1;
   int j;
   i=len-1;
+  //std::cout << "next called on:";
+  //for (j=0; j<L.size(); j++) {
+  //  std::cout << L[j] << " ";
+  //}
   while (i>=0 && L[i] == max_plus_one-1) {
     i--;
   }
   if (i==-1) {
+    //std::cout << "returning 1\n";
     return 1;
   }
   L[i]++;
   for (j=i+1; j<len; j++) {
     L[j] = min;
   }
+  //std::cout << "returning 0\n";
   return 0;
 }
 

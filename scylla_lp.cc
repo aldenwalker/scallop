@@ -21,13 +21,13 @@ extern "C" {
 /***************************************************************************
  a helper function to collect duplicates
  ***************************************************************************/
-void collect_dups_and_push(std::vector<int> temp_ia,
-                          std::vector<int> temp_ja,
-                          std::vector<int> temp_ar,
-                          std::vector<int> ia,
-                          std::vector<int> ja,
-                          std::vector<int> ar) {
-  int j,k;
+void collect_dups_and_push(std::vector<int> &temp_ia,
+                          std::vector<int> &temp_ja,
+                          std::vector<int> &temp_ar,
+                          std::vector<int> &ia,
+                          std::vector<int> &ja,
+                          std::vector<double> &ar) {
+  int j, k, temp;
   for (j=0; j<(int)temp_ia.size(); j++) {
     if (temp_ar[j] == 0) {
       continue;
@@ -75,16 +75,16 @@ void scylla_lp(Chain& C,
   std::vector<int> ia(0);
 	std::vector<int> ja(0);
 	std::vector<double> ar(0); 
-  int i,j,k,m,row, col, val;
-  int temp_letter_1, temp_letter_2, word_1, word_2, temp;
-  int num_cols, offset, num rows;
+  int i,j,k,m;
+  int temp_letter_1, temp_letter_2;
+  int num_cols, offset, num_rows;
   EdgePair temp_pair;
 
   //this is the master list of all edge pairs
   std::vector<EdgePair> edge_pairs(IEL.edges.size());
   std::vector<int> central_edge_pairs(CEL.edges.size());
   std::vector<std::vector<int> > group_edge_pairs((C.G)->num_groups());
-  std::vector<int> rows_for_letters(0);
+  std::vector<std::vector<std::vector<int> > > rows_for_letters_in_mouths;
   
   //add all the interface edges; note these will have the SAME INDICES, THIS IS IMPORTANT
   for (i=0; i<(int)IEL.edges.size(); i++) {
@@ -173,7 +173,7 @@ void scylla_lp(Chain& C,
 	  glp_init_smcp(&parm);
 	  parm.presolve=GLP_OFF;
 	  
-	  parm.msg_lev=GLP_MSG_ALL;
+	  parm.msg_lev=GLP_MSG_OFF;
 	  glp_set_prob_name(lp, "scl");
 	  glp_set_obj_dir(lp,GLP_MIN);
 	
@@ -181,20 +181,34 @@ void scylla_lp(Chain& C,
     
     //ROWS
     //there is a row for (1) each edge pair (2) each word and 
-    //(3) every letter in every position (0,order[i]-1)
+    //(3) every letter in every position (0,order[i]-1) for every mouth
     //first we have to find out how many rows there are
-    num_rows = edge_pairs.size() + words.size();
-    rows_for_letters.resize(C.num_letters());
-    for (i=0; i<C.num_letters(); i++) {
-      rows_for_letters[i] = num_rows;
-      num_rows += (C.G)->orders[C.chain_letters[i].group]+1;
+    num_rows = edge_pairs.size() + C.words.size();
+    rows_for_letters_in_mouths.resize((C.G)->num_groups());
+    for (i=0; i<(C.G)->num_groups(); i++) {
+      rows_for_letters_in_mouths[i].resize(GM[i].size());
+      for (j=0; j<(int)GM[i].size(); j++) {
+        if (GM[i][j].inverse) {
+          rows_for_letters_in_mouths[i][j].resize(C.inverse_letters[i].size());
+          for (k=0; k<(int)C.inverse_letters[i].size(); k++) {
+            rows_for_letters_in_mouths[i][j][k] = num_rows;
+            num_rows += (C.G)->orders[i]+1;
+          }
+        } else {
+          rows_for_letters_in_mouths[i][j].resize(C.regular_letters[i].size());
+          for (k=0; k<(int)C.regular_letters[i].size(); k++) {
+            rows_for_letters_in_mouths[i][j][k] = num_rows;
+            num_rows += (C.G)->orders[i]+1;
+          }
+        }
+      }
     }
     
 	  glp_add_rows(lp, num_rows );
 	  
     for(i=0; i<(int)edge_pairs.size(); i++){
 		  glp_set_row_bnds(lp, i+1, GLP_FX, 0.0, 0.0);
-      //std::cout << "Set row " << i << " bounded to " << 0 << "\n";
+      //std::cout << "Set row " << i+1 << " bounded to " << 0 << "\n";
 	  }
 	  for(i=0; i<(int)C.words.size(); i++){
 		  glp_set_row_bnds(lp, 
@@ -204,9 +218,9 @@ void scylla_lp(Chain& C,
                        C.words[i].size()*C.weights[i]);	
       //std::cout << "Set row " << edge_pairs.size()+i+1 << " bounded to " << C.words[i].size()*C.weights[i] << "\n";
 	  }
-    for(i=edge_pairs.size() + words.size(); i<num_rows; i++){
+    for(i=edge_pairs.size() + C.words.size(); i<num_rows; i++){
 		  glp_set_row_bnds(lp, i+1, GLP_FX, 0.0, 0.0);
-      //std::cout << "Set row " << i << " bounded to " << 0 << "\n";
+      //std::cout << "Set row " << i+1 << " bounded to " << 0 << "\n";
 	  }    
     
     
@@ -229,22 +243,25 @@ void scylla_lp(Chain& C,
       for (j=0; j<(int)GT[i].size(); j++) {
         glp_set_col_bnds(lp, offset+1, GLP_LO, 0.0, 0.0);
         glp_set_obj_coef(lp, offset+1, -GT[i][j].chi_times_2(C));
+        //std::cout << "GT Set objective " << offset+1 << " to " << -GT[i][j].chi_times_2(C) << "\n";
         offset++;
       }
       for (j=0; j<(int)GM[i].size(); j++) {
         glp_set_col_bnds(lp, offset+1, GLP_LO, 0.0, 0.0);
         glp_set_obj_coef(lp, offset+1, -GM[i][j].chi_times_2(C));
+        //std::cout << "GM Set objective " << offset+1 << " to " << -GM[i][j].chi_times_2(C) << "\n";
         offset++;
       }
       for (j=0; j<(int)GP[i].size(); j++) {
         glp_set_col_bnds(lp, offset+1, GLP_LO, 0.0, 0.0);
-        glp_set_obj_coef(lp, offset+1, -GP[i][j].chi_times_2(C, GEL[i]));
-        //std::cout << "Set objective " << offset+1 << " to " << -GP[i][j].chi_times_2(C, GEL[i], IEL) << "\n";
+        glp_set_obj_coef(lp, offset+1, -GP[i][j].chi_times_2(GEL[i]));
+        //std::cout << "GP Set objective " << offset+1 << " to " << -GP[i][j].chi_times_2(GEL[i]) << "\n";
         offset++;
       }  
       for (j=0; j<(int)GR[i].size(); j++) {
         glp_set_col_bnds(lp, offset+1, GLP_LO, 0.0, 0.0);
         glp_set_obj_coef(lp, offset+1, 0);
+        //std::cout << "GR Set objective " << offset+1 << " to " << 0 << "\n";
         offset++;
       }    
     }
@@ -281,15 +298,15 @@ void scylla_lp(Chain& C,
     offset = CP.size();
     for (i=0; i<(C.G)->num_groups(); i++) {
       for (m=0; m<(int)GT[i].size(); m++) {
-        GT[i][m].compute_ia_etc_for_edges(offset, C, IEL, rows_for_letters, ia, ja, ar);
+        GT[i][m].compute_ia_etc_for_edges(offset, C, IEL, rows_for_letters_in_mouths, ia, ja, ar);
         offset++;
       }
       for (m=0; m<(int)GM[i].size(); m++) {
         GM[i][m].compute_ia_etc_for_edges(offset, 
-                                          i,
                                           C,
                                           GEL[i], 
-                                          rows_for_letters,
+                                          m,
+                                          rows_for_letters_in_mouths,
                                           edge_pairs, 
                                           group_edge_pairs[i],
                                           ia,
@@ -316,7 +333,6 @@ void scylla_lp(Chain& C,
       for (m=0; m<(int)GR[i].size(); m++) {
         GR[i][m].compute_ia_etc_for_edges(offset, ia, ja, ar);
         offset++;
-        //std::cout << "Put " << row+1 << ", " << col+1 << ", " << -1 << ".\n";
       }
     }
     
@@ -347,7 +363,7 @@ void scylla_lp(Chain& C,
     }
     
     if (VERBOSE) {
-      std::cout << "Loaded word constrains\n";
+      std::cout << "Loaded word constraints\n";
     }
     
 	  if (VERBOSE) {

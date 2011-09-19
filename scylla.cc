@@ -34,13 +34,13 @@ void compute_group_teeth_mouths_polygons_and_rectangles(Chain &C,
                                                          std::vector<std::vector<GroupMouth> > &GM,
                                                          std::vector<std::vector<GroupPolygon> > &GP,
                                                          std::vector<std::vector<GroupRectangle> > &GR) {
-  int i,j,k,m,n;
+  int i,j,k,l,m,n;
   int num_groups = (C.G)->num_groups();
-  Multiarc temp_marc;
   GroupRectangle temp_group_rect;
   GroupPolygon temp_group_poly;
   GroupTooth temp_group_tooth;
   GroupMouth temp_group_mouth;
+  Multiset letter_selection;
   int temp_letter_1, temp_letter_2;
   
   GP.resize(num_groups);
@@ -61,77 +61,138 @@ void compute_group_teeth_mouths_polygons_and_rectangles(Chain &C,
         GR[i].push_back(temp_group_rect);
       }
     }
+  
+    if ((C.G)->orders[i] == 0) {
+      GT[i].resize(0);
+      GM[i].resize(0);
+      GP[i].resize(0);
+      continue;
+    }
 
-    //now we make the group teeth
-    GT[i].resize(0);
-    for (j=0; j<(int)C.regular_letters[i].size(); j++) {
-      temp_group_tooth.first = C.regular_letters[i][j];
-      for (k=0; k<(int)C.regular_letters[i].size(); k++) {
-        temp_group_tooth.last = C.regular_letters[i][k];
-        for (m=0; m<(int)(C.G)->orders[i]; m++) {
-          temp_group_tooth.position = m;
-          GT[i].push_back(temp_group_tooth);
-        }
-      }
-    }
-    for (j=0; j<(int)C.inverse_letters[i].size(); j++) {
-      temp_group_tooth.first = C.inverse_letters[i][j];
-      for (k=0; k<(int)C.inverse_letters[i].size(); k++) {
-        temp_group_tooth.last = C.inverse_letters[i][k];
-        for (m=0; m<(int)(C.G)->orders[i]; m++) {
-          temp_group_tooth.position = m;
-          GT[i].push_back(temp_group_tooth);
-        }
-      }
-    }
-    
-    //now the group mouths -- just any pair of letters
+    //now we make the group teeth and mouths
+    GT[i].resize(0);   
     GM[i].resize(0);
+    temp_group_mouth.inverse = false;
+    temp_group_mouth.group_index = i;
+    temp_group_tooth.inverse = false;
+    temp_group_tooth.group_index = i;
     for (j=0; j<(int)C.regular_letters[i].size(); j++) {
       temp_group_mouth.first = C.regular_letters[i][j];
+      temp_group_mouth.first_letter_index = j;
       for (k=0; k<(int)C.regular_letters[i].size(); k++) {
         temp_group_mouth.last = C.regular_letters[i][k];
+        temp_group_mouth.last_letter_index = k;
         GM[i].push_back(temp_group_mouth);
-      }
-    }    
-    for (j=0; j<(int)C.inverse_letters[i].size(); j++) {
-      temp_group_mouth.first = C.inverse_letters[i][j];
-      for (k=0; k<(int)C.inverse_letters[i].size(); k++) {
-        temp_group_mouth.last = C.inverse_letters[i][k];
-        GM[i].push_back(temp_group_mouth);
+        
+        //teeth for the 0th position
+        temp_group_tooth.first = j;
+        temp_group_tooth.position = 0;
+        temp_group_tooth.group_mouth_index = GM[i].size()-1;
+        for (m=0; m<(int)C.regular_letters[i].size(); m++) {
+          temp_group_tooth.last = m;
+          GT[i].push_back(temp_group_tooth);
+        }
+        //teeth for the orderth position
+        temp_group_tooth.last = k;
+        temp_group_tooth.position = (C.G)->orders[i]-1;
+        temp_group_tooth.group_mouth_index = GM[i].size()-1;
+        for (m=0; m<(int)C.regular_letters[i].size(); m++) {
+          temp_group_tooth.first = m;
+          GT[i].push_back(temp_group_tooth);
+        }     
+        //teeth for the middle positions
+        for (l=1; l<(int)(C.G)->orders[i]-1; l++) {
+          temp_group_tooth.position = l;
+          temp_group_tooth.group_mouth_index = GM[i].size()-1;
+          for (m=0; m<(int)C.regular_letters[i].size(); m++) {
+            temp_group_tooth.first = m;
+            for (n=0; n<(int)C.regular_letters[i].size(); n++) {
+              temp_group_tooth.last = n;
+              GT[i].push_back(temp_group_tooth);
+            }
+          }
+        }
       }
     }
+    temp_group_mouth.inverse = true;
+    temp_group_tooth.inverse = true;
+    for (j=0; j<(int)C.inverse_letters[i].size(); j++) {
+      temp_group_mouth.first = C.inverse_letters[i][j];
+      temp_group_mouth.last_letter_index = j;
+      for (k=0; k<(int)C.inverse_letters[i].size(); k++) {
+        temp_group_mouth.last = C.inverse_letters[i][k];
+        temp_group_mouth.last_letter_index = k;
+        GM[i].push_back(temp_group_mouth);
+        
+        //teeth for the 0th position
+        temp_group_tooth.first = j;
+        temp_group_tooth.position = 0;
+        temp_group_tooth.group_mouth_index = GM[i].size()-1;
+        for (m=0; m<(int)C.inverse_letters[i].size(); m++) {
+          temp_group_tooth.last = m;
+          GT[i].push_back(temp_group_tooth);
+        }
+        //teeth for the orderth position
+        temp_group_tooth.last = k;
+        temp_group_tooth.position = (C.G)->orders[i]-1;
+        temp_group_tooth.group_mouth_index = GM[i].size()-1;
+        for (m=0; m<(int)C.inverse_letters[i].size(); m++) {
+          temp_group_tooth.first = m;
+          GT[i].push_back(temp_group_tooth);
+        }     
+        //teeth for the middle positions
+        for (l=1; l<(int)(C.G)->orders[i]-1; l++) {
+          temp_group_tooth.position = l;
+          temp_group_tooth.group_mouth_index = GM[i].size()-1;
+          for (m=0; m<(int)C.inverse_letters[i].size(); m++) {
+            temp_group_tooth.first = m;
+            for (n=0; n<(int)C.inverse_letters[i].size(); n++) {
+              temp_group_tooth.last = n;
+              GT[i].push_back(temp_group_tooth);
+            }
+          }
+        }
+      }
+    }
+      
+    
+
+
     
     //now the group internal polygons -- note there can be just any four letters
     //on the corners, though we require there to be at least one nontrivial edge
     GP[i].resize(0);
     temp_group_poly.edges.resize(4);
     temp_group_poly.group = i;
-    Multiset letter_selection(4, 0, C.regular_letters[i].size());
-    do {
-      if (letter_selection[0] == letter_selection[1]) {
-        continue;                                       //this is a waste of time
-      }
-      for (j=0; j<4; j++) {
-        temp_letter_1 = C.regular_letters[i][letter_selection[j]];
-        temp_letter_2 = C.regular_letters[i][letter_selection[(j+1)%4]];
-        temp_group_poly.edges[j] = GEL[i].get_index(temp_letter_1, temp_letter_2);
-      }
-      GP[i].push_back(temp_group_poly);
-    } while (1 != letter_selection.next());
+    if (C.regular_letters[i].size() > 0) {
+      letter_selection = Multiset(4, 0, C.regular_letters[i].size());
+      do {
+        if (letter_selection[0] == letter_selection[1]) {
+          continue;                                       //this is a waste of time
+        }
+        for (j=0; j<4; j++) {
+          temp_letter_1 = C.regular_letters[i][letter_selection[j]];
+          temp_letter_2 = C.regular_letters[i][letter_selection[(j+1)%4]];
+          temp_group_poly.edges[j] = GEL[i].get_index(temp_letter_1, temp_letter_2);
+        }
+        GP[i].push_back(temp_group_poly);
+      } while (1 != letter_selection.next());
+    }
     
-    letter_selection = Multiset(4, 0, C.inverse_letters[i].size());
-    do {
-      if (letter_selection[0] == letter_selection[1]) {
-        continue;                                       //this is a waste of time
-      }
-      for (j=0; j<4; j++) {
-        temp_letter_1 = C.inverse_letters[i][letter_selection[j]];
-        temp_letter_2 = C.inverse_letters[i][letter_selection[(j+1)%4]];
-        temp_group_poly.edges[j] = GEL[i].get_index(temp_letter_1, temp_letter_2);
-      }
-      GP[i].push_back(temp_group_poly);
-    } while (1 != letter_selection.next());
+    if (C.inverse_letters[i].size() > 0) {
+      letter_selection = Multiset(4, 0, C.inverse_letters[i].size());
+      do {
+        if (letter_selection[0] == letter_selection[1]) {
+          continue;                                       //this is a waste of time
+        }
+        for (j=0; j<4; j++) {
+          temp_letter_1 = C.inverse_letters[i][letter_selection[j]];
+          temp_letter_2 = C.inverse_letters[i][letter_selection[(j+1)%4]];
+          temp_group_poly.edges[j] = GEL[i].get_index(temp_letter_1, temp_letter_2);
+        }
+        GP[i].push_back(temp_group_poly);
+      } while (1 != letter_selection.next());
+    }
     
   }  
   
@@ -334,34 +395,26 @@ void print_central_polys(std::vector<CentralPolygon> &CP, std::ostream &os, int 
 
 void print_group_teeth_mouths_polys_and_rectangles(std::vector<std::vector<GroupTooth> > &GT,
                                                   std::vector<std::vector<GroupMouth> > &GM,
-                                                  std::vector<std::vector<GroupRectangle> > &GR,
                                                   std::vector<std::vector<GroupPolygon> > &GP,
+                                                  std::vector<std::vector<GroupRectangle> > &GR,
                                                   std::ostream &os,
                                                   int level) {
-  int i,j,k,l;
+  int i,j;
   for (i=0; i<(int)GP.size(); i++) {
-    os << "Group " << i << " rectangles:\n";
-    if (level == 0) {
-      os << "(" << GR[i].size() << " rectangles hidden)\n";
-    } else {
-      for (j=0; j<(int)GR[i].size(); j++) {
-        os << j << ": " << GR[i][j].first << " " << GR[i][j].last << "\n";
-      }
-    }
     os << "Group " << i << " teeth:\n";
     if (level == 0) {
       os << "(" << GT[i].size() << " hidden)\n";
     } else {
       for (j=0; j<(int)GT[i].size(); j++) {
-        os << j << ": " << GT[i][j].first << " " << GT[i][j].last << "\n";
+        os << j << ": " << GT[i][j] << "\n";
       }
     }
     os << "Group " << i << " mouths:\n";
     if (level == 0) {
       os << "(" << GM[i].size() << " hidden)\n";
     } else {
-      for (j=0; j<(int)GT[i].size(); j++) {
-        os << j << ": " << GM[i].first << " " << GM[i].last << "\n";
+      for (j=0; j<(int)GM[i].size(); j++) {
+        os << j << ": " << GM[i][j] << "\n";
       }
     }
     os << "Group " << i << " polygons:\n";
@@ -369,11 +422,15 @@ void print_group_teeth_mouths_polys_and_rectangles(std::vector<std::vector<Group
       os << "(" << GP[i].size() << " polygons hidden)\n";
     } else {
       for (j=0; j<(int)GP[i].size(); j++) {
-        os << j << ": ";
-        for (k=0; k<(int)GP[i][j].edges.size(); k++) {
-          os << GP[i][j].edges[k] << " ";
-        }
-        os << "\n";
+        os << j << ": " << GP[i][j] << "\n";
+      }
+    }    
+    os << "Group " << i << " rectangles:\n";
+    if (level == 0) {
+      os << "(" << GR[i].size() << " rectangles hidden)\n";
+    } else {
+      for (j=0; j<(int)GR[i].size(); j++) {
+        os << j << ": " << GR[i][j] << "\n";
       }
     }
   }
@@ -386,6 +443,8 @@ void print_group_teeth_mouths_polys_and_rectangles(std::vector<std::vector<Group
 int main(int argc, char* argv[]) {
   int current_arg = 1;
   int i;
+  bool VERBOSE = false;
+  
   if (argc < 3 || std::string(argv[1]) == "-h") {
     std::cout << "usage: ./scyllop [-h] <gen string> <chain>\n";
     std::cout << "\twhere <gen string> is of the form <gen1><order1><gen2><order2>...\n";
@@ -406,43 +465,44 @@ int main(int argc, char* argv[]) {
   
   Chain C(&G, &argv[current_arg], argc-current_arg);                              //process the chain argument
 
-  std::cout << "Group: " << G << "\n";
-  std::cout << "Chain: " << C << "\n";
-  std::cout << "Letters:\n";
-  C.print_letters(std::cout);
-  
-  std::cout << "Group letters:\n";
-  C.print_group_letters(std::cout);
+  if (VERBOSE) {
+    std::cout << "Group: " << G << "\n";
+    std::cout << "Chain: " << C << "\n";
+    std::cout << "Letters:\n";
+    C.print_letters(std::cout);
+    std::cout << "Group letters:\n";
+    C.print_group_letters(std::cout);
+  }
   
   CentralEdgeList CEL(C);
-  CEL.print(std::cout);
+  if (VERBOSE) CEL.print(std::cout);
   
   InterfaceEdgeList IEL(C);
-  IEL.print(std::cout);
+  if (VERBOSE) IEL.print(std::cout);
   
   std::vector<GroupEdgeList> GEL((C.G)->num_groups());
   for (i=0; i<(C.G)->num_groups(); i++) {
     GEL[i] = GroupEdgeList(C, i);
-    GEL[i].print(std::cout);
+    if (VERBOSE) GEL[i].print(std::cout);
   }
   
   std::vector<CentralPolygon> CP;
   compute_central_polys(C, IEL, CEL, CP);
-  print_central_polys(CP, std::cout, 0);
+  if (VERBOSE) print_central_polys(CP, std::cout, 0);
   
   std::vector<std::vector<GroupTooth> > GT;
   std::vector<std::vector<GroupMouth> > GM;
   std::vector<std::vector<GroupRectangle> > GR;
   std::vector<std::vector<GroupPolygon> > GP;
   compute_group_teeth_mouths_polygons_and_rectangles(C, IEL, GEL, GT, GM, GP, GR);
-  print_group_teeth_mouths_polys_and_rectangles(GT, GM, GR, GP, std::cout, 0);
+  if (VERBOSE) print_group_teeth_mouths_polys_and_rectangles(GT, GM, GP, GR, std::cout, 0);
   
    
   rational scl;
   std::vector<rational> solution_vector(0);                           //run the LP
-  scyllop_lp(C, GEL, IEL, CEL, GT, GM, GP, GR, CP, &scl, &solution_vector, GLPK_DOUBLE, true); 
+  scylla_lp(C, GEL, IEL, CEL, CP, GT, GM, GP, GR, &scl, &solution_vector, GLPK_DOUBLE, VERBOSE); 
   
-  std::cout << "scl( " << C << ") = " << scl << " = " << scl.get_d() << "\n";    //output the answer
+  std::cout << "scl_{" << G << "}( " << C << ") = " << scl << " = " << scl.get_d() << "\n";    //output the answer
   
   return 0;
 }
