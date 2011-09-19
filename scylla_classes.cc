@@ -629,7 +629,7 @@ void GroupTooth::compute_ia_etc_for_edges(int offset,
   int row;
   int col = offset;
   
-  if (C.next_letter(first) == last) { 
+  if (C.next_letter(first) != last) { 
     row = IEL.get_index_from_group_side(first, last);
     ia.push_back(row+1);
     ja.push_back(col+1);
