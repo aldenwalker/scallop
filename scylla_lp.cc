@@ -187,7 +187,7 @@ void scylla_lp(Chain& C,
     rows_for_letters.resize(C.num_letters());
     for (i=0; i<C.num_letters(); i++) {
       rows_for_letters[i] = num_rows;
-      num_rows += (C.G)->orders[C.chain_letters[i].group];
+      num_rows += (C.G)->orders[C.chain_letters[i].group]+1;
     }
     
 	  glp_add_rows(lp, num_rows );
@@ -261,9 +261,8 @@ void scylla_lp(Chain& C,
       temp_ia.resize(0);
       temp_ja.resize(0);
       temp_ar.resize(0);
-      col = i;
-      
-      CP[i].compute_ia_etc_for_edges(C,
+      CP[i].compute_ia_etc_for_edges(i,
+                                     C,
                                      IEL, 
                                      CEL, 
                                      edge_pairs, 
@@ -282,12 +281,15 @@ void scylla_lp(Chain& C,
     offset = CP.size();
     for (i=0; i<(C.G)->num_groups(); i++) {
       for (m=0; m<(int)GT[i].size(); m++) {
-        GT[i][j].compute_ia_etc_for_edges(offset, IEL, rows_for_letters, ia, ja, ar);
+        GT[i][j].compute_ia_etc_for_edges(offset, C, IEL, rows_for_letters, ia, ja, ar);
         offset++;
       }
       for (m=0; m<(int)GM[i].size(); m++) {
         GM[i][j].compute_ia_etc_for_edges(offset, 
+                                          i,
+                                          C,
                                           GEL[i], 
+                                          rows_for_letters,
                                           edge_pairs, 
                                           group_edge_pairs[i],
                                           ia,
@@ -299,7 +301,15 @@ void scylla_lp(Chain& C,
         temp_ia.resize(0);
         temp_ja.resize(0);
         temp_ar.resize(0);
-        GP[i][m].compute_ia_etc_for_edges(offset, C, IEL, GEL[i], edge_pairs, group_edge_pairs[i], temp_ia, temp_ja, temp_ar);
+        GP[i][m].compute_ia_etc_for_edges(offset, 
+                                          C, 
+                                          IEL, 
+                                          GEL[i], 
+                                          edge_pairs, 
+                                          group_edge_pairs[i], 
+                                          temp_ia, 
+                                          temp_ja, 
+                                          temp_ar);
         collect_dups_and_push(temp_ia, temp_ja, temp_ar, ia, ja, ar);
         offset++;
       }
@@ -319,29 +329,19 @@ void scylla_lp(Chain& C,
     offset = CP.size();
     for (i=0; i<(C.G)->num_groups(); i++) {
       for (j=0; j<(int)GT[i].size(); j++) {
+        GT[i][j].compute_ia_etc_for_words(offset, edge_pairs.size(), C, ia, ja, ar);
+        offset++;
       }
       offset += GM[i].size();
       offset += GP[i].size();
       for (j=0; j<(int)GR[i].size(); j++) {
-        GR[i][j].compute_ia_etc_for_words(offset, C, IEL, edge_pairs);
-        col = offset;
-        word_1 = C.chain_letters[IEL.edges[GR[i][j].first].first].word;
-        word_2 = C.chain_letters[IEL.edges[GR[i][j].last].first].word;
-        if (word_1 == word_2) {
-          ia.push_back(word_1 + edge_pairs.size() + 1);
-          ja.push_back(offset + 1);
-          ar.push_back(2);
-          //std::cout << "Put " << word_1 + edge_pairs.size() + 1 << ", " << offset+1 << ", " << 2 << ".\n";
-        } else {
-          ia.push_back(word_1 + edge_pairs.size() + 1);
-          ja.push_back(offset + 1);
-          ar.push_back(1);
-          //std::cout << "Put " << word_1 + edge_pairs.size() + 1 << ", " << offset+1 << ", " << 1 << ".\n";
-          ia.push_back(word_2 + edge_pairs.size() + 1);
-          ja.push_back(offset + 1);
-          ar.push_back(1);
-          //std::cout << "Put " << word_2 + edge_pairs.size() + 1 << ", " << offset+1 << ", " << 1 << ".\n";
-        }
+        GR[i][j].compute_ia_etc_for_words(offset, 
+                                          edge_pairs.size(), 
+                                          C, 
+                                          IEL,
+                                          ia, 
+                                          ja, 
+                                          ar);
         offset++;
       }
     }

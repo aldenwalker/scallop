@@ -175,7 +175,8 @@ struct CentralPolygon {
   std::vector<int> edges;
   std::vector<bool> interface;
   int chi_times_2(Chain &C, CentralEdgeList &CEL, InterfaceEdgeList &IEL);
-  void compute_ia_etc_for_edges(Chain &C,
+  void compute_ia_etc_for_edges(int i,
+                                Chain &C,
                                 InterfaceEdgeList &IEL,
                                 CentralEdgeList &CEL,
                                 std::vector<EdgePair> &edge_pairs,
@@ -195,6 +196,20 @@ struct GroupTooth {
   int first;
   int last;
   int chi_times_2(Chain &C);
+  void compute_ia_etc_for_edges(int offset, 
+                                Chain &C,
+                                InterfaceEdgeList &IEL, 
+                                std::vector<int> &rows_for_letters, 
+                                std::vector<int> &ia, 
+                                std::vector<int> &ja, 
+                                std::vector<int> &ar);
+  void compute_ia_etc_for_words(int offset, 
+                                int row_offset,
+                                Chain &C,
+                                std::vector<int> &ia, 
+                                std::vector<int> &ja, 
+                                std::vector<int> &ar);
+                                
 };
 
 std::ostream &operator<<(std::ostream &os, GroupTooth &GT);
@@ -207,6 +222,16 @@ struct GroupMouth {
   int first;
   int last;
   int chi_times_2(Chain &C);
+  void compute_ia_etc_for_edges(int offset, 
+                                int group_index,
+                                Chain &C,
+                                GroupEdgeList &GEL,
+                                std::vector<int> &rows_for_letters,
+                                std::vector<EdgePair> &edge_pairs,
+                                std::vector<int> &group_edge_pairs,
+                                std::vector<int> &ia,
+                                std::vector<int> &ja,
+                                std::vector<int> &ar);
 };
 
 std::ostream &operator<<(std::ostream &os, GroupMouth &GM);
@@ -219,21 +244,12 @@ struct GroupPolygon {
   int group;
   std::vector<int> edges;
   int chi_times_2(GroupEdgeList &GEL);
-  void get_ia_etc_for_edges(Chain &C, 
-                            InterfaceEdgeList &IEL, 
-                           GroupEdgeList &GEL, 
-                           std::vector<EdgePair> &edge_pairs,
-                           std::vector<int> &group_edge_pairs, 
-                           int &offset, 
-                           std::vector<int> &temp_ia, 
-                           std::vector<int> &temp_ja, 
-                           std::vector<int> &temp_ar);
-  void get_ia_etc_for_words(Chain &C, 
+  void get_ia_etc_for_edges(int offset, 
+                            Chain &C, 
                             InterfaceEdgeList &IEL, 
                             GroupEdgeList &GEL, 
                             std::vector<EdgePair> &edge_pairs,
                             std::vector<int> &group_edge_pairs, 
-                            int &offset, 
                             std::vector<int> &temp_ia, 
                             std::vector<int> &temp_ja, 
                             std::vector<int> &temp_ar);
@@ -247,10 +263,18 @@ std::ostream &operator<<(std::ostream &os, GroupPolygon &GP);
 struct GroupRectangle {
   int first;
   int last;
-  void compute_ia_etc_for_edges(int &offset, 
+  void compute_ia_etc_for_edges(int offset, 
                                 std::vector<int> &temp_ia, 
                                 std::vector<int> &temp_ja, 
                                 std::vector<int> &temp_ar);
+  void compute_ia_etc_for_words(int offset, 
+                                int row_offset,
+                                Chain &C, 
+                                InterfaceEdgeList &IEL,
+                                std::vector<int> &ia,
+                                std::vector<int> &ja,
+                                std::vector<int> &ar);
+                                
 };
  
 std::ostream &operator<<(std::ostream &os, GroupRectangle &GR);
