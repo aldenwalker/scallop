@@ -281,11 +281,11 @@ void scylla_lp(Chain& C,
     offset = CP.size();
     for (i=0; i<(C.G)->num_groups(); i++) {
       for (m=0; m<(int)GT[i].size(); m++) {
-        GT[i][j].compute_ia_etc_for_edges(offset, C, IEL, rows_for_letters, ia, ja, ar);
+        GT[i][m].compute_ia_etc_for_edges(offset, C, IEL, rows_for_letters, ia, ja, ar);
         offset++;
       }
       for (m=0; m<(int)GM[i].size(); m++) {
-        GM[i][j].compute_ia_etc_for_edges(offset, 
+        GM[i][m].compute_ia_etc_for_edges(offset, 
                                           i,
                                           C,
                                           GEL[i], 
@@ -313,8 +313,8 @@ void scylla_lp(Chain& C,
         collect_dups_and_push(temp_ia, temp_ja, temp_ar, ia, ja, ar);
         offset++;
       }
-      for (j=0; j<(int)GR[i].size(); j++) {
-        GR[i][j].compute_ia_etc_for_edges(offset, ia, ja, ar);
+      for (m=0; m<(int)GR[i].size(); m++) {
+        GR[i][m].compute_ia_etc_for_edges(offset, ia, ja, ar);
         offset++;
         //std::cout << "Put " << row+1 << ", " << col+1 << ", " << -1 << ".\n";
       }
@@ -375,20 +375,36 @@ void scylla_lp(Chain& C,
       }
       offset = CP.size();
       for (i=0; i<(C.G)->num_groups(); i++) {
-        for (j=0; j<(int)GR[i].size(); j++) {
+        for (j=0; j<(int)GT[i].size(); j++) {
           if ((*solution_vector)[offset] == rational(0,1)) {
             offset++;
             continue;
           }
-          std::cout << (*solution_vector)[offset] << " * " << GR[i][j] << "\n";
+          std::cout << (*solution_vector)[offset] << " * " << GT[i][j] << "\n";
           offset++;
         }
+        for (j=0; j<(int)GM[i].size(); j++) {
+          if ((*solution_vector)[offset] == rational(0,1)) {
+            offset++;
+            continue;
+          }
+          std::cout << (*solution_vector)[offset] << " * " << GM[i][j] << "\n";
+          offset++;
+        }        
         for (j=0; j<(int)GP[i].size(); j++) {
           if ((*solution_vector)[offset] == rational(0,1)) {
             offset++;
             continue;
           } 
           std::cout << (*solution_vector)[offset] << " * " << GP[i][j] << "\n";
+          offset++;
+        }
+        for (j=0; j<(int)GR[i].size(); j++) {
+          if ((*solution_vector)[offset] == rational(0,1)) {
+            offset++;
+            continue;
+          }
+          std::cout << (*solution_vector)[offset] << " * " << GR[i][j] << "\n";
           offset++;
         }
       }

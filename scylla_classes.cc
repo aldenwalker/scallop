@@ -538,9 +538,9 @@ void GroupEdgeList::print(std::ostream &os) {
 
 
 
-
-
-
+/*****************************************************************************
+ Central polygons
+ *****************************************************************************/
 int CentralPolygon::chi_times_2(Chain &C, CentralEdgeList &CEL, InterfaceEdgeList &IEL) {
   int i;
   int sum=0;
@@ -608,6 +608,9 @@ std::ostream &operator<<(std::ostream &os, CentralPolygon &CP) {
 }
 
 
+/****************************************************************************
+ group tooth
+ ****************************************************************************/
 int GroupTooth::chi_times_2(Chain &C) {
   if (C.next_letter(first) == last) {
     return 0;
@@ -615,7 +618,6 @@ int GroupTooth::chi_times_2(Chain &C) {
     return -1;
   }
 }
-
 
 void GroupTooth::compute_ia_etc_for_edges(int offset, 
                                           Chain &C,
@@ -659,7 +661,14 @@ void GroupTooth::compute_ia_etc_for_words(int offset,
   ar.push_back(1);
 }
 
+std::ostream &operator<<(std::ostream &os, GroupTooth &GT) {
+  os << "GT: " << GT.first << " " << GT.last;
+  return os;
+}
 
+/****************************************************************************
+ group mouth
+ ****************************************************************************/
 int GroupMouth::chi_times_2(Chain &C) {
   if (last == first) {
     return 2;
@@ -706,15 +715,16 @@ void GroupMouth::compute_ia_etc_for_edges(int offset,
   }
 }
 
-
-
-std::ostream &operator<<(std::ostream &os, GroupTooth &GT) {
-  os << "GT: " << GT.first << " " << GT.last;
+std::ostream &operator<<(std::ostream &os, GroupMouth &GM) {
+  os << "GM: " << GM.first << " " << GM.last;
   return os;
 }
 
 
 
+/****************************************************************************
+ group polygon/square
+ ****************************************************************************/
 int GroupPolygon::chi_times_2(GroupEdgeList &GEL) {
   int i,j;
   int temp_letter_1, temp_letter_2;
@@ -810,6 +820,10 @@ std::ostream &operator<<(std::ostream &os, GroupPolygon &GP) {
 }
 
 
+
+/****************************************************************************
+ group rectangle
+ ****************************************************************************/
 void GroupRectangle::compute_ia_etc_for_edges(int &offset, 
                                               std::vector<int> &ia, 
                                               std::vector<int> &ja, 
@@ -857,13 +871,6 @@ void GroupRectangle::compute_ia_etc_for_words(int offset,
 
 std::ostream &operator<<(std::ostream &os, GroupRectangle &GR) {
   os << "GR: " << GR.first << " " << GR.last;
-  return os;
-}
-
-
-
-std::ostream &operator<<(std::ostream &os, GrouMouth &GM) {
-  os << "GM: " << GM.first << " " << GM.last;
   return os;
 }
 
