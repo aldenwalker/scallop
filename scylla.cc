@@ -488,6 +488,7 @@ int main(int argc, char* argv[]) {
   
   std::vector<CentralPolygon> CP;
   compute_central_polys(C, IEL, CEL, CP);
+  std::cout << "computed polys\n"; std::cout.flush();
   if (VERBOSE) print_central_polys(CP, std::cout, 0);
   
   std::vector<std::vector<GroupTooth> > GT;
@@ -495,12 +496,13 @@ int main(int argc, char* argv[]) {
   std::vector<std::vector<GroupRectangle> > GR;
   std::vector<std::vector<GroupPolygon> > GP;
   compute_group_teeth_mouths_polygons_and_rectangles(C, IEL, GEL, GT, GM, GP, GR);
+  std::cout << "computed group stuff\n"; std::cout.flush();
   if (VERBOSE) print_group_teeth_mouths_polys_and_rectangles(GT, GM, GP, GR, std::cout, 0);
   
    
   rational scl;
   std::vector<rational> solution_vector(0);                           //run the LP
-  scylla_lp(C, GEL, IEL, CEL, CP, GT, GM, GP, GR, &scl, &solution_vector, GLPK_DOUBLE, VERBOSE); 
+  scylla_lp(C, GEL, IEL, CEL, CP, GT, GM, GP, GR, &scl, &solution_vector, GLPK_DOUBLE, true); 
   
   std::cout << "scl_{" << G << "}( " << C << ") = " << scl << " = " << scl.get_d() << "\n";    //output the answer
   

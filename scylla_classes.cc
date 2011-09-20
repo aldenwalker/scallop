@@ -139,6 +139,7 @@ Chain::Chain(CyclicProduct* G_in, char** input, int num_strings) {
     words[i] = words[i].substr(j, words[i].size()-j) + words[i].substr(0, j);
   }
   
+  /*
   //first pass = all lower case
   for (i=0; i<(int)words.size(); i++) {
     j=0;
@@ -179,6 +180,7 @@ Chain::Chain(CyclicProduct* G_in, char** input, int num_strings) {
       }
     }
   }
+  * */
   
   //now compute the chunks -- note we may assume that a chunk starts the word
   chunks.resize(words.size());

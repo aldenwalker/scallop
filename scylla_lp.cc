@@ -133,7 +133,7 @@ void scylla_lp(Chain& C,
     }
   }
   
-  if (VERBOSE) {
+  if (false) {
     std::cout << "Edge pairs:\n";
     for (i=0; i<(int)edge_pairs.size(); i++) {
       std::cout << i << ": ";
@@ -171,9 +171,9 @@ void scylla_lp(Chain& C,
 	
 	  lp = glp_create_prob();
 	  glp_init_smcp(&parm);
-	  parm.presolve=GLP_OFF;
+	  parm.presolve=GLP_ON;
 	  
-	  parm.msg_lev=GLP_MSG_OFF;
+	  parm.msg_lev=GLP_MSG_ALL;
 	  glp_set_prob_name(lp, "scl");
 	  glp_set_obj_dir(lp,GLP_MIN);
 	
@@ -367,7 +367,7 @@ void scylla_lp(Chain& C,
     }
     
 	  if (VERBOSE) {
-	    std::cout << "Created " << ia.size() << " constraints\n";
+	    std::cout << "Created " << ia.size() << " nonzeroes on " << num_rows << " rows and " << num_cols << " columns\n";
 	  }
   
 	  glp_load_matrix(lp, ia.size()-1, &ia[0], &ja[0], &ar[0]);

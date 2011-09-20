@@ -133,8 +133,7 @@ void do_linear_program(   vector<string> &w,
 	    cout << "Created constraints\n";
 	  }
 	
-    //cout << l << " matrix entries \n";
-	  //cout <<"vector sizes:" << ia.size() << " " << ja.size() << " " << ar.size() << "\n";
+    //cout << ia.size() << " nonzeros in " << ((arc_list_length/2) + numWords) << " rows and " << polygon_list_length << " columns\n";
 	
 	  //the contents of a vector<> are guaranteed to be contiguous in memory, 
 	  //so this should be ok

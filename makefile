@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-g -pg -Wall
+CFLAGS=-O3 #-g -pg -Wall
 IFLAGS=-I/sw/include
 LDFLAGS=-L/sw/lib -lglpk -lgmp
 all: scallop scyllop
