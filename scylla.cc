@@ -118,7 +118,7 @@ void compute_group_teeth_mouths_polygons_and_rectangles(Chain &C,
     temp_group_tooth.inverse = true;
     for (j=0; j<(int)C.inverse_letters[i].size(); j++) {
       temp_group_mouth.first = C.inverse_letters[i][j];
-      temp_group_mouth.last_letter_index = j;
+      temp_group_mouth.first_letter_index = j;
       for (k=0; k<(int)C.inverse_letters[i].size(); k++) {
         temp_group_mouth.last = C.inverse_letters[i][k];
         temp_group_mouth.last_letter_index = k;
@@ -489,7 +489,7 @@ int main(int argc, char* argv[]) {
   std::vector<CentralPolygon> CP;
   compute_central_polys(C, IEL, CEL, CP);
   std::cout << "computed polys\n"; std::cout.flush();
-  if (VERBOSE) print_central_polys(CP, std::cout, 0);
+  if (VERBOSE) print_central_polys(CP, std::cout, VERBOSE);
   
   std::vector<std::vector<GroupTooth> > GT;
   std::vector<std::vector<GroupMouth> > GM;
@@ -497,7 +497,7 @@ int main(int argc, char* argv[]) {
   std::vector<std::vector<GroupPolygon> > GP;
   compute_group_teeth_mouths_polygons_and_rectangles(C, IEL, GEL, GT, GM, GP, GR);
   std::cout << "computed group stuff\n"; std::cout.flush();
-  if (VERBOSE) print_group_teeth_mouths_polys_and_rectangles(GT, GM, GP, GR, std::cout, 0);
+  if (VERBOSE) print_group_teeth_mouths_polys_and_rectangles(GT, GM, GP, GR, std::cout, VERBOSE);
   
    
   rational scl;
