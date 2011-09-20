@@ -443,19 +443,23 @@ int main(int argc, char* argv[]) {
   int current_arg = 1;
   //int i;
   bool VERBOSE = false;
+  bool IPT = false;
   
   if (argc < 3 || std::string(argv[1]) == "-h") {
-    std::cout << "usage: ./scyllop [-h] <gen string> <chain>\n";
+    std::cout << "usage: ./scyllop [-h] [-i] <gen string> <chain>\n";
     std::cout << "\twhere <gen string> is of the form <gen1><order1><gen2><order2>...\n";
     std::cout << "\te.g. a5b0 computes in Z/5Z * Z\n";
     std::cout << "\tand <chain> is an integer linear combination of words in the generators\n";
     std::cout << "\te.g. ./scyllop a5b0 aabaaaB\n";
     std::cout << "\t-h: print this message\n";
+    std::cout << "\t-i: use the interior point LP method (faster but rational output is sometimes wrong)\n";
     exit(0);
   }
   while (argv[current_arg][0] == '-') {
+    if (argv[current_arg][1] == 'i') {
+      IPT = true;
+    }
     current_arg++;
-    //handle arguments (none yet)
   }
   
   std::string G_in = std::string(argv[current_arg]);
@@ -503,7 +507,11 @@ int main(int argc, char* argv[]) {
    
   rational scl;
   std::vector<rational> solution_vector(0);                           //run the LP
-  scylla_lp(C, GEL, IEL, CEL, CP, GT, GM, GP, GR, &scl, &solution_vector, GLPK_IPT, true); 
+  scylla_lp(C, GEL, IEL, CEL, CP, GT, GM, GP, GR, 
+            &scl, 
+            &solution_vector, 
+            (IPT ? GLPK_IPT : GLPK_SIMPLEX),
+            true); 
   
   std::cout << "scl_{" << G << "}( " << C << ") = " << scl << " = " << scl.get_d() << "\n";    //output the answer
   
