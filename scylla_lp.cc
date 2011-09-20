@@ -113,6 +113,8 @@ void scylla_lp(Chain& C,
   }
   
   //pair up all of the group edges
+  //(there are no group edges anymore
+  /*
   for (i=0; i<(C.G)->num_groups(); i++) {
     group_edge_pairs[i].resize(GEL[i].edges.size());
     for (j=0; j<(int)GEL[i].edges.size(); j++) {
@@ -132,6 +134,7 @@ void scylla_lp(Chain& C,
       }
     }
   }
+  */
   
   if (false) {
     std::cout << "Edge pairs:\n";
@@ -158,7 +161,7 @@ void scylla_lp(Chain& C,
   }
   
   
-  if (solver == GLPK_DOUBLE || solver == GLPK_EXACT) {   
+  if (solver == GLPK_SIMPLEX || solver == GLPK_IPT) {   
     
     //now we actually do the LP setup  
     //note that we need some temporary data
@@ -168,12 +171,10 @@ void scylla_lp(Chain& C,
     
 	  glp_prob *lp;
     glp_smcp parm;
+    glp_iptcp ipt_parm;
 	
 	  lp = glp_create_prob();
-	  glp_init_smcp(&parm);
-	  parm.presolve=GLP_ON;
-	  
-	  parm.msg_lev=GLP_MSG_ALL;
+  
 	  glp_set_prob_name(lp, "scl");
 	  glp_set_obj_dir(lp,GLP_MIN);
 	
@@ -192,13 +193,13 @@ void scylla_lp(Chain& C,
           rows_for_letters_in_mouths[i][j].resize(C.inverse_letters[i].size());
           for (k=0; k<(int)C.inverse_letters[i].size(); k++) {
             rows_for_letters_in_mouths[i][j][k] = num_rows;
-            num_rows += (C.G)->orders[i]+1;
+            num_rows += (C.G)->orders[i];
           }
         } else {
           rows_for_letters_in_mouths[i][j].resize(C.regular_letters[i].size());
           for (k=0; k<(int)C.regular_letters[i].size(); k++) {
             rows_for_letters_in_mouths[i][j][k] = num_rows;
-            num_rows += (C.G)->orders[i]+1;
+            num_rows += (C.G)->orders[i];
           }
         }
       }
@@ -372,16 +373,36 @@ void scylla_lp(Chain& C,
   
 	  glp_load_matrix(lp, ia.size()-1, &ia[0], &ja[0], &ar[0]);
 	
-    glp_simplex(lp, &parm);
-	
-    *scl = approxRat(glp_get_obj_val(lp)/4.0);	
+    
+    if (solver == GLPK_SIMPLEX) {
+      glp_init_smcp(&parm);
+      parm.presolve=GLP_ON;
+      parm.msg_lev=GLP_MSG_ALL;
+      glp_simplex(lp, &parm);
+    } else if (solver == GLPK_IPT) {
+      glp_init_iptcp(&ipt_parm);
+      ipt_parm.msg_lev = GLP_MSG_ALL;
+      glp_interior(lp, &ipt_parm);
+    }
+    
+    if (solver == GLPK_SIMPLEX) {
+      *scl = approxRat(glp_get_obj_val(lp)/4.0);	
+    } else {
+      *scl = approxRat_be_nice(glp_ipt_obj_val(lp)/4.0);	
+    }
 	
     (*solution_vector).resize(num_cols);
-	  for (i=0; i<num_cols; i++) {
-	    (*solution_vector)[i] = approxRat(glp_get_col_prim(lp,i+1));
-	  }	
+    if (solver == GLPK_SIMPLEX) {
+      for (i=0; i<num_cols; i++) {
+        (*solution_vector)[i] = approxRat(glp_get_col_prim(lp,i+1));
+      }	
+    } else {
+      for (i=0; i<num_cols; i++) {
+        (*solution_vector)[i] = approxRat_be_nice(glp_ipt_col_prim(lp,i+1));
+      }	
+    }
     
-    if (VERBOSE) {
+    if (VERBOSE && (*solution_vector).size() < 1000) {
       std::cout << "Solution: \n";
       for (i=0; i<(int)CP.size(); i++) {
         if ((*solution_vector)[i] == rational(0,1)) {

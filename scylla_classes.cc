@@ -107,7 +107,7 @@ Chain::Chain(CyclicProduct* G_in, char** input, int num_strings) {
   std::string weight;
   ChainChunk temp;
   int wordLen;
-  int order;
+  //int order;
   std::string first, middle, last;
   
   G = G_in;                   // note this does NOT require a copy constructor
@@ -655,18 +655,20 @@ void GroupTooth::compute_ia_etc_for_edges(int offset,
     ar.push_back(-1);
     //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
   }
-  
+
   row = rows_for_letters_in_mouths[group_index][group_mouth_index][first] + position;
   ia.push_back(row+1);
   ja.push_back(col+1);
   ar.push_back(1);
   //std::cout << "Pushed " << row+1 << " " << col+1 << " " << 1 << "\n";
   
-  row = rows_for_letters_in_mouths[group_index][group_mouth_index][last] + position + 1;
-  ia.push_back(row+1);
-  ja.push_back(col+1);
-  ar.push_back(-1);
-  //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
+  if (position < (C.G)->orders[group_index]-1) {
+    row = rows_for_letters_in_mouths[group_index][group_mouth_index][last] + position+1;
+    ia.push_back(row+1);
+    ja.push_back(col+1);
+    ar.push_back(-1);
+    //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
+  }
 }
   
 
@@ -717,8 +719,10 @@ void GroupMouth::compute_ia_etc_for_edges(int offset,
                                           std::vector<double> &ar) {
   int col = offset;
   int row;
-  int edge_num;
-  int val;
+  //int edge_num;
+  //int val;
+  
+  
   row = rows_for_letters_in_mouths[group_index][my_index][first_letter_index] + 0;
   ia.push_back(row+1);
   ja.push_back(col+1);
@@ -726,12 +730,15 @@ void GroupMouth::compute_ia_etc_for_edges(int offset,
   //std::cout << "GM " << my_index << "\n";
   //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
   
+  /*
   row = rows_for_letters_in_mouths[group_index][my_index][last_letter_index] + (C.G)->orders[group_index];
   ia.push_back(row+1);
   ja.push_back(col+1);
   ar.push_back(1);  
   //std::cout << "Pushed " << row+1 << " " << col+1 << " " << 1 << "\n";
+  */
   
+  /*
   if (last != first) {
     edge_num = GEL.get_index(last, first);
     row = group_edge_pairs[edge_num];
@@ -745,6 +752,7 @@ void GroupMouth::compute_ia_etc_for_edges(int offset,
     ar.push_back(val);
     //std::cout << "Pushed " << row+1 << " " << col+1 << " " << val << "\n";
   }
+  * */
 }
 
 std::ostream &operator<<(std::ostream &os, GroupMouth &GM) {

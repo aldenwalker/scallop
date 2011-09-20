@@ -40,6 +40,7 @@ class rational {
 
 rational cont_frac_value(std::vector<int> a);
 rational approxRat(double a);
+rational approxRat_be_nice(double a);
 int lcm(int a, int b);
 int gcd(int a, int b);
 

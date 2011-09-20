@@ -215,14 +215,16 @@ rational cont_frac_value(vector<int> a) {
   return answer;
 }
 
-rational approxRat(double a) {
+rational approxRat(double b) {
+  double a;
   vector<int> As(0);
+  a = b;
   //cout << "Called with " << a << "\n"; fflush(stdout);
   As.push_back((int)floor(a));
   //cout << "Floor: " << (int)floor(a) << "\n";
   double currentRem = a - (double)As[As.size()-1];
   rational currentR = rational(As[0], 1);
-  while (fabs(currentR.get_d() - a) > 0.00000000001) {
+  while (fabs(currentR.get_d() - a) > 0.00000001) {
     //cout << "last conv element: " << As[As.size()-1] << " and current Rem: "<< currentRem << "\n";
     As.push_back((int)floor(1.0/currentRem));
     currentRem = (1.0/currentRem) - (double)As[As.size()-1];
@@ -231,3 +233,23 @@ rational approxRat(double a) {
   //cout << "Done!  Returning " << currentR.n() << "/" << currentR.d() << "\n";
   return currentR;
 } 
+
+rational approxRat_be_nice(double b) {
+  double a;
+  vector<int> As(0);
+  a = b - 0.000000001;
+  //cout << "Called with " << a << "\n"; fflush(stdout);
+  As.push_back((int)floor(a));
+  //cout << "Floor: " << (int)floor(a) << "\n";
+  double currentRem = a - (double)As[As.size()-1];
+  rational currentR = rational(As[0], 1);
+  while (fabs(currentR.get_d() - a) > 0.00000001) {
+    //cout << "last conv element: " << As[As.size()-1] << " and current Rem: "<< currentRem << "\n";
+    As.push_back((int)floor(1.0/currentRem));
+    currentRem = (1.0/currentRem) - (double)As[As.size()-1];
+    currentR =  cont_frac_value(As);
+  }
+  //cout << "Done!  Returning " << currentR.n() << "/" << currentR.d() << "\n";
+  return currentR;
+} 
+
