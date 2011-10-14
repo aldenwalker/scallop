@@ -2,7 +2,7 @@ CC=g++
 CFLAGS=-O3 #-g -Wall
 IFLAGS=-I/sw/include
 LDFLAGS=-L/sw/lib -lglpk -lgmp
-all: scallop scyllop
+all: scallop scylla
 
 scallop.o: scallop.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c scallop.cc
@@ -38,7 +38,7 @@ exlp-package:
 scallop: exlp-package scallop.o word.o draw.o rational.o lp.o io.o
 	$(CC) $(CFLAGS) -o scallop scallop.o word.o draw.o rational.o lp.o io.o exlp-package/*.o $(LDFLAGS)
 
-scyllop: exlp-package scylla.o rational.o scylla_lp.o scylla_classes.o
+scylla: exlp-package scylla.o rational.o scylla_lp.o scylla_classes.o
 	$(CC) $(CFLAGS) -o scylla scylla.o scylla_lp.o scylla_classes.o rational.o exlp-package/*.o $(LDFLAGS)
 
 

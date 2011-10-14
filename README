@@ -6,7 +6,7 @@ sc ll p
 stable commutator length linear programmer
 
 Copyright GPL 2008 by Danny Calegari
-Copyright GPL 2008-2010 by Danny Calegari and Alden Walker
+Copyright GPL 2008-2011 by Danny Calegari and Alden Walker
 
 email dannyc@its.caltech.edu 
       awalker@caltech.edu
@@ -27,6 +27,15 @@ http://gmplib.org/
 
 scallop computes stable commutator length for elements
 of B_1(F), where F is a free group.
+
+-----
+scylla version 0.1, October 14, 2011: 
+-----
+This version of the package contains scylla, copyright GPL 2011 Alden Walker,
+which implements a generalized version of the scallop algorithm to compute 
+scl rigorously in polynomial time in the rank and word length.  It works in free groups 
+and free products of finite cyclic groups.  Type ./scylla for usage.  
+Scylla is far less mature than scallop.
 
 -----
 Current version: 
