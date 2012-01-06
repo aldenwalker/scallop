@@ -6,6 +6,7 @@
 
 void red(std::string& s);			// reduce by cancelling adjacent inverse letters
 void swapCase(std::string& s);
+char swapCaseChar(char c);
 void cyc_red(std::string& s);
 std::string inverse(std::string& s);
 std::string reverse(std::string s);

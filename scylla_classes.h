@@ -10,15 +10,6 @@
 #include <vector>
 
 
-/*****************************************************************************
- * a chunk in a chain
- * ***************************************************************************/
-struct ChainChunk {
-  int word;
-  int group;
-  int start_index;
-  int len;
-};
 
 /*****************************************************************************
  * a letter in a chain
@@ -45,7 +36,7 @@ struct CyclicProduct {
   int gen_index(char gen);                 //return the number of the gen
   int num_groups(void);
   
-  void cyc_red(std::string* S);                 //cyclically reduce a string
+  void cyc_red(std::string &S);                 //cyclically reduce a string
     
   std::vector<char> gens;
   std::vector<int> orders;
@@ -72,7 +63,6 @@ struct Chain {
   CyclicProduct* G;
   std::vector<std::string> words;
   std::vector<int> weights;
-  std::vector<std::vector<ChainChunk> > chunks;
   std::vector<std::vector<int> > group_letters;
   std::vector<ChainLetter> chain_letters;
   std::vector<std::vector<int> > regular_letters;
@@ -84,26 +74,28 @@ std::ostream &operator<<(std::ostream &os, Chain &C);
 
 
 /****************************************************************************
- * an edge joining two central polygons
+ * an edge pair which can join central polygons 
+ * Note this pair is edges (i,j) and (j-1,i+1)
  ****************************************************************************/
-struct CentralEdge {
+struct CentralEdgePair {
   int first;
   int last;
 };
-
 /****************************************************************************
  * A list of central edges
+ * (we will record only the one with minimal first letter.)
+ * Also, we don't allow the edge pair (i,i+1), (i, i+1)
  * **************************************************************************/
-struct CentralEdgeList {
-  CentralEdgeList();
-  CentralEdgeList(Chain &C);
+struct CentralEdgePairList {
+  CentralEdgePairList();
+  CentralEdgePairList(Chain &C);
   
-  int get_index(int a, int b);
-  CentralEdge operator[](int index);
+  int get_index(int a, int b);      //this returns ind+1 for the first edge and -(ind+1) for the second edge
+  CentralEdgePair operator[](int index);
   void print(std::ostream &os);
   
-  std::vector<CentralEdge> edges;
-  std::vector<std::vector<int> > edges_beginning_with;
+  std::vector<CentralEdgePair> edge_pairs;
+  std::vector<std::vector<int> > edges_pairs_beginning_with;
 };
 
 
@@ -131,30 +123,6 @@ struct InterfaceEdgeList {
   std::vector<std::vector<int> > edges_beginning_with;
 };
 
-/*****************************************************************************
- * an edge between group polygons
- * ***************************************************************************/
-struct GroupEdge {
-  int first;
-  int last;
-};
-
-/****************************************************************************
- * a list of group edges
- * **************************************************************************/
-struct GroupEdgeList {
-  GroupEdgeList();
-  GroupEdgeList(Chain &C, int group_index);
-  int get_index(int a, int b);
-  void print(std::ostream &os);
-  GroupEdge operator[](int index);
-  
-  int group;
-  std::vector<GroupEdge> edges;
-  std::vector<std::vector<int> > edges_beginning_with;
-  std::vector<int> regular_edges;
-  std::vector<int> inverse_edges;
-};
 
 /****************************************************************************
  * an edge pair
@@ -172,8 +140,9 @@ struct EdgePair {
  * a central polygon  (this is a list of interface and polygon edges)
  * ***************************************************************************/
 struct CentralPolygon {
-  std::vector<int> edges;
-  std::vector<bool> interface;
+  std::vector<int> edge;         //these are the central edges
+  std::vector<int> side_of_edge; //these record which side (+/-) each edge is (N/A for interface edges)
+  std::vector<bool> interface;   //this records whether the edge is an interface edge
   int chi_times_2(Chain &C, CentralEdgeList &CEL, InterfaceEdgeList &IEL);
   void compute_ia_etc_for_edges(int i,
                                 Chain &C,
@@ -192,12 +161,12 @@ std::ostream &operator<<(std::ostream &os, CentralPolygon &CP);
  * a group outside edge (these pair with the interface edges
  * **************************************************************************/
 struct GroupTooth {
-  int position;
-  int first;
-  int last;
+  int position;     //the position of this tooth around the circle
+  int first;        //the first letter (as position in the chain)
+  int last;         //the last letter 
   bool inverse;
   int group_index;
-  int group_mouth_index;
+  int base_letter;  //the base letter (as position in the chain)
   int chi_times_2(Chain &C);
   void compute_ia_etc_for_edges(int offset, 
                                 Chain &C,
@@ -217,59 +186,14 @@ struct GroupTooth {
 
 std::ostream &operator<<(std::ostream &os, GroupTooth &GT);
 
-/****************************************************************************
- * These are really just special group polygons designated to face the teeth
- * They join the group edge (first, last) (it's not reversed)
- * **************************************************************************/
-struct GroupMouth {
-  int first;
-  int last;
-  int first_letter_index;
-  int last_letter_index;
-  int group_index;
-  bool inverse;
-  int chi_times_2(Chain &C);
-  void compute_ia_etc_for_edges(int offset, 
-                                Chain &C,
-                                GroupEdgeList &GEL,
-                                int my_index,
-                                std::vector<std::vector<std::vector<int> > > &rows_for_letters_in_mouths,
-                                std::vector<EdgePair> &edge_pairs,
-                                std::vector<int> &group_edge_pairs,
-                                std::vector<int> &ia,
-                                std::vector<int> &ja,
-                                std::vector<double> &ar);
-};
-
-std::ostream &operator<<(std::ostream &os, GroupMouth &GM);
-
-/****************************************************************************
- * a group polygon -- these are really just squares with all incident 
- * edges as group edges -- when computing chi, we must ignore the joined edges
- * **************************************************************************/
-struct GroupPolygon {
-  int group;
-  std::vector<int> edges;
-  int chi_times_2(GroupEdgeList &GEL);
-  void compute_ia_etc_for_edges(int offset, 
-                                Chain &C, 
-                                InterfaceEdgeList &IEL, 
-                                GroupEdgeList &GEL, 
-                                std::vector<EdgePair> &edge_pairs,
-                                std::vector<int> &group_edge_pairs, 
-                                std::vector<int> &temp_ia, 
-                                std::vector<int> &temp_ja, 
-                                std::vector<int> &temp_ar);
-};
-
-std::ostream &operator<<(std::ostream &os, GroupPolygon &GP);
 
 /****************************************************************************
  * a group rectangle
  * **************************************************************************/
 struct GroupRectangle {
-  int first;
-  int last;
+  int group_index;
+  int first;            //the first letter of the rectangle (position in the chain)
+  int last;             //the second letter of the rectangle
   void compute_ia_etc_for_edges(int offset, 
                                 std::vector<int> &ia, 
                                 std::vector<int> &ja, 
@@ -287,23 +211,6 @@ struct GroupRectangle {
 std::ostream &operator<<(std::ostream &os, GroupRectangle &GR);
 
 
-/*****************************************************************************
- * a multiset
- * ***************************************************************************/
-class Multiset {
-  public:
-    Multiset();
-    Multiset(int len, int Min, int Max_plus_one);
-    int next(void);
-    std::vector<int>* get_list(void);
-    int operator[](int index);
-    void set_index(int index, int val);
-  private:
-    std::vector<int> L;
-    int min;
-    int len;
-    int max_plus_one;
-};
 
 
 

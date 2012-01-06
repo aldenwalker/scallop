@@ -1,12 +1,13 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <utility>
 
 #include <ctype.h>
 #include <stdlib.h>
 
 #include "scylla_classes.h"
-
+#include "word.h"
 
 
 
@@ -20,6 +21,8 @@ CyclicProduct::CyclicProduct(void) {
   orders.resize(0);
 }
 
+/* Create a cyclic group from an input of the form a0b2c3, giving Z*Z/2Z*Z/3Z
+ */
 CyclicProduct::CyclicProduct(std::string input) {
   int i;
   int start;
@@ -41,7 +44,7 @@ CyclicProduct::~CyclicProduct(void) {
   //I don't need to free the vectors, right?
 }
 
-
+/* Return the order of a factor, given the generator letter */
 int CyclicProduct::gen_order(char gen) {
   int i;
   int len = gens.size();
@@ -55,10 +58,12 @@ int CyclicProduct::gen_order(char gen) {
   return -1;
 }
 
+/* return the order of a factor, given the index of that factor */
 int CyclicProduct::index_order(int index) {
   return orders[index];
 }
 
+/* return the index of a generator, given the generator letter */
 int CyclicProduct::gen_index(char gen) {
   int i;
   int len = gens.size();
@@ -75,9 +80,115 @@ int CyclicProduct::num_groups(void) {
   return gens.size();
 }
 
-
-void CyclicProduct::cyc_red(std::string* S) {
+/* Cyclically minimally reduce the word S.  This entails:
+ * (1) cyclically reduce it
+ * (2) replace strings of generators with inverses, if that makes it shorter
+ * */
+void CyclicProduct::cyc_red(std::string &S) {
+  int i,j;
+  char current_char;
+  int current_start;
+  int ord;
+  std::vector<std::pair<char, int> > chunks(0);
+  i=0;
+  //reduce the interior of the word
+  while (i < (int)S.size()-1) {
+    if (S[i] == swapCaseChar(S[i+1])) {
+      S.erase(i,2);
+      if (i > 0) {
+        i--;
+      }
+    } else {
+      i++;
+    }
+  }
   
+  //std::cout << "after reducing interior:" << S << "\n";
+  
+  //we'll cyclically reduce later, after reducing chunks
+  //now make the chunks
+  current_char = S[0];
+  current_start = 0;
+  i=1;
+  while (i < (int)S.size()) {
+    while (i < (int)S.size() && S[i] == current_char) {
+      i++;
+    }
+    if (i==(int)S.size()) {
+      break;
+    }
+    if (islower(current_char)) {
+      chunks.push_back( std::make_pair( current_char, i-current_start ) );
+    } else {
+      chunks.push_back( std::make_pair( tolower(current_char), -(i-current_start)));
+    }
+    current_char = S[i];
+    current_start = i;
+    i++;
+  }
+  //finish the last chunk
+  if (islower(current_char)) {
+    chunks.push_back( std::make_pair( current_char, i-current_start ) );
+  } else {
+    chunks.push_back( std::make_pair( tolower(current_char), -(i-current_start)));
+  }  
+
+  //now reduce the chunks.  go around cyclically reducing the size 
+  //and/or collecting chunks
+  i=0;
+  while (1) {
+    std::cout << "reducing chunk " << chunks[i].first << "," << chunks[i].second << "\n";
+    //reduce the chunk
+    ord = orders[ gen_index( chunks[i].first ) ];
+    if (ord != 0) {
+      chunks[i].second = chunks[i].second % ord;
+      if (chunks[i].second < -(ord/2)) {
+        chunks[i].second += ord;
+      } else if (chunks[i].second > ord/2) {
+        chunks[i].second -= ord;
+      }
+      if (chunks[i].second == 0) {
+        chunks.erase(chunks.begin() + i);
+        i=0;
+        continue;
+      }
+    }
+    
+    //combine the chunks
+    j= (i+1) % chunks.size();
+    if (chunks[i].first == chunks[j].first) {
+      chunks[i].second += chunks[j].second;
+      if (chunks[i].second == 0) {
+        if (j < i) {
+          chunks.erase(chunks.begin() + i);
+          chunks.erase(chunks.begin() + j);
+        } else {
+          chunks.erase(chunks.begin() + j);
+          chunks.erase(chunks.begin() + i);
+        }
+      } else {
+        chunks.erase(chunks.begin() + j);
+      }
+      //start over
+      i=0;
+      continue;
+    }
+          
+    i++;
+    if (i==(int)chunks.size()) {
+      break;
+    }
+  }
+  
+  //replace the word with the reduced one
+  S = "";
+  for (i=0; i<(int)chunks.size(); i++) {
+    if (chunks[i].second < 0) {
+      S += std::string(-chunks[i].second, toupper(chunks[i].first));
+    } else {
+      S += std::string(chunks[i].second, chunks[i].first);
+    }
+  }
 }    
     
 std::ostream &operator<<(std::ostream &os, CyclicProduct &G) {
@@ -105,12 +216,8 @@ Chain::Chain(CyclicProduct* G_in, char** input, int num_strings) {
   int j;
   std::string word;
   std::string weight;
-  ChainChunk temp;
-  int wordLen;
-  //int order;
-  std::string first, middle, last;
   
-  G = G_in;                   // note this does NOT require a copy constructor
+  G = G_in; //just a pointer assignment, not copy constructor
   
   //input the raw words
   for (i=0; i<num_strings; i++) {
@@ -128,98 +235,18 @@ Chain::Chain(CyclicProduct* G_in, char** input, int num_strings) {
     words.push_back(word);
   }
   
-  //simplify the words into all lower case (as much as possible)
-  //first rotate the words so a chunk starts the word
+  //simplify the words
   for (i=0; i<(int)words.size(); i++) {
-    j=0;
-    while (j<(int)words[i].size()-1 && words[i][j] == words[i][j+1]) {
-      j++;
-    }
-    j = (j+1)%words[i].size();
-    words[i] = words[i].substr(j, words[i].size()-j) + words[i].substr(0, j);
-  }
-  
-  /*
-  //first pass = all lower case
-  for (i=0; i<(int)words.size(); i++) {
-    j=0;
-    while (j<(int)words[i].size()) {
-      order = (*G).gen_order(words[i][j]);
-      if (order > 0 && !islower(words[i][j])) {
-        first = words[i].substr(0, j);
-        middle = std::string(order-1, tolower(words[i][j]));
-        last = (j < (int)words[i].size()-1 ? words[i].substr(j+1, words[i].size()-j) : "");
-        words[i] = first + middle + last;
-        j += order-1;
-      } else {
-        j++;
-      }
+    (*G).cyc_red(words[i]);
+    if ((int)words[i].size() == 0) {
+      std::cout << "You gave me a trivial word\n";
+      exit(1);
     }
   }
   
-  //now reduce them
-  for (i=0; i<(int)words.size(); i++) {
-    j=0;
-    while ( true ) {
-      if (j >= (int)words[i].size()) {
-        break;
-      }
-      order = (*G).gen_order(words[i][j]);
-      if (j+order >= (int)words[i].size() ) {
-        j++;
-        continue;
-      }
-      if (order == 0) {
-        j++;
-        continue;
-      }
-      if (words[i].substr(j, order) == std::string(order, words[i][j])) {
-        words[i] = words[i].substr(0, j) + words[i].substr(j+order, words[i].size()-j-order);
-      } else {
-        j++;
-      }
-    }
-  }
-  * */
-  
-  //now compute the chunks -- note we may assume that a chunk starts the word
-  chunks.resize(words.size());
-  for (i=0; i<(int)words.size(); i++) {
-    chunks[i].resize(0);
-    word = words[i];
-    wordLen = word.size();
-    temp.word = i;
-    if (words[i][0] == words[i][wordLen-1]) { //if the word only has one letter
-      temp.start_index = 0;
-      temp.len = wordLen;
-      temp.group = (*G).gen_index(words[i][0]);
-      chunks[i].push_back(temp);
-      continue;
-    }
-    j = 0;                                //j is at the beginning of a chunk
-    while (j != (int)words[i].size()) {        //stop if we've looped around
-      temp.start_index = j;
-      if ((*G).gen_order(word[j]) == 0) {
-        temp.len = 1;
-        temp.group = (*G).gen_index(word[j]);
-        chunks[i].push_back(temp);
-        j++;
-        continue;
-      }
-      while (word[j] == word[(j+1)%wordLen]) {  //go until the end of the chunk
-        j++;
-      }
-      temp.len = j-temp.start_index;
-      if (temp.len < 0) {
-        temp.len += wordLen;
-      }
-      temp.len += 1;
-      temp.group = (*G).gen_index(word[j]);
-      chunks[i].push_back(temp);
-      j++;
-    }
-  }
-  
+  std::cout << "Done simplifying words\n";
+  std::cout.flush();
+ 
   //now compute the chain letters
   ChainLetter temp_letter;
   chain_letters.resize(0);
@@ -283,6 +310,7 @@ std::string Chain::operator[](int index) {
   return words[index];
 }
 
+/*
 void Chain::print_chunks(std::ostream &os) {
   int i,j;
   for (i=0; i<(int)chunks.size(); i++) {
@@ -295,7 +323,7 @@ void Chain::print_chunks(std::ostream &os) {
     os << "\n";
   }
 }
-
+*/
 
 void Chain::print_letters(std::ostream &os) {
   int i;
@@ -337,47 +365,59 @@ std::ostream &operator<<(std::ostream &os, Chain &C) {
  * note the central edges can be anything
  * the edge is the letter just before it, and the letter just after
  ****************************************************************************/
-CentralEdgeList::CentralEdgeList() {
+CentralEdgePairList::CentralEdgePairList() {
   edges.resize(0);
   edges_beginning_with.resize(0);
 }
 
-CentralEdgeList::CentralEdgeList(Chain &C) {
+CentralEdgePairList::CentralEdgePairList(Chain &C) {
   int i,j;
   int num_letters = C.num_letters();
-  CentralEdge temp_central_edge;
-  edges.resize(0);
-  edges_beginning_with.resize(num_letters);
+  CentralEdgePair temp_central_edge_pair;
+  edge_pairs.resize(0);
+  edge_pairs_beginning_with.resize(num_letters);
   for (i=0; i<num_letters; i++) {
-    edges_beginning_with[i].resize(0);
-    temp_central_edge.first = i;
-    for (j=0; j<num_letters; j++) {
-      temp_central_edge.last = j;
-      edges.push_back(temp_central_edge);
-      edges_beginning_with[i].push_back(edges.size()-1);
+    edge_pairs_beginning_with[i].resize(0);
+    temp_central_edge_pair.first = i;
+    for (j=i+2; j<num_letters; j++) {
+      temp_central_edge_pair.last = j;
+      edge_pairs.push_back(temp_central_edge_pair);
+      edge_pairs_beginning_with[i].push_back(edge_pairs.size()-1);
     }
   }
 }
 
-int CentralEdgeList::get_index(int a, int b) {
+//if (a,b) has minimal first entry between that and (b-1,a+1) (i.e. b-1>a),
+//this returns ind+1
+//otherwise, it returns -(ind+1)
+int CentralEdgePairList::get_index(int a, int b) {
   int i;
-  for (i=0; i<(int)edges_beginning_with[a].size(); i++) {
-    if (edges[edges_beginning_with[a][i]].last == b) {
-      return edges_beginning_with[a][i];
+  if (b-1 > a) {
+    for (i=0; i<(int)edge_pairs_beginning_with[a].size(); i++) {
+      if (edge_pairs[edge_pairs_beginning_with[a][i]].last == b) {
+        return edge_pairs_beginning_with[a][i]+1;
+      }
+    }
+  } else {
+    for (i=0; i<(int)edge_pairs_beginning_with[b-1].size(); i++) {
+      if (edge_pairs[edge_pairs_beginning_with[b-1][i]].last == a+1) {
+        return -(edge_pairs_beginning_with[b-1][i]+1);
+      }
     }
   }
-  return -1;
+  return 0;  //this is bad
 }
 
-CentralEdge CentralEdgeList::operator[](int index) {
-  return edges[index];
+CentralEdgePair CentralEdgePairList::operator[](int index) {
+  return edge_pairs[index];
 }
 
-void CentralEdgeList::print(std::ostream &os) {
+void CentralEdgePairList::print(std::ostream &os) {
   int i;
-  os << "Central Edges:\n";
-  for (i=0; i<(int)edges.size(); i++) {
-    os << i << ": " << edges[i].first << ", " << edges[i].last << "\n";
+  os << "Central Edge pairs:\n";
+  for (i=0; i<(int)edge_pairs.size(); i++) {
+    os << i << ": (" << edge_pairs[i].first << ", " << edge_pairs[i].last
+       << "), (" << edge_pairs[i].last-1 << ", " << edge_pairs[i].first + 1 << ")\n";
   }
 }
     
@@ -475,68 +515,6 @@ void InterfaceEdgeList::print(std::ostream &os) {
 }
 
 
-/****************************************************************************
- * make a list of all the group edges
- ****************************************************************************/
-GroupEdgeList::GroupEdgeList() {
-  edges.resize(0);
-  edges_beginning_with.resize(0);
-}
-
-GroupEdgeList::GroupEdgeList(Chain &C, int group_index) {
-  int order = (C.G)->orders[group_index];
-  edges.resize(0);
-  edges_beginning_with.resize(C.num_letters());
-  regular_edges.resize(0);
-  inverse_edges.resize(0);
-  GroupEdge temp_group_edge;
-  group = group_index;
-  int i,j;
-  if (order == 0) {
-    return;
-  }
-  
-  for (i=0; i<(int)C.regular_letters[group_index].size(); i++) {
-    temp_group_edge.first = C.regular_letters[group_index][i];
-    for (j=0; j<(int)C.regular_letters[group_index].size(); j++) {
-      temp_group_edge.last = C.regular_letters[group_index][j];
-      edges.push_back(temp_group_edge);
-      edges_beginning_with[temp_group_edge.first].push_back(edges.size()-1);
-      regular_edges.push_back(edges.size()-1);
-    }
-  }
-  for (i=0; i<(int)C.inverse_letters[group_index].size(); i++) {
-    temp_group_edge.first = C.inverse_letters[group_index][i];
-    for (j=0; j<(int)C.inverse_letters[group_index].size(); j++) {
-      temp_group_edge.last = C.inverse_letters[group_index][j];
-      edges.push_back(temp_group_edge);
-      edges_beginning_with[temp_group_edge.first].push_back(edges.size()-1);
-      inverse_edges.push_back(edges.size()-1);
-    }
-  }
-}
-
-GroupEdge GroupEdgeList::operator[](int index) {
-  return edges[index];
-}
-
-int GroupEdgeList::get_index(int a, int b) {
-  int i;
-  for (i=0; i<(int)edges_beginning_with[a].size(); i++) {
-    if (edges[edges_beginning_with[a][i]].last == b) {
-      return edges_beginning_with[a][i];
-    }
-  }
-  return -1;
-}
-
-void GroupEdgeList::print(std::ostream &os) {
-  int i;
-  os << "Group " << group << " Edges:\n";
-  for (i=0; i<(int)edges.size(); i++) {
-    os << i << ": " << edges[i].first << ", " << edges[i].last << "\n";
-  }
-}
 
 
 
