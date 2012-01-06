@@ -17,6 +17,7 @@
 struct ChainLetter {
   int word;
   int index;
+  int index_in_group_reg_inv_list;
   char letter;
   int group;
 };
@@ -124,32 +125,18 @@ struct InterfaceEdgeList {
 };
 
 
-/****************************************************************************
- * an edge pair
- * **************************************************************************/
-enum EDGE_TYPE {SCYLLA_EDGE_CENTRAL, SCYLLA_EDGE_INTERFACE, SCYLLA_EDGE_GROUP};
-struct EdgePair {
-  EDGE_TYPE edge_type;
-  int group;
-  int first;
-  int second;
-};
-
 
 /*****************************************************************************
  * a central polygon  (this is a list of interface and polygon edges)
  * ***************************************************************************/
 struct CentralPolygon {
-  std::vector<int> edge;         //these are the central edges
-  std::vector<int> side_of_edge; //these record which side (+/-) each edge is (N/A for interface edges)
+  std::vector<pair<int, int> > edges; //these record the first and second letters in the edge pair
   std::vector<bool> interface;   //this records whether the edge is an interface edge
-  int chi_times_2(Chain &C, CentralEdgeList &CEL, InterfaceEdgeList &IEL);
+  int chi_times_2();
   void compute_ia_etc_for_edges(int i,
                                 Chain &C,
                                 InterfaceEdgeList &IEL,
-                                CentralEdgeList &CEL,
-                                std::vector<EdgePair> &edge_pairs,
-                                std::vector<int> &central_edge_pairs,
+                                CentralEdgePairList &CEL,
                                 std::vector<int> &temp_ia,
                                 std::vector<int> &temp_ja,
                                 std::vector<int> &temp_ar);
@@ -158,16 +145,16 @@ struct CentralPolygon {
 std::ostream &operator<<(std::ostream &os, CentralPolygon &CP);
 
 /****************************************************************************
- * a group outside edge (these pair with the interface edges
+ * a group outside edge (these pair with the interface edges)
  * **************************************************************************/
 struct GroupTooth {
   int position;     //the position of this tooth around the circle
   int first;        //the first letter (as position in the chain)
   int last;         //the last letter 
-  bool inverse;
-  int group_index;
+  bool inverse;     //is it mad eup of inverse letters?
+  int group_index;  //index of the group
   int base_letter;  //the base letter (as position in the chain)
-  int chi_times_2(Chain &C);
+  double chi_times_2(Chain &C);
   void compute_ia_etc_for_edges(int offset, 
                                 Chain &C,
                                 InterfaceEdgeList &IEL, 

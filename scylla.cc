@@ -28,9 +28,8 @@
  * Make the list of group polygons and rectangles. 
  * ***************************************************************************/
 void compute_group_teeth_and_rectangles(Chain &C, 
-                                         InterfaceEdgeList &IEL,
-                                         std::vector<GroupTooth > &GT,
-                                         std::vector<GroupRectangle > &GR) {
+                                       std::vector<GroupTooth > &GT,
+                                       std::vector<GroupRectangle > &GR) {
   int i,j,k,l,m,n;
   int ord;
   int num_groups = (C.G)->num_groups();
@@ -129,235 +128,167 @@ void compute_group_teeth_and_rectangles(Chain &C,
 
 /*****************************************************************************
  * compute the list of polys. 
+ Setting limit_central_sides limits the central sides to only a single 
+ one in a triangle.  This effectively duplicates the nonrigorous scallop
+ (the intention is that it should be faster)
  *****************************************************************************/
 void compute_central_polys(Chain &C, 
                            InterfaceEdgeList &IEL, 
-                           CentralEdgeList &CEL,
-                           std::vector<CentralPolygon> &CP) {
+                           std::vector<CentralPolygon> &CP,
+                           bool limit_central_sides) {
   int i,j,k;
-  
+  int e1L1, e1L2, e2L1, e2L2, e3L1, e3L2;  //edge1, letter1, etc
   CentralPolygon temp_central_poly;
   
   CP.resize(0);
-  temp_central_poly.edges.resize(4);
-  temp_central_poly.interface.resize(4);
   
-  //first, we go through everything with two central edges
-  //for this, all we have to do is enumerate everything with 
-  //2 interface edges, and that's it
-  for (i=0; i<4; i++) {
-    temp_central_poly.interface[i] = (i%2 == 0 ? true : false);
-  }
-  for (i=0; i<(int)IEL.edges.size(); i++) {
-    temp_central_poly.edges[0] = i;
-    for (j=0; j<(int)IEL.edges.size(); j++) {
-      temp_central_poly.edges[2] = j;
-      temp_central_poly.edges[1] = CEL.get_index( IEL[i].last, IEL[j].first );
-      temp_central_poly.edges[3] = CEL.get_index( IEL[j].last, IEL[i].first );
-      CP.push_back(temp_central_poly);
-    }
-  }
-  
-  //now, we go through all guys with 1 central edge
-  //build chains of interface edges; whenever the length is 3, we tack on 
-  //a central edge, and we're done
-  std::vector<int> current_beginning_letters(3);    //this records the first letters of the interface edge choices
-  std::vector<int> current_edges(3);                //this records where we are in the lists real_edges_beginning_with
-  int current_len;                                  //this records the current length
-  int temp_CE_1, temp_CE_2, temp_CE_3, temp_letter;
-  current_len = 1;
-  current_beginning_letters[0] = 0;
-  current_edges[0] = 0;
-  temp_central_poly.interface[0] = true;
-  temp_central_poly.interface[1] = true;
-  temp_central_poly.interface[2] = true;
-  temp_central_poly.interface[3] = false;
-  while (true) {   
-    //for (i=0; i<current_len; i++) {
-    //  std::cout << "(" << current_beginning_letters[i] << ", " << current_edges[i] << ") ";
-    //}
-    //std::cout << "\n";
-    if (current_len == 3) {
-      temp_CE_1 = IEL.edges_beginning_with[current_beginning_letters[current_len-1]][current_edges[current_len-1]];
-      temp_CE_2 = IEL.edges_beginning_with[current_beginning_letters[0]][current_edges[0]];
-      for (i=0; i<current_len; i++) {
-        temp_central_poly.edges[i] = IEL.edges_beginning_with[current_beginning_letters[i]]
-                                                             [current_edges[i]];
-      }
-      temp_central_poly.edges[3] = CEL.get_index(IEL[temp_CE_1].last, IEL[temp_CE_2].first);
-      CP.push_back(temp_central_poly);
-    }
-    //now we advance it: if the list is shorter than maxmal (3), then add
-    //one on.  otherwise, step back and leave it short
-    if (current_len < 3) { 
-      temp_CE_1 = IEL.edges_beginning_with[current_beginning_letters[current_len-1]]
-                                          [current_edges[current_len-1]];
-      temp_letter = C.next_letter( IEL[temp_CE_1].last );
-      current_beginning_letters[current_len] = temp_letter;
-      current_edges[current_len] = 0;
-      current_len++;
-      continue;
-    }
-    //if we're here, then the length is 3, so advance to the next one
-    i = current_len-1;
-    while (i>=0 && current_edges[i] == (int)IEL.edges_beginning_with[current_beginning_letters[i]].size()-1) {
-      i--;
-    }
-    if (i==-1) {
-      if (current_beginning_letters[0] == (int)C.chain_letters.size()-1) {
-        break;
-      } else {
-        current_beginning_letters[0]++;
-        current_edges[0] = 0;
-        current_len = 1;
+  //first, enumerate all polys with two sides.  These are 
+  //always both interface edges.  We may always assume that 
+  //the smallest letter is at position 0
+  temp_central_poly.edges.resize(2);
+  temp_central_poly.interface = std::vector<bool>(2, true);
+  for (i=0; i<(int)C.chain_letters.size(); i++) {               //the first letter
+    e1L1 = i;
+    for (j=0; j<(int)IEL.edges_beginning_with[i].size(); j++) { //which edge we are thinking about
+      e1L2 = IEL[IEL.edges_beginning_with[i][j]].last;
+      e2L1 = C.next_letter(e1L2)
+      if (e2L1 < e1L1) {
         continue;
       }
-    } 
-    current_edges[i]++;
-    current_len = i+1;
-  }
-  
-  
-  //now we search for all interface-edge polygons
-  current_len = 1;
-  current_beginning_letters.resize(3);
-  current_edges.resize(3);
-  current_beginning_letters[0] = 0;
-  current_edges[0] = 0;
-  temp_central_poly.interface[0] = true;
-  temp_central_poly.interface[1] = true;
-  temp_central_poly.interface[2] = true;
-  temp_central_poly.interface[3] = true;
-  while (true) {     
-    //for (i=0; i<current_len; i++) {
-    //  std::cout << "(" << current_beginning_letters[i] << ", " << current_edges[i] << ") ";
-    //}
-    //std::cout << "\n";
-    if (current_len == 3) {
-      temp_CE_1 = IEL.edges_beginning_with[current_beginning_letters[current_len-1]]
-                                          [current_edges[current_len-1]];
-      temp_CE_2 = IEL.edges_beginning_with[current_beginning_letters[0]]
-                                          [current_edges[0]];
-      temp_CE_3 = IEL.get_index_from_poly_side(C.next_letter( IEL[temp_CE_1].last ),
-                                               C.prev_letter( IEL[temp_CE_2].first ) );
-      if (temp_CE_3 != -1) {
-        for (i=0; i<current_len; i++) {
-          temp_central_poly.edges[i] = IEL.edges_beginning_with[current_beginning_letters[i]]
-                                                               [current_edges[i]];
-        }
-        temp_central_poly.edges[3] = temp_CE_3;
-        CP.push_back(temp_central_poly);
-      }
-    }
-    //now we advance it: if the list is shorter than maxmal (4), then add
-    //one on.  otherwise, step back and leave it short
-    if (current_len < 3) { 
-      for (k=current_edges[current_len-1];
-           k<(int)IEL.edges_beginning_with[current_beginning_letters[current_len-1]].size();
-           k++) {
-        temp_CE_1 = IEL.edges_beginning_with[current_beginning_letters[current_len-1]][k];
-        temp_letter = C.next_letter( IEL[temp_CE_1].last );
-        if (temp_letter > current_beginning_letters[0]) {
+      for (k=0; k<(int)IEL.edges_beginning_with[e2L1].size(); k++) {
+        e2L2 = IEL[IEL.edges_beginning_with[e2L1][k]].last
+        if (e2L2 == C.prev_letter(e1L1)) {
+          temp_central_poly.edges[0] = make_pair( e1L1, e1L2 );
+          temp_central_poly.edges[1] = make_pair( e2L1, e2L2 );
+          CP.push_back(temp_central_poly);
           break;
         }
       }
-      if (k<(int)IEL.edges_beginning_with[current_beginning_letters[current_len-1]].size()) {
-        current_beginning_letters[current_len] = temp_letter;
-        current_edges[current_len] = 0;
-        current_edges[current_len-1] = k;
-        current_len++;
-        continue;
-      } else {
-        current_edges[current_len-1] = k-1;
-        //we need to advance to the next letter; the following code will do that
-        //because we just set current_edges[current_len-1] to the last one
-      }
     }
-    //if we're here, then the length is 3, so advance to the next one
-    i = current_len-1;
-    while (i>=0 && current_edges[i] == (int)IEL.edges_beginning_with[current_beginning_letters[i]].size()-1) {
-      i--;
-    }
-    if (i==-1) {
-      if (current_beginning_letters[0] == (int)C.chain_letters.size()-1) {
-        break;
-      } else {
-        current_beginning_letters[0]++;
-        current_edges[0] = 0;
-        current_len = 1;
+  }
+  
+  //enumerate all polys with three sides, all interface
+  temp_central_poly.edges.resize(3);
+  temp_central_poly.interface = std::vector<bool>(3, true);
+  for (i=0; i<(int)C.chain_letters.size(); i++) {               //the first letter
+    e1L1 = i;
+    for (j=0; j<(int)IEL.edges_beginning_with[i].size(); j++) { //which edge we are thinking about
+      e1L2 = IEL[IEL.edges_beginning_with[i][j]].last;
+      e2L1 = C.next_letter(e1L2)      
+      if (e2L1 < e1L1) {  //if first letter isn't smallest
         continue;
       }
-    } 
-    current_edges[i]++;
-    current_len = i+1;
+      for (k=0; k<(int)IEL.edges_beginning_with[e2L1].size(); k++) {
+        e2L2 = IEL[IEL.edges_beginning_with[e2L1][k]].last
+        e3L1 = C.next_letter(e2L2);      
+        if (e3L1 < e1L1) {  //if first letter isn't smallest
+          continue;
+        }
+        for (l=0; l<(int)IEL.edges_beginning_with[e3L1].size(); l++) {
+          e3L2 = IEL[IEL.edges_beginning_with[e3L1][l]].last
+          if (e3L2 == C.prev_letter(e1L1)) {
+            temp_central_poly.edges[0] = make_pair( e1L1, e1L2 );
+            temp_central_poly.edges[1] = make_pair( e2L1, e2L2 );
+            temp_central_poly.edges[2] = make_pair( e3L1, e3L2 );
+            CP.push_back(temp_central_poly);
+            break;
+          }
+        }
+      }
+    }
+  }
+  
+  //enumerate all polys with three sides, 2 interface
+  //we can no longer assume the first one is the smallest letter
+  temp_central_poly.edges.resize(3);
+  temp_central_poly.interface = std::vector<bool>(3, true);
+  temp_central_poly.interface[2] = false;
+  for (i=0; i<(int)C.chain_letters.size(); i++) {               //the first letter
+    e1L1 = i;
+    for (j=0; j<(int)IEL.edges_beginning_with[i].size(); j++) { //which edge we are thinking about
+      e1L2 = IEL[IEL.edges_beginning_with[i][j]].last;
+      e2L1 = C.next_letter(e1L2)      
+      for (k=0; k<(int)IEL.edges_beginning_with[e2L1].size(); k++) {
+        e2L2 = IEL[IEL.edges_beginning_with[e2L1][k]].last
+        if (C.next_letter(e2L2) == e1L1) { //this is really a bigon
+          continue;
+        }
+        temp_central_poly.edges[0] = make_pair( e1L1, e1L2 );
+        temp_central_poly.edges[1] = make_pair( e2L1, e2L2 );
+        temp_central_poly.edges[2] = make_pair( e2L2, e1L1 );
+        CP.push_back(temp_central_poly);
+      }
+    }
+  }
+  
+  if (limit_central_sides) {
+    return;
+  }
+  
+  //enumerate all polys with three sides, 1 interface
+  //we can no longer assume the first one is the smallest letter
+  temp_central_poly.edges.resize(3);
+  temp_central_poly.interface = std::vector<bool>(3, false);
+  temp_central_poly.interface[0] = true;
+  for (i=0; i<(int)C.chain_letters.size(); i++) {               //the first letter
+    e1L1 = i;
+    for (j=0; j<(int)IEL.edges_beginning_with[i].size(); j++) { //which edge we are thinking about
+      e1L2 = IEL[IEL.edges_beginning_with[i][j]].last;
+      e2L1 = e1L2     
+      for (e2L2 = 0; e2L2<(int)C.chain_letters.size(); e2L2++) {
+        if (e2L2 == C.next_letter(e2L1)) {
+          continue;
+        }
+        e3L1 = C.prev_letter(e2L2); //this is really weird
+        e3L2 = e1L1;
+        if (e3L2 == C.next_letter(e3L1)) {
+          continue;
+        }
+        temp_central_poly.edges[0] = make_pair( e1L1, e1L2 );
+        temp_central_poly.edges[1] = make_pair( e2L1, e2L2 );
+        temp_central_poly.edges[2] = make_pair( e2L2, e1L1 );
+        CP.push_back(temp_central_poly);       
+      }
+    }
   }
   
 }
 
 
 
-void print_central_polys(std::vector<CentralPolygon> &CP, std::ostream &os, int level) {
+void print_central_polys(std::vector<CentralPolygon> &CP, 
+                         std::ostream &os, 
+                         int level) {
   int i,j;
   os << "Central polygons: (" << CP.size() << "):\n"; 
-  if (level == 0) {
+  if (level < 3 && (int)CP.size() > 30) {
     os << "(" << CP.size() << " polygons hidden)\n";
   } else {
     for (i=0; i<(int)CP.size(); i++) {
-      os << i << ": ";
-      for (j=0; j<(int)CP[i].edges.size(); j++) {
-        os << CP[i].edges[j];
-        if (CP[i].interface[j]) {
-          os << "i";
-        } else {
-          os << "c";
-        }
-        os << " ";
-      }
-      os << "\n";
+      os << i << ": " << CP[i];
     }
   }
 }
 
 
-void print_group_teeth_mouths_polys_and_rectangles(std::vector<std::vector<GroupTooth> > &GT,
-                                                  std::vector<std::vector<GroupMouth> > &GM,
-                                                  std::vector<std::vector<GroupPolygon> > &GP,
-                                                  std::vector<std::vector<GroupRectangle> > &GR,
-                                                  std::ostream &os,
-                                                  int level) {
+void print_group_teeth_and_rectangles(std::vector<GroupTooth> &GT,
+                                  std::vector<GroupRectangle> &GR,
+                                  std::ostream &os,
+                                  int level) {
   int i,j;
-  for (i=0; i<(int)GP.size(); i++) {
-    os << "Group " << i << " teeth:\n";
-    if (level == 0) {
-      os << "(" << GT[i].size() << " hidden)\n";
-    } else {
-      for (j=0; j<(int)GT[i].size(); j++) {
-        os << j << ": " << GT[i][j] << "\n";
-      }
-    }
-    os << "Group " << i << " mouths:\n";
-    if (level == 0) {
-      os << "(" << GM[i].size() << " hidden)\n";
-    } else {
-      for (j=0; j<(int)GM[i].size(); j++) {
-        os << j << ": " << GM[i][j] << "\n";
-      }
-    }
-    os << "Group " << i << " polygons:\n";
-    if (level == 0) {
-      os << "(" << GP[i].size() << " polygons hidden)\n";
-    } else {
-      for (j=0; j<(int)GP[i].size(); j++) {
-        os << j << ": " << GP[i][j] << "\n";
-      }
-    }    
-    os << "Group " << i << " rectangles:\n";
-    if (level == 0) {
-      os << "(" << GR[i].size() << " rectangles hidden)\n";
-    } else {
-      for (j=0; j<(int)GR[i].size(); j++) {
-        os << j << ": " << GR[i][j] << "\n";
-      }
+  os << "Group teeth: (" << GT.size() << ")\n";
+  if (level < 3 && (int)GT.size() > 30) {
+    os << "(" << GT.size() << " hidden)\n";
+  } else {
+  for (i=0; i<(int)GT.size(); i++) { GR
+    os << i << ": " << GT[i] << "\n";
+  }  
+  os << "Group rectangles: (" << GR.size() << ")\n";
+   if (level < 3 && (int)GR.size() > 30) {
+    os << "(" << GR.size() << " rectangles hidden)\n";
+  } else {
+    for (i=0; i<(int)GR.size(); i++) {
+      os << i << ": " << GR[i] << "\n";
     }
   }
 }
@@ -369,17 +300,19 @@ void print_group_teeth_mouths_polys_and_rectangles(std::vector<std::vector<Group
 int main(int argc, char* argv[]) {
   int current_arg = 1;
   //int i;
-  bool VERBOSE = false;
+  int VERBOSE = 1;
   bool IPT = false;
+  bool LIMIT_CENTRAL_SIDES;
   
   if (argc < 3 || std::string(argv[1]) == "-h") {
-    std::cout << "usage: ./scyllop [-h] [-v] [-i] <gen string> <chain>\n";
+    std::cout << "usage: ./scyllop [-h] [-v[n]] [-l] [-i] <gen string> <chain>\n";
     std::cout << "\twhere <gen string> is of the form <gen1><order1><gen2><order2>...\n";
     std::cout << "\te.g. a5b0 computes in Z/5Z * Z\n";
     std::cout << "\tand <chain> is an integer linear combination of words in the generators\n";
     std::cout << "\te.g. ./scyllop a5b0 aabaaaB\n";
     std::cout << "\t-h: print this message\n";
-    std::cout << "\t-v: verbose output\n";
+    std::cout << "\t-v[n]: verbose output (n=0,1,2,3); 0 gives quiet output\n";
+    std::cout << "\t-l: limit the number of central sides to 1 (see readme)\n";
     std::cout << "\t-i: use the interior point LP method (faster but rational output is sometimes wrong)\n";
     exit(0);
   }
@@ -387,7 +320,13 @@ int main(int argc, char* argv[]) {
     if (argv[current_arg][1] == 'i') {
       IPT = true;
     } else if (argv[current_arg][1] == 'v') {
-      VERBOSE = true;
+      if (argv[current_arg][2] == '\0') {
+        VERBOSE = 2;
+      } else {
+        VERBOSE = atoi(&argv[current_arg][2]);
+      }
+    } else if (argv[current_arg][1] == 'l') {
+      LIMIT_CENTRAL_SIDES = true;
     }
     current_arg++;
   }
@@ -398,44 +337,50 @@ int main(int argc, char* argv[]) {
   
   Chain C(&G, &argv[current_arg], argc-current_arg);                              //process the chain argument
 
-  if (VERBOSE) {
+  if (VERBOSE>1) {
     std::cout << "Group: " << G << "\n";
     std::cout << "Chain: " << C << "\n";
-    std::cout << "Letters:\n";
-    C.print_letters(std::cout);
-    std::cout << "Group letters:\n";
-    C.print_group_letters(std::cout);
+    if (VERBOSE>2) {
+      std::cout << "Letters:\n";
+      C.print_letters(std::cout);
+      std::cout << "Group letters:\n";
+      C.print_group_letters(std::cout);
+    }
   }
   
-  CentralEdgeList CEL(C);
-  if (VERBOSE) CEL.print(std::cout);
-  
   InterfaceEdgeList IEL(C);
-  if (VERBOSE) IEL.print(std::cout);
+  if (VERBOSE>1) IEL.print(std::cout);
+  
+  CentralEdgePairList CEL(C);
+  if (VERBOSE>1) CEL.print(std::cout);
   
   std::vector<CentralPolygon> CP;
-  compute_central_polys(C, IEL, CEL, CP);
-  std::cout << "computed polys (" << CP.size() << ")\n"; std::cout.flush();
-  if (VERBOSE) print_central_polys(CP, std::cout, VERBOSE);
+  compute_central_polys(C, IEL, CP, LIMIT_CENTRAL_SIDES);
+  if (VERBOSE > 1) {
+    std::cout << "computed polys (" << CP.size() << ")\n"; std::cout.flush();
+    print_central_polys(CP, std::cout, VERBOSE);
+  }
   
   std::vector<std::vector<GroupTooth> > GT;
-  std::vector<std::vector<GroupMouth> > GM;
   std::vector<std::vector<GroupRectangle> > GR;
-  std::vector<std::vector<GroupPolygon> > GP;
-  compute_group_teeth_mouths_polygons_and_rectangles(C, IEL, GEL, GT, GM, GP, GR);
-  std::cout << "computed group stuff\n"; std::cout.flush();
-  if (VERBOSE) print_group_teeth_mouths_polys_and_rectangles(GT, GM, GP, GR, std::cout, VERBOSE);
+  compute_group_teeth_and_rectangles(C, GT, GR);
+  if (VERBOSE > 1) {
+    std::cout << "computed group teeth and rectangles\n"; std::cout.flush();
+    print_group_teeth_and_rectangles(GT, GR, std::cout, VERBOSE);
+  }
   
-   
   rational scl;
   std::vector<rational> solution_vector(0);                           //run the LP
-  scylla_lp(C, GEL, IEL, CEL, CP, GT, GM, GP, GR, 
+  scylla_lp(C, IEL, CEL, CP, GT, GR, 
             &scl, 
             &solution_vector, 
             (IPT ? GLPK_IPT : GLPK_SIMPLEX),
-            true); 
+            VERBOSE); 
   
-  std::cout << "scl_{" << G << "}( " << C << ") = " << scl << " = " << scl.get_d() << "\n";    //output the answer
-  
+  if (VERBOSE>0) {
+    std::cout << "scl_{" << G << "}( " << C << ") = " << scl << " = " << scl.get_d() << "\n";    //output the answer
+  } else {
+    std::cout << scl.get_d() << "\n";
+  }
   return 0;
 }
