@@ -47,7 +47,7 @@ void compute_group_teeth_and_rectangles(Chain &C,
     for (j=0; j<(int)C.regular_letters[i].size(); j++) {
       temp_group_rect.first = C.regular_letters[i][j];
       for (k=0; k<(int)C.inverse_letters[i].size(); k++) {
-        temp_group_rect.last = C.inverse_letters[i][j];
+        temp_group_rect.last = C.inverse_letters[i][k];
         GR.push_back(temp_group_rect);
       }
     }
@@ -246,7 +246,7 @@ void compute_central_polys(Chain &C,
         }
         temp_central_poly.edges[0] = std::make_pair( e1L1, e1L2 );
         temp_central_poly.edges[1] = std::make_pair( e2L1, e2L2 );
-        temp_central_poly.edges[2] = std::make_pair( e2L2, e1L1 );
+        temp_central_poly.edges[2] = std::make_pair( e3L1, e3L2 );
         CP.push_back(temp_central_poly);       
       }
     }

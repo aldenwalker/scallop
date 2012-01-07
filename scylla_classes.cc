@@ -11,6 +11,12 @@
 
 
 
+//this is useful; subtract one mod something
+int sub_1_mod(int a, int m) {
+  //std::cout << "Called with " << a << " and " << m << "\n";
+  return (a+m-1)%m;
+}
+
 
 
 /*****************************************************************************
@@ -152,6 +158,10 @@ void CyclicProduct::cyc_red(std::string &S) {
         i=0;
         continue;
       }
+    }
+    
+    if ((int)chunks.size() == 1) {
+      break;
     }
     
     //combine the chunks
@@ -376,8 +386,8 @@ CentralEdgePairList::CentralEdgePairList() {
 
 CentralEdgePairList::CentralEdgePairList(Chain &C) {
   int i,j;
-  int num_letters = C.num_letters();
   CentralEdgePair temp_central_edge_pair;
+  num_letters = C.num_letters();
   edge_pairs.resize(0);
   edge_pairs_beginning_with.resize(num_letters);
   for (i=0; i<num_letters; i++) {
@@ -401,16 +411,18 @@ CentralEdgePairList::CentralEdgePairList(Chain &C) {
 //otherwise, it returns -(ind+1)
 int CentralEdgePairList::get_index(int a, int b) {
   int i;
-  if (b-1 > a) {
+  int bm1 = sub_1_mod(b, num_letters);
+  //std::cout << "Getting index of " << a << ", " << b << "\n";
+  if (bm1 > a) {
     for (i=0; i<(int)edge_pairs_beginning_with[a].size(); i++) {
       if (edge_pairs[edge_pairs_beginning_with[a][i]].last == b) {
         return edge_pairs_beginning_with[a][i]+1;
       }
     }
   } else {
-    for (i=0; i<(int)edge_pairs_beginning_with[b-1].size(); i++) {
-      if (edge_pairs[edge_pairs_beginning_with[b-1][i]].last == a+1) {
-        return -(edge_pairs_beginning_with[b-1][i]+1);
+    for (i=0; i<(int)edge_pairs_beginning_with[bm1].size(); i++) {
+      if (edge_pairs[edge_pairs_beginning_with[bm1][i]].last == (a+1)%num_letters) {
+        return -(edge_pairs_beginning_with[bm1][i]+1);
       }
     }
   }
@@ -426,7 +438,7 @@ void CentralEdgePairList::print(std::ostream &os) {
   os << "Central Edge pairs:\n";
   for (i=0; i<(int)edge_pairs.size(); i++) {
     os << i << ": (" << edge_pairs[i].first << ", " << edge_pairs[i].last
-       << "), (" << edge_pairs[i].last-1 << ", " << edge_pairs[i].first + 1 << ")\n";
+       << "), (" << sub_1_mod(edge_pairs[i].last, num_letters) << ", " << (edge_pairs[i].first+1)%num_letters << ")\n";
   }
 }
 
@@ -560,12 +572,14 @@ void CentralPolygon::compute_ia_etc_for_edges(int col,
       row = IEL.get_index_from_poly_side(edges[j].first, edges[j].second);
       val = 1;
     } else {
-      row = IEL.size() + CEL.get_index(edges[j].first, edges[j].second);
+      row = CEL.get_index(edges[j].first, edges[j].second);
       if (row < 0) {
         row = -row-1;
+        row += IEL.size();
         val = -1;
       } else {
         row = row-1;
+        row += IEL.size();
         val = 1;
       }
     } 
@@ -624,6 +638,7 @@ void GroupTooth::compute_ia_etc_for_edges(int offset,
     ja.push_back(col+1);
     ar.push_back(-1);
   }
+  std::cout << "Pushed interface " << row+1 << "," << col+1 << ",-1\n";
 
   //now do the group teeth edges
   L1 = C.chain_letters[first];
@@ -638,6 +653,9 @@ void GroupTooth::compute_ia_etc_for_edges(int offset,
     ia.push_back(row+1);
     ja.push_back(col+1);
     ar.push_back(-1);
+    std::cout << "Compute row1_offset = " << row1_offset << 
+    "so row+1 = " << row+1 << "\n";
+    
   }
   if (position < (C.G)->index_order(group_index)-1) {
     row2_offset = group_teeth_rows[L2.group]
@@ -647,6 +665,8 @@ void GroupTooth::compute_ia_etc_for_edges(int offset,
     ia.push_back(row+1);
     ja.push_back(col+1);
     ar.push_back(1); 
+    std::cout << "Compute row2_offset = " << row1_offset << 
+    "so row+1 = " << row+1 << "\n";
   } 
 }
   
@@ -690,13 +710,13 @@ void GroupRectangle::compute_ia_etc_for_edges(int col,
   ia.push_back(row+1);
   ja.push_back(col+1);
   ar.push_back(-1);
-  //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
+  std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
 
   row = IEL.get_index_from_group_side(last, first);
   ia.push_back(row+1);
   ja.push_back(col+1);
   ar.push_back(-1);
-  //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
+  std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
 }
 
 void GroupRectangle::compute_ia_etc_for_words(int offset, 
@@ -715,6 +735,7 @@ void GroupRectangle::compute_ia_etc_for_words(int offset,
     ia.push_back(row+1);
     ja.push_back(col+1);
     ar.push_back(1);
+    std::cout << "Pushed " << row+1 << " " << col+1 << " " << 1 << "\n";
   }
   if (C.chain_letters[last].index == 0) { // note the other letter can't be index 0
     word = C.chain_letters[last].word;
@@ -722,6 +743,7 @@ void GroupRectangle::compute_ia_etc_for_words(int offset,
     ia.push_back(row+1);
     ja.push_back(col+1);
     ar.push_back(1);
+    std::cout << "Pushed " << row+1 << " " << col+1 << " " << 1 << "\n";
   }
 }
 

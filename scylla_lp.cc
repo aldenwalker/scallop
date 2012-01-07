@@ -140,6 +140,10 @@ void scylla_lp(Chain& C,
   
   num_cols = CP.size() + GT.size() + GR.size();
   
+  if (VERBOSE > 2) {
+    std::cout << "Num equality rows: " << num_equality_rows
+              << "Num rows: " << num_rows << "\n";
+  }
   
   if (VERBOSE>1) {
     std::cout << "Started linear programming setup\n";
@@ -238,6 +242,9 @@ void scylla_lp(Chain& C,
     offset = CP.size();
     for (m=0; m<(int)GT.size(); m++) {
       if (GT[m].inverse) {
+        if (VERBOSE > 2) {
+          std::cout << GT[m] << "\n";
+        }
         GT[m].compute_ia_etc_for_edges(offset + m, 
                                         C, 
                                         IEL, 
@@ -245,7 +252,10 @@ void scylla_lp(Chain& C,
                                         ia, 
                                         ja, 
                                         ar);
-      } else {
+      } else {        
+        if (VERBOSE > 2) {
+          std::cout << GT[m] << "\n";
+        }
         GT[m].compute_ia_etc_for_edges(offset + m, 
                                         C, 
                                         IEL, 
@@ -257,6 +267,7 @@ void scylla_lp(Chain& C,
     }
     offset = CP.size() + GT.size();
     for (m=0; m<(int)GR.size(); m++) {
+      std::cout << GR[m] << "\n";
       GR[m].compute_ia_etc_for_edges(offset + m, IEL, ia, ja, ar);
     }
     
@@ -271,8 +282,11 @@ void scylla_lp(Chain& C,
     for (j=0; j<(int)GT.size(); j++) {
       GT[j].compute_ia_etc_for_words(offset + j, C, num_equality_rows, ia, ja, ar);
     }
-    offset += CP.size() + GT.size();
+    offset = CP.size() + GT.size();
     for (j=0; j<(int)GR.size(); j++) {
+      if (VERBOSE > 2) {
+        std::cout << "word cons GR " << GR[j] << "\n";
+      }
       GR[j].compute_ia_etc_for_words(offset + j, 
                                       C, 
                                       num_equality_rows, 

@@ -97,6 +97,7 @@ struct CentralEdgePairList {
   void print(std::ostream &os);
   int size();
   
+  int num_letters;
   std::vector<CentralEdgePair> edge_pairs;
   std::vector<std::vector<int> > edge_pairs_beginning_with;
 };
