@@ -370,8 +370,8 @@ std::ostream &operator<<(std::ostream &os, Chain &C) {
  * the edge is the letter just before it, and the letter just after
  ****************************************************************************/
 CentralEdgePairList::CentralEdgePairList() {
-  edges.resize(0);
-  edges_beginning_with.resize(0);
+  edge_pairs.resize(0);
+  edge_pairs_beginning_with.resize(0);
 }
 
 CentralEdgePairList::CentralEdgePairList(Chain &C) {
@@ -387,6 +387,11 @@ CentralEdgePairList::CentralEdgePairList(Chain &C) {
       temp_central_edge_pair.last = j;
       edge_pairs.push_back(temp_central_edge_pair);
       edge_pairs_beginning_with[i].push_back(edge_pairs.size()-1);
+    }
+    if (i < num_letters-1) {
+      temp_central_edge_pair.last = 0;
+      edge_pairs.push_back(temp_central_edge_pair);
+      edge_pairs_beginning_with[i].push_back(edge_pairs.size()-1);      
     }
   }
 }
@@ -424,7 +429,11 @@ void CentralEdgePairList::print(std::ostream &os) {
        << "), (" << edge_pairs[i].last-1 << ", " << edge_pairs[i].first + 1 << ")\n";
   }
 }
-    
+
+
+int CentralEdgePairList::size() {
+  return edge_pairs.size();
+}
   
 
 
@@ -525,7 +534,9 @@ void InterfaceEdgeList::print(std::ostream &os) {
   }
 }
 
-
+int InterfaceEdgeList::size() {
+  return edges.size();
+}
 
 
 
@@ -546,20 +557,16 @@ void CentralPolygon::compute_ia_etc_for_edges(int col,
   int j,row,val;
   for (j=0; j<(int)edges.size(); j++) {
     if (interface[j]) {
-      if (C.next_letter( IEL[edges[j]].last ) == IEL[edges[j]].first ) {         //don't restrict edges like this
-        continue;
-      }
-      row = edges[j];
+      row = IEL.get_index_from_poly_side(edges[j].first, edges[j].second);
       val = 1;
     } else {
-      if (C.next_letter( CEL[edges[j]].first ) == CEL[edges[j]].last) {   //nor these edges
-        continue;
-      }
-      row = central_edge_pairs[edges[j]];
-      if (edge_pairs[row].first == edges[j]) { 
-        val = 1;
-      } else {
+      row = IEL.size() + CEL.get_index(edges[j].first, edges[j].second);
+      if (row < 0) {
+        row = -row-1;
         val = -1;
+      } else {
+        row = row-1;
+        val = 1;
       }
     } 
     temp_ja.push_back(col+1);
@@ -574,7 +581,7 @@ std::ostream &operator<<(std::ostream &os, CentralPolygon &CP) {
   int j;
   os << "CP: ";
   for (j=0; j<(int)CP.edges.size(); j++) {
-    os << "(" << CP.edges[j].first << ", " CP.edges[j].second << ")";
+    os << "(" << CP.edges[j].first << ", " << CP.edges[j].second << ")";
     if (CP.interface[j]) {
       os << "i";
     } else {
@@ -601,67 +608,70 @@ double GroupTooth::chi_times_2(Chain &C) {
 void GroupTooth::compute_ia_etc_for_edges(int offset, 
                                           Chain &C,
                                           InterfaceEdgeList &IEL, 
-                                          std::vector<std::vector<std::vector<int> > > &rows_for_letters_in_mouths, 
+                                          std::vector<std::vector<std::vector<int> > > &group_teeth_rows, 
                                           std::vector<int> &ia, 
                                           std::vector<int> &ja, 
                                           std::vector<double> &ar) {
   int row;
   int col = offset;
+  int row1_offset, row2_offset;
+  ChainLetter L1, L2, baseL;
   
-  int temp_letter_1, temp_letter_2;
-  if (inverse) {
-    temp_letter_1 = C.inverse_letters[group_index][first];
-    temp_letter_2 = C.inverse_letters[group_index][last];
-  } else {
-    temp_letter_1 = C.regular_letters[group_index][first];
-    temp_letter_2 = C.regular_letters[group_index][last];
-  }
-  
-  if (C.next_letter(temp_letter_1) != temp_letter_2) { 
-    row = IEL.get_index_from_group_side(temp_letter_1, temp_letter_2);
+  //do the interface edge
+  if (C.next_letter(first) != last) { //only do it if it's not a dummy edge
+    row = IEL.get_index_from_group_side(first, last);
     ia.push_back(row+1);
     ja.push_back(col+1);
     ar.push_back(-1);
-    //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
   }
 
-  row = rows_for_letters_in_mouths[group_index][group_mouth_index][first] + position;
-  ia.push_back(row+1);
-  ja.push_back(col+1);
-  ar.push_back(1);
-  //std::cout << "Pushed " << row+1 << " " << col+1 << " " << 1 << "\n";
-  
-  if (position < (C.G)->orders[group_index]-1) {
-    row = rows_for_letters_in_mouths[group_index][group_mouth_index][last] + position+1;
+  //now do the group teeth edges
+  L1 = C.chain_letters[first];
+  L2 = C.chain_letters[last];
+  baseL = C.chain_letters[base_letter];
+
+  if (position > 0) {    
+    row1_offset = group_teeth_rows[L1.group]
+                                  [L1.index_in_group_reg_inv_list]
+                                  [baseL.index_in_group_reg_inv_list];
+    row = row1_offset + (position-1);
     ia.push_back(row+1);
     ja.push_back(col+1);
     ar.push_back(-1);
-    //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
   }
+  if (position < (C.G)->index_order(group_index)-1) {
+    row2_offset = group_teeth_rows[L2.group]
+                                  [L2.index_in_group_reg_inv_list]
+                                  [baseL.index_in_group_reg_inv_list];
+    row = row2_offset + position;
+    ia.push_back(row+1);
+    ja.push_back(col+1);
+    ar.push_back(1); 
+  } 
 }
   
 
 void GroupTooth::compute_ia_etc_for_words(int offset, 
-                                          int row_offset,
                                           Chain &C,
+                                          int row_offset,
                                           std::vector<int> &ia, 
                                           std::vector<int> &ja, 
                                           std::vector<double> &ar) {
   int col = offset;
   int row;
-  if (inverse) {
-    row = row_offset + C.chain_letters[C.inverse_letters[group_index][first]].word;
-  } else {
-    row = row_offset + C.chain_letters[C.regular_letters[group_index][first]].word;
+  int word;
+  if (C.chain_letters[first].index == 0) {
+    word = C.chain_letters[first].word;
+    row = row_offset + word;
+    ia.push_back(row+1);
+    ja.push_back(col+1);
+    ar.push_back(1); 
   }
-  ia.push_back(row+1);
-  ja.push_back(col+1);
-  ar.push_back(1);
   //std::cout << "Pushed " << row+1 << " " << col+1 << " " << 1 << "\n";
 }
 
 std::ostream &operator<<(std::ostream &os, GroupTooth &GT) {
-  os << "GT: gp" << group_index << " (" << first << "," << last << ") " << position << " " << base_letter;
+  os << "GT: gp" << GT.group_index << " (" << GT.first << "," << GT.last << ") " << GT.position << " " << GT.base_letter;
   return os;
 }
 
@@ -670,19 +680,19 @@ std::ostream &operator<<(std::ostream &os, GroupTooth &GT) {
 /****************************************************************************
  group rectangle
  ****************************************************************************/
-void GroupRectangle::compute_ia_etc_for_edges(int offset, 
+void GroupRectangle::compute_ia_etc_for_edges(int col, 
+                                              InterfaceEdgeList &IEL,
                                               std::vector<int> &ia, 
                                               std::vector<int> &ja, 
                                               std::vector<double> &ar) {
-  int row,col;
-  col = offset;
-  row = first;
+  int row;
+  row = IEL.get_index_from_group_side(first, last);
   ia.push_back(row+1);
   ja.push_back(col+1);
   ar.push_back(-1);
   //std::cout << "Pushed " << row+1 << " " << col+1 << " " << -1 << "\n";
 
-  row = last;
+  row = IEL.get_index_from_group_side(last, first);
   ia.push_back(row+1);
   ja.push_back(col+1);
   ar.push_back(-1);
@@ -690,35 +700,34 @@ void GroupRectangle::compute_ia_etc_for_edges(int offset,
 }
 
 void GroupRectangle::compute_ia_etc_for_words(int offset, 
-                                              int row_offset,
                                               Chain &C, 
+                                              int row_offset,
                                               InterfaceEdgeList &IEL,
                                               std::vector<int> &ia,
                                               std::vector<int> &ja,
                                               std::vector<double> &ar) {
   int col = offset;
-  int word_1 = C.chain_letters[IEL.edges[first].first].word;
-  int word_2 = C.chain_letters[IEL.edges[last].first].word;
-  if (word_1 == word_2) {
-    ia.push_back(word_1 + row_offset + 1);
-    ja.push_back(col + 1);
-    ar.push_back(2);
-    //std::cout << "Put " << word_1 + row_offset + 1 << ", " << col+1 << ", " << 2 << ".\n";
-  } else {
-    ia.push_back(word_1 + row_offset + 1);
-    ja.push_back(col + 1);
+  int row;
+  int word;
+  if (C.chain_letters[first].index == 0) { // note the other letter can't be index 0
+    word = C.chain_letters[first].word;
+    row = row_offset + word;
+    ia.push_back(row+1);
+    ja.push_back(col+1);
     ar.push_back(1);
-    //std::cout << "Put " << word_1 + row_offset + 1 << ", " << col+1 << ", " << 1 << ".\n";
-    ia.push_back(word_2 + row_offset + 1);
-    ja.push_back(col + 1);
+  }
+  if (C.chain_letters[last].index == 0) { // note the other letter can't be index 0
+    word = C.chain_letters[last].word;
+    row = row_offset + word;
+    ia.push_back(row+1);
+    ja.push_back(col+1);
     ar.push_back(1);
-    //std::cout << "Put " << word_2 + row_offset + 1 << ", " << col+1 << ", " << 1 << ".\n";
   }
 }
 
 
 std::ostream &operator<<(std::ostream &os, GroupRectangle &GR) {
-  os << "GR: gp" << group_index << " (" << GR.first << "," << GR.last << ")";
+  os << "GR: gp" << GR.group_index << " (" << GR.first << "," << GR.last << ")";
   return os;
 }
 

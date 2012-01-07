@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <utility>
 
 
 
@@ -94,9 +95,10 @@ struct CentralEdgePairList {
   int get_index(int a, int b);      //this returns ind+1 for the first edge and -(ind+1) for the second edge
   CentralEdgePair operator[](int index);
   void print(std::ostream &os);
+  int size();
   
   std::vector<CentralEdgePair> edge_pairs;
-  std::vector<std::vector<int> > edges_pairs_beginning_with;
+  std::vector<std::vector<int> > edge_pairs_beginning_with;
 };
 
 
@@ -119,6 +121,7 @@ struct InterfaceEdgeList {
   int get_index_from_group_side(int a, int b);
   InterfaceEdge operator[](int index);
   void print(std::ostream &os);
+  int size();
   
   std::vector<InterfaceEdge> edges;
   std::vector<std::vector<int> > edges_beginning_with;
@@ -130,10 +133,10 @@ struct InterfaceEdgeList {
  * a central polygon  (this is a list of interface and polygon edges)
  * ***************************************************************************/
 struct CentralPolygon {
-  std::vector<pair<int, int> > edges; //these record the first and second letters in the edge pair
+  std::vector<std::pair<int, int> > edges; //these record the first and second letters in the edge pair
   std::vector<bool> interface;   //this records whether the edge is an interface edge
   int chi_times_2();
-  void compute_ia_etc_for_edges(int i,
+  void compute_ia_etc_for_edges(int col,
                                 Chain &C,
                                 InterfaceEdgeList &IEL,
                                 CentralEdgePairList &CEL,
@@ -151,20 +154,20 @@ struct GroupTooth {
   int position;     //the position of this tooth around the circle
   int first;        //the first letter (as position in the chain)
   int last;         //the last letter 
-  bool inverse;     //is it mad eup of inverse letters?
+  bool inverse;     //is it made up of inverse letters?
   int group_index;  //index of the group
   int base_letter;  //the base letter (as position in the chain)
   double chi_times_2(Chain &C);
   void compute_ia_etc_for_edges(int offset, 
                                 Chain &C,
                                 InterfaceEdgeList &IEL, 
-                                std::vector<std::vector<std::vector<int> > > &rows_for_letters_in_mouths, 
+                                std::vector<std::vector<std::vector<int> > > &group_teeth_rows, 
                                 std::vector<int> &ia, 
                                 std::vector<int> &ja, 
                                 std::vector<double> &ar);
   void compute_ia_etc_for_words(int offset, 
-                                int row_offset,
                                 Chain &C,
+                                int row_offset,
                                 std::vector<int> &ia, 
                                 std::vector<int> &ja, 
                                 std::vector<double> &ar);
@@ -182,12 +185,13 @@ struct GroupRectangle {
   int first;            //the first letter of the rectangle (position in the chain)
   int last;             //the second letter of the rectangle
   void compute_ia_etc_for_edges(int offset, 
+                                InterfaceEdgeList &IEL, 
                                 std::vector<int> &ia, 
                                 std::vector<int> &ja, 
                                 std::vector<double> &ar);
   void compute_ia_etc_for_words(int offset, 
-                                int row_offset,
                                 Chain &C, 
+                                int row_offset,
                                 InterfaceEdgeList &IEL,
                                 std::vector<int> &ia,
                                 std::vector<int> &ja,

@@ -30,7 +30,7 @@
 void compute_group_teeth_and_rectangles(Chain &C, 
                                        std::vector<GroupTooth > &GT,
                                        std::vector<GroupRectangle > &GR) {
-  int i,j,k,l,m,n;
+  int i,j,k,l,m;
   int ord;
   int num_groups = (C.G)->num_groups();
   GroupTooth temp_group_tooth;
@@ -136,7 +136,7 @@ void compute_central_polys(Chain &C,
                            InterfaceEdgeList &IEL, 
                            std::vector<CentralPolygon> &CP,
                            bool limit_central_sides) {
-  int i,j,k;
+  int i,j,k,l;
   int e1L1, e1L2, e2L1, e2L2, e3L1, e3L2;  //edge1, letter1, etc
   CentralPolygon temp_central_poly;
   
@@ -151,15 +151,15 @@ void compute_central_polys(Chain &C,
     e1L1 = i;
     for (j=0; j<(int)IEL.edges_beginning_with[i].size(); j++) { //which edge we are thinking about
       e1L2 = IEL[IEL.edges_beginning_with[i][j]].last;
-      e2L1 = C.next_letter(e1L2)
+      e2L1 = C.next_letter(e1L2);
       if (e2L1 < e1L1) {
         continue;
       }
       for (k=0; k<(int)IEL.edges_beginning_with[e2L1].size(); k++) {
-        e2L2 = IEL[IEL.edges_beginning_with[e2L1][k]].last
+        e2L2 = IEL[IEL.edges_beginning_with[e2L1][k]].last;
         if (e2L2 == C.prev_letter(e1L1)) {
-          temp_central_poly.edges[0] = make_pair( e1L1, e1L2 );
-          temp_central_poly.edges[1] = make_pair( e2L1, e2L2 );
+          temp_central_poly.edges[0] = std::make_pair( e1L1, e1L2 );
+          temp_central_poly.edges[1] = std::make_pair( e2L1, e2L2 );
           CP.push_back(temp_central_poly);
           break;
         }
@@ -174,22 +174,22 @@ void compute_central_polys(Chain &C,
     e1L1 = i;
     for (j=0; j<(int)IEL.edges_beginning_with[i].size(); j++) { //which edge we are thinking about
       e1L2 = IEL[IEL.edges_beginning_with[i][j]].last;
-      e2L1 = C.next_letter(e1L2)      
+      e2L1 = C.next_letter(e1L2);
       if (e2L1 < e1L1) {  //if first letter isn't smallest
         continue;
       }
       for (k=0; k<(int)IEL.edges_beginning_with[e2L1].size(); k++) {
-        e2L2 = IEL[IEL.edges_beginning_with[e2L1][k]].last
+        e2L2 = IEL[IEL.edges_beginning_with[e2L1][k]].last;
         e3L1 = C.next_letter(e2L2);      
         if (e3L1 < e1L1) {  //if first letter isn't smallest
           continue;
         }
         for (l=0; l<(int)IEL.edges_beginning_with[e3L1].size(); l++) {
-          e3L2 = IEL[IEL.edges_beginning_with[e3L1][l]].last
+          e3L2 = IEL[IEL.edges_beginning_with[e3L1][l]].last;
           if (e3L2 == C.prev_letter(e1L1)) {
-            temp_central_poly.edges[0] = make_pair( e1L1, e1L2 );
-            temp_central_poly.edges[1] = make_pair( e2L1, e2L2 );
-            temp_central_poly.edges[2] = make_pair( e3L1, e3L2 );
+            temp_central_poly.edges[0] = std::make_pair( e1L1, e1L2 );
+            temp_central_poly.edges[1] = std::make_pair( e2L1, e2L2 );
+            temp_central_poly.edges[2] = std::make_pair( e3L1, e3L2 );
             CP.push_back(temp_central_poly);
             break;
           }
@@ -207,15 +207,15 @@ void compute_central_polys(Chain &C,
     e1L1 = i;
     for (j=0; j<(int)IEL.edges_beginning_with[i].size(); j++) { //which edge we are thinking about
       e1L2 = IEL[IEL.edges_beginning_with[i][j]].last;
-      e2L1 = C.next_letter(e1L2)      
+      e2L1 = C.next_letter(e1L2);   
       for (k=0; k<(int)IEL.edges_beginning_with[e2L1].size(); k++) {
-        e2L2 = IEL[IEL.edges_beginning_with[e2L1][k]].last
+        e2L2 = IEL[IEL.edges_beginning_with[e2L1][k]].last;
         if (C.next_letter(e2L2) == e1L1) { //this is really a bigon
           continue;
         }
-        temp_central_poly.edges[0] = make_pair( e1L1, e1L2 );
-        temp_central_poly.edges[1] = make_pair( e2L1, e2L2 );
-        temp_central_poly.edges[2] = make_pair( e2L2, e1L1 );
+        temp_central_poly.edges[0] = std::make_pair( e1L1, e1L2 );
+        temp_central_poly.edges[1] = std::make_pair( e2L1, e2L2 );
+        temp_central_poly.edges[2] = std::make_pair( e2L2, e1L1 );
         CP.push_back(temp_central_poly);
       }
     }
@@ -234,7 +234,7 @@ void compute_central_polys(Chain &C,
     e1L1 = i;
     for (j=0; j<(int)IEL.edges_beginning_with[i].size(); j++) { //which edge we are thinking about
       e1L2 = IEL[IEL.edges_beginning_with[i][j]].last;
-      e2L1 = e1L2     
+      e2L1 = e1L2;     
       for (e2L2 = 0; e2L2<(int)C.chain_letters.size(); e2L2++) {
         if (e2L2 == C.next_letter(e2L1)) {
           continue;
@@ -244,9 +244,9 @@ void compute_central_polys(Chain &C,
         if (e3L2 == C.next_letter(e3L1)) {
           continue;
         }
-        temp_central_poly.edges[0] = make_pair( e1L1, e1L2 );
-        temp_central_poly.edges[1] = make_pair( e2L1, e2L2 );
-        temp_central_poly.edges[2] = make_pair( e2L2, e1L1 );
+        temp_central_poly.edges[0] = std::make_pair( e1L1, e1L2 );
+        temp_central_poly.edges[1] = std::make_pair( e2L1, e2L2 );
+        temp_central_poly.edges[2] = std::make_pair( e2L2, e1L1 );
         CP.push_back(temp_central_poly);       
       }
     }
@@ -259,13 +259,13 @@ void compute_central_polys(Chain &C,
 void print_central_polys(std::vector<CentralPolygon> &CP, 
                          std::ostream &os, 
                          int level) {
-  int i,j;
+  int i;
   os << "Central polygons: (" << CP.size() << "):\n"; 
   if (level < 3 && (int)CP.size() > 30) {
     os << "(" << CP.size() << " polygons hidden)\n";
   } else {
     for (i=0; i<(int)CP.size(); i++) {
-      os << i << ": " << CP[i];
+      os << i << ": " << CP[i] << "\n";
     }
   }
 }
@@ -275,20 +275,21 @@ void print_group_teeth_and_rectangles(std::vector<GroupTooth> &GT,
                                   std::vector<GroupRectangle> &GR,
                                   std::ostream &os,
                                   int level) {
-  int i,j;
+  int i;
   os << "Group teeth: (" << GT.size() << ")\n";
   if (level < 3 && (int)GT.size() > 30) {
     os << "(" << GT.size() << " hidden)\n";
   } else {
-  for (i=0; i<(int)GT.size(); i++) { GR
-    os << i << ": " << GT[i] << "\n";
-  }  
-  os << "Group rectangles: (" << GR.size() << ")\n";
-   if (level < 3 && (int)GR.size() > 30) {
-    os << "(" << GR.size() << " rectangles hidden)\n";
-  } else {
-    for (i=0; i<(int)GR.size(); i++) {
-      os << i << ": " << GR[i] << "\n";
+    for (i=0; i<(int)GT.size(); i++) {
+      os << i << ": " << GT[i] << "\n";
+    }  
+    os << "Group rectangles: (" << GR.size() << ")\n";
+     if (level < 3 && (int)GR.size() > 30) {
+      os << "(" << GR.size() << " rectangles hidden)\n";
+    } else {
+      for (i=0; i<(int)GR.size(); i++) {
+        os << i << ": " << GR[i] << "\n";
+      }
     }
   }
 }
@@ -361,8 +362,8 @@ int main(int argc, char* argv[]) {
     print_central_polys(CP, std::cout, VERBOSE);
   }
   
-  std::vector<std::vector<GroupTooth> > GT;
-  std::vector<std::vector<GroupRectangle> > GR;
+  std::vector<GroupTooth> GT;
+  std::vector<GroupRectangle> GR;
   compute_group_teeth_and_rectangles(C, GT, GR);
   if (VERBOSE > 1) {
     std::cout << "computed group teeth and rectangles\n"; std::cout.flush();
