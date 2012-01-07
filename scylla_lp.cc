@@ -29,7 +29,7 @@ void collect_dups_and_push(std::vector<int> &temp_ia,
                           std::vector<double> &ar,
                           int VERBOSE) {
   int j, k, temp;
-  if (VERBOSE < 2) {
+  if (VERBOSE < 3) {
     for (j=0; j<(int)temp_ia.size(); j++) {
       if (temp_ar[j] == 0) {
         continue;
@@ -234,7 +234,7 @@ void scylla_lp(Chain& C,
       collect_dups_and_push(temp_ia, temp_ja, temp_ar, ia, ja, ar, VERBOSE);
     }
     
-    if (VERBOSE) { 
+    if (VERBOSE>1) { 
       std::cout << "Loaded central polygon edge constraints\n";
     }     
     
@@ -267,7 +267,9 @@ void scylla_lp(Chain& C,
     }
     offset = CP.size() + GT.size();
     for (m=0; m<(int)GR.size(); m++) {
-      std::cout << GR[m] << "\n";
+      if (VERBOSE>2) {
+        std::cout << GR[m] << "\n";
+      }
       GR[m].compute_ia_etc_for_edges(offset + m, IEL, ia, ja, ar);
     }
     
@@ -310,11 +312,19 @@ void scylla_lp(Chain& C,
     if (solver == GLPK_SIMPLEX) {
       glp_init_smcp(&parm);
       parm.presolve=GLP_ON;
-      parm.msg_lev=GLP_MSG_ALL;
+      if (VERBOSE > 1) {
+        parm.msg_lev = GLP_MSG_ALL;
+      } else {
+        parm.msg_lev = GLP_MSG_OFF;
+      }
       glp_simplex(lp, &parm);
     } else if (solver == GLPK_IPT) {
       glp_init_iptcp(&ipt_parm);
-      ipt_parm.msg_lev = GLP_MSG_ALL;
+      if (VERBOSE > 1) {
+        ipt_parm.msg_lev = GLP_MSG_ALL;
+      } else {
+        ipt_parm.msg_lev = GLP_MSG_OFF;
+      }
       glp_interior(lp, &ipt_parm);
     }
     
