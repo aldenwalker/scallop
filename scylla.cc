@@ -302,6 +302,7 @@ int main(int argc, char* argv[]) {
   int current_arg = 1;
   //int i;
   int VERBOSE = 1;
+  int LP_VERBOSE = 0;
   bool IPT = false;
   bool LIMIT_CENTRAL_SIDES = false;
   
@@ -313,6 +314,7 @@ int main(int argc, char* argv[]) {
     std::cout << "\te.g. ./scyllop a5b0 aabaaaB\n";
     std::cout << "\t-h: print this message\n";
     std::cout << "\t-v[n]: verbose output (n=0,1,2,3); 0 gives quiet output\n";
+    std::cout << "\t-V: verbose LP output\n";
     std::cout << "\t-l: limit the number of central sides to 1 (see readme)\n";
     std::cout << "\t-i: use the interior point LP method (faster but rational output is sometimes wrong)\n";
     exit(0);
@@ -326,6 +328,8 @@ int main(int argc, char* argv[]) {
       } else {
         VERBOSE = atoi(&argv[current_arg][2]);
       }
+    } else if (argv[current_arg][1] == 'V') {
+      LP_VERBOSE = 1;
     } else if (argv[current_arg][1] == 'l') {
       LIMIT_CENTRAL_SIDES = true;
     }
@@ -376,7 +380,8 @@ int main(int argc, char* argv[]) {
             &scl, 
             &solution_vector, 
             (IPT ? GLPK_IPT : GLPK_SIMPLEX),
-            VERBOSE); 
+            VERBOSE,
+            LP_VERBOSE); 
   
   if (VERBOSE>0) {
     std::cout << "scl_{" << G << "}( " << C << ") = " << scl << " = " << scl.get_d() << "\n";    //output the answer

@@ -225,6 +225,7 @@ int main(int argc, char* argv[]){
 	int WRITE_PROGRAM = 0;
 	int ONLY_WRITE_PROGRAM = 0;
   int WRITE_POLYHEDRON = 0;
+  int LP_VERBOSE = 0;
   string polyFileName = "";
 	string programFile = "";
 	int RAT = 0;
@@ -247,6 +248,7 @@ int main(int argc, char* argv[]){
 		cout << "\t-P : output a polyhedron representation of the optimal solutions to filename\n";
     cout << "\t-mn : advanced: use polygons with up to n edges\n";
 		cout << "\t-v : verbose output\n";
+    cout << "\t-V : verbose LP output\n";
 		cout << "\t-h : print this message\n";
     cout << "\t-q : quiet output (print only the scl)\n";
 		return(0);
@@ -260,6 +262,9 @@ int main(int argc, char* argv[]){
     switch (argv[chainStart][1]) {
       case 'v':
         VERBOSE = 1;
+        break;
+      case 'V':
+        LP_VERBOSE = 1;
         break;
       case 'q':
         VERBOSE = -1;
@@ -447,7 +452,8 @@ int main(int argc, char* argv[]){
   do_linear_program(w, weight, arc_list, polygon_list, scl, 
                                               solutionVector, 
                                               (RAT == 0 ? GLPK_DOUBLE : EXLP),
-                                              VERBOSE);	
+                                              VERBOSE,
+                                              LP_VERBOSE);	
 	
   if(VERBOSE==1){
 		cout << "optimal solution vector (weight by polygon type): \n";

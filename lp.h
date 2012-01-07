@@ -19,7 +19,8 @@ void do_linear_program(   vector<string> &w,
                           rational &scl, 
                           vector<rational> &solutionVector,
                           scallop_lp_solver solver, 
-                          int VERBOSE);
+                          int VERBOSE,
+                          int LP_VERBOSE);
 
 
 #endif

@@ -18,6 +18,7 @@ void scylla_lp(Chain& C,
                 rational* scl, 
                 std::vector<rational>* solution_vector, 
                 scylla_lp_solver solver, 
-                int VERBOSE); 
+                int VERBOSE,
+                int LP_VERBOSE); 
 
 #endif 

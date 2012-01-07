@@ -31,7 +31,8 @@ void do_linear_program(   vector<string> &w,
                           rational &scl, 
                           vector<rational> &solutionVector,
                           scallop_lp_solver solver,
-                          int VERBOSE         ){
+                          int VERBOSE,
+                          int LP_VERBOSE){
      
 
 
@@ -62,7 +63,11 @@ void do_linear_program(   vector<string> &w,
 	  glp_init_smcp(&parm);
 	  parm.presolve=GLP_OFF;
 	  
-	  parm.msg_lev=GLP_MSG_ALL;
+    if (LP_VERBOSE == 1  || VERBOSE == 1) {
+      parm.msg_lev=GLP_MSG_ALL;
+    } else { 
+      parm.msg_lev=GLP_MSG_OFF;
+    }
 	  glp_set_prob_name(lp, "scl");
 	  glp_set_obj_dir(lp,GLP_MIN);
 	

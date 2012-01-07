@@ -87,7 +87,8 @@ void scylla_lp(Chain& C,
                rational* scl, 
                std::vector<rational>* solution_vector, 
                scylla_lp_solver solver, 
-               int VERBOSE) {
+               int VERBOSE,
+               int LP_VERBOSE) {
   std::vector<int> ia(0);
 	std::vector<int> ja(0);
 	std::vector<double> ar(0); 
@@ -312,18 +313,18 @@ void scylla_lp(Chain& C,
     if (solver == GLPK_SIMPLEX) {
       glp_init_smcp(&parm);
       parm.presolve=GLP_ON;
-      if (VERBOSE > 1) {
+      if (VERBOSE > 1 || LP_VERBOSE==1) {
         parm.msg_lev = GLP_MSG_ALL;
       } else {
-        parm.msg_lev = GLP_MSG_ALL;
+        parm.msg_lev = GLP_MSG_OFF;
       }
       glp_simplex(lp, &parm);
     } else if (solver == GLPK_IPT) {
       glp_init_iptcp(&ipt_parm);
-      if (VERBOSE > 1) {
+      if (VERBOSE > 1 || LP_VERBOSE==1) {
         ipt_parm.msg_lev = GLP_MSG_ALL;
       } else {
-        ipt_parm.msg_lev = GLP_MSG_ALL;
+        ipt_parm.msg_lev = GLP_MSG_OFF;
       }
       glp_interior(lp, &ipt_parm);
     }
