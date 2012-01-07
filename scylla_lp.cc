@@ -315,7 +315,7 @@ void scylla_lp(Chain& C,
       if (VERBOSE > 1) {
         parm.msg_lev = GLP_MSG_ALL;
       } else {
-        parm.msg_lev = GLP_MSG_OFF;
+        parm.msg_lev = GLP_MSG_ALL;
       }
       glp_simplex(lp, &parm);
     } else if (solver == GLPK_IPT) {
@@ -323,7 +323,7 @@ void scylla_lp(Chain& C,
       if (VERBOSE > 1) {
         ipt_parm.msg_lev = GLP_MSG_ALL;
       } else {
-        ipt_parm.msg_lev = GLP_MSG_OFF;
+        ipt_parm.msg_lev = GLP_MSG_ALL;
       }
       glp_interior(lp, &ipt_parm);
     }
