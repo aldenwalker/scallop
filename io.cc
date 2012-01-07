@@ -16,8 +16,7 @@ void write_linear_program(vector<string>& w,
                           vector<arc>& arc_list, 
                           vector<polygon>& polygon_list, 
                           string& programFile) {
-  int i,j,k;
-  int coef;
+  int i,j;
   string AFile = programFile + ".A";
   string bFile = programFile + ".b";
   string cFile = programFile + ".c";

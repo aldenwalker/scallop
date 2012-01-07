@@ -23,7 +23,7 @@ struct ChainLetter {
   int group;
 };
 
-
+std::ostream &operator<<(std::ostream &os, ChainLetter &CL);
 
 /*****************************************************************************
 * A free product of cyclic groups

@@ -303,7 +303,7 @@ int main(int argc, char* argv[]) {
   //int i;
   int VERBOSE = 1;
   bool IPT = false;
-  bool LIMIT_CENTRAL_SIDES;
+  bool LIMIT_CENTRAL_SIDES = false;
   
   if (argc < 3 || std::string(argv[1]) == "-h") {
     std::cout << "usage: ./scyllop [-h] [-v[n]] [-l] [-i] <gen string> <chain>\n";

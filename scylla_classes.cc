@@ -18,6 +18,16 @@ int sub_1_mod(int a, int m) {
 }
 
 
+/****************************************************************************
+ print a chain letter
+ ***************************************************************************/
+std::ostream &operator<<(std::ostream &os, ChainLetter &CL) {
+  os << CL.letter << " (" << CL.word << "," << CL.index << ","
+     << CL.index_in_group_reg_inv_list << ")";
+  return os;
+}
+   
+
 
 /*****************************************************************************
 * A free product of cyclic groups
@@ -274,17 +284,17 @@ Chain::Chain(CyclicProduct* G_in, char** input, int num_strings) {
       temp_letter.index = j;
       temp_letter.letter = words[i][j];
       temp_letter.group = (*G).gen_index(words[i][j]);
-      chain_letters.push_back(temp_letter);
-      group_letters[ temp_letter.group ].push_back(chain_letters.size()-1);
+      group_letters[ temp_letter.group ].push_back(chain_letters.size());
       if (isupper(temp_letter.letter)) {
-        inverse_letters[temp_letter.group].push_back(chain_letters.size()-1);
+        inverse_letters[temp_letter.group].push_back(chain_letters.size());
         temp_letter.index_in_group_reg_inv_list 
-        = inverse_letters[temp_letter.group].size()-1;
+                              = inverse_letters[temp_letter.group].size()-1;
       } else {
-        regular_letters[temp_letter.group].push_back(chain_letters.size()-1);
+        regular_letters[temp_letter.group].push_back(chain_letters.size());
         temp_letter.index_in_group_reg_inv_list 
-        = regular_letters[temp_letter.group].size()-1;
+                              = regular_letters[temp_letter.group].size()-1;
       }
+      chain_letters.push_back(temp_letter);
     }
   }
   
@@ -342,9 +352,7 @@ void Chain::print_chunks(std::ostream &os) {
 void Chain::print_letters(std::ostream &os) {
   int i;
   for (i=0; i<(int)chain_letters.size(); i++) {
-    os << i << ": (" << chain_letters[i].word << "," 
-                     << chain_letters[i].index << ","
-                     << chain_letters[i].letter << ")\n";
+    os << i << ": " << chain_letters[i] << "\n";
   }
 }
 
@@ -644,6 +652,9 @@ void GroupTooth::compute_ia_etc_for_edges(int offset,
   L1 = C.chain_letters[first];
   L2 = C.chain_letters[last];
   baseL = C.chain_letters[base_letter];
+  
+  std::cout << "letters: " << L1 << ", " << L2 << "\n";
+  std::cout << "based at: " << baseL << "\n";
 
   if (position > 0) {    
     row1_offset = group_teeth_rows[L1.group]
