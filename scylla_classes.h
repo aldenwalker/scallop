@@ -98,6 +98,7 @@ struct CentralEdgePairList {
   int size();
   
   int num_letters;
+  Chain* my_chain;;
   std::vector<CentralEdgePair> edge_pairs;
   std::vector<std::vector<int> > edge_pairs_beginning_with;
 };

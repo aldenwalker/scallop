@@ -394,6 +394,7 @@ CentralEdgePairList::CentralEdgePairList() {
 
 CentralEdgePairList::CentralEdgePairList(Chain &C) {
   int i,j;
+  my_chain = &C;
   CentralEdgePair temp_central_edge_pair;
   num_letters = C.num_letters();
   edge_pairs.resize(0);
@@ -401,25 +402,26 @@ CentralEdgePairList::CentralEdgePairList(Chain &C) {
   for (i=0; i<num_letters; i++) {
     edge_pairs_beginning_with[i].resize(0);
     temp_central_edge_pair.first = i;
-    for (j=i+2; j<num_letters; j++) {
+    for (j=0; j<num_letters; j++) {
+      if (C.prev_letter(j) <= i) {
+        continue;
+      }
+      std::cout << "pushing on " << i << " " << j << "\n";
       temp_central_edge_pair.last = j;
       edge_pairs.push_back(temp_central_edge_pair);
       edge_pairs_beginning_with[i].push_back(edge_pairs.size()-1);
     }
-    if (i < num_letters-1) {
-      temp_central_edge_pair.last = 0;
-      edge_pairs.push_back(temp_central_edge_pair);
-      edge_pairs_beginning_with[i].push_back(edge_pairs.size()-1);      
-    }
   }
 }
 
+//note b-1 and a+1 are computed in the WORD
 //if (a,b) has minimal first entry between that and (b-1,a+1) (i.e. b-1>a),
 //this returns ind+1
 //otherwise, it returns -(ind+1)
 int CentralEdgePairList::get_index(int a, int b) {
   int i;
-  int bm1 = sub_1_mod(b, num_letters);
+  int bm1 = my_chain->prev_letter(b); // sub_1_mod(b, num_letters);
+  int ap1 = my_chain->next_letter(a);
   //std::cout << "Getting index of " << a << ", " << b << "\n";
   if (bm1 > a) {
     for (i=0; i<(int)edge_pairs_beginning_with[a].size(); i++) {
@@ -429,7 +431,7 @@ int CentralEdgePairList::get_index(int a, int b) {
     }
   } else {
     for (i=0; i<(int)edge_pairs_beginning_with[bm1].size(); i++) {
-      if (edge_pairs[edge_pairs_beginning_with[bm1][i]].last == (a+1)%num_letters) {
+      if (edge_pairs[edge_pairs_beginning_with[bm1][i]].last == ap1) {
         return -(edge_pairs_beginning_with[bm1][i]+1);
       }
     }
@@ -446,7 +448,7 @@ void CentralEdgePairList::print(std::ostream &os) {
   os << "Central Edge pairs:\n";
   for (i=0; i<(int)edge_pairs.size(); i++) {
     os << i << ": (" << edge_pairs[i].first << ", " << edge_pairs[i].last
-       << "), (" << sub_1_mod(edge_pairs[i].last, num_letters) << ", " << (edge_pairs[i].first+1)%num_letters << ")\n";
+       << "), (" << my_chain->prev_letter(edge_pairs[i].last) << ", " << my_chain->next_letter(edge_pairs[i].first) << ")\n";
   }
 }
 
