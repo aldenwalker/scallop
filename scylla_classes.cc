@@ -406,7 +406,7 @@ CentralEdgePairList::CentralEdgePairList(Chain &C) {
       if (C.prev_letter(j) <= i) {
         continue;
       }
-      std::cout << "pushing on " << i << " " << j << "\n";
+      //std::cout << "pushing on " << i << " " << j << "\n";
       temp_central_edge_pair.last = j;
       edge_pairs.push_back(temp_central_edge_pair);
       edge_pairs_beginning_with[i].push_back(edge_pairs.size()-1);
