@@ -305,9 +305,11 @@ int main(int argc, char* argv[]) {
   int LP_VERBOSE = 0;
   bool IPT = false;
   bool LIMIT_CENTRAL_SIDES = false;
+  bool WRITE_LP = false;
+  std::string LP_filename;
   
   if (argc < 3 || std::string(argv[1]) == "-h") {
-    std::cout << "usage: ./scyllop [-h] [-v[n]] [-l] [-i] <gen string> <chain>\n";
+    std::cout << "usage: ./scylla [-h] [-v[n]] [-L <filename>] [-l] [-i] <gen string> <chain>\n";
     std::cout << "\twhere <gen string> is of the form <gen1><order1><gen2><order2>...\n";
     std::cout << "\te.g. a5b0 computes in Z/5Z * Z\n";
     std::cout << "\tand <chain> is an integer linear combination of words in the generators\n";
@@ -317,6 +319,7 @@ int main(int argc, char* argv[]) {
     std::cout << "\t-V: verbose LP output\n";
     std::cout << "\t-l: limit the number of central sides to 1 (see readme)\n";
     std::cout << "\t-i: use the interior point LP method (faster but rational output is sometimes wrong)\n";
+    std::cout << "\t-L <filename>: write out a sparse lp to the filename .A, .b, and .c\n";
     exit(0);
   }
   while (argv[current_arg][0] == '-') {
@@ -330,6 +333,11 @@ int main(int argc, char* argv[]) {
       }
     } else if (argv[current_arg][1] == 'V') {
       LP_VERBOSE = 1;
+    } else if (argv[current_arg][1] == 'L') {
+      WRITE_LP = true;
+      LP_filename = std::string(argv[current_arg+1]);
+      current_arg++;
+      
     } else if (argv[current_arg][1] == 'l') {
       LIMIT_CENTRAL_SIDES = true;
     }
@@ -380,8 +388,14 @@ int main(int argc, char* argv[]) {
             &scl, 
             &solution_vector, 
             (IPT ? GLPK_IPT : GLPK_SIMPLEX),
+            WRITE_LP, LP_filename,
             VERBOSE,
             LP_VERBOSE); 
+  
+  if (WRITE_LP) {
+    std::cout << "Wrote linear program\n";
+    return 0;
+  }
   
   if (VERBOSE>0) {
     std::cout << "scl_{" << G << "}( " << C << ") = " << scl << " = " << scl.get_d() << "\n";    //output the answer

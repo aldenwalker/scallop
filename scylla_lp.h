@@ -18,6 +18,8 @@ void scylla_lp(Chain& C,
                 rational* scl, 
                 std::vector<rational>* solution_vector, 
                 scylla_lp_solver solver, 
+                bool WRITE_LP,
+                std::string LP_filename,
                 int VERBOSE,
                 int LP_VERBOSE); 
 
