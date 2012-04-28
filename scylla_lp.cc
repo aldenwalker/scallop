@@ -464,17 +464,27 @@ void scylla_lp(Chain& C,
 	  
 	} else if (solver == EXLP) {
     //not implemented
-  } else if (solver == CPLEX) {
+  } else if (solver == CPLEX || solver == CIPT) {
     CPXENVptr     env = NULL;
     CPXLPptr      lp = NULL;
     int           status = 0;
     env = CPXopenCPLEX (&status);
-    
+    status = CPXsetintparam (env, CPX_PARAM_SCRIND, CPX_ON);
+    lp = CPXcreateprob (env, &status, "scylla");
+
     std::vector<double> double_rhs(RHS.size());
     for (i=0; i<(int)RHS.size(); i++) {
       double_rhs[i] = RHS[i];
     }
     
+    //change the optimization type
+    if (solver == CIPT) {
+      status = CPXsetintparam (env, CPX_PARAM_LPMETHOD, CPX_ALG_BARRIER);
+    } else {
+      status = CPXsetintparam (env, CPX_PARAM_LPMETHOD, CPX_ALG_AUTOMATIC);
+    }
+
+    //add the rows and columns
     status = CPXnewrows (env, lp, 
                          num_rows, 
                          &double_rhs[0], 
@@ -485,10 +495,64 @@ void scylla_lp(Chain& C,
                          NULL/*lb;default 0*/, 
                          NULL/*ub;default +inf*/, NULL/*type*/, NULL/*name*/);
     
-    status = CPXchgcoeflist (env, lp, (int)ia.size()-1, &ia[1], &ja[1], &ar[1]);
+    //fix the matrix entries, because all the rows and columns are 1-based
+    for (i=0; i<(int)ia.size(); i++) {
+      ia[i] = ia[i+1]-1;
+      ja[i] = ja[i+1]-1;
+      ar[i] = ar[i+1];
+    }
+
+    status = CPXchgcoeflist (env, lp, (int)ia.size()-1, &ia[0], &ja[0], &ar[0]);
     
+    //load in the matrix
     CPXchgobjsen (env, lp, CPX_MIN);  /* Problem is minimization */
-    
+
+    status = CPXlpopt (env, lp);
+
+    std::vector<double> double_solution_vector(num_cols);
+    std::vector<double> slack(num_rows);
+    std::vector<double> dj_dual(num_cols);
+    std::vector<double> pi(num_cols);
+    double obj_val;
+    int solstat;
+
+    status = CPXsolution (env, lp, &solstat, &obj_val, &double_solution_vector[0], &pi[0], &slack[0], &dj_dual[0]);
+
+    *scl = approxRat(obj_val/4.0);
+
+    (*solution_vector).resize(num_cols);
+    for (i=0; i<num_cols; i++) {
+      (*solution_vector)[i] = approxRat(double_solution_vector[i]);
+    }
+    if ( (VERBOSE>1 && (*solution_vector).size() < 1000) 
+         || VERBOSE>2) {
+      std::cout << "Solution: \n";
+      for (i=0; i<(int)CP.size(); i++) {
+        if ((*solution_vector)[i] == rational(0,1)) {
+          continue;
+        }
+        std::cout << (*solution_vector)[i] << " * " << CP[i] << "\n";
+      }
+      offset = CP.size();
+      for (j=0; j<(int)GT.size(); j++) {
+        if ((*solution_vector)[offset] == rational(0,1)) {
+          offset++;
+          continue;
+        }
+        std::cout << (*solution_vector)[offset] << " * " << GT[j] << "\n";
+        offset++;
+      }
+      for (j=0; j<(int)GR.size(); j++) {
+        if ((*solution_vector)[offset] == rational(0,1)) {
+          offset++;
+          continue;
+        }
+        std::cout << (*solution_vector)[offset] << " * " << GR[j] << "\n";
+        offset++;
+      }
+    }
+    status = CPXfreeprob (env, &lp);
+    status = CPXcloseCPLEX (&env);
   }
   
   

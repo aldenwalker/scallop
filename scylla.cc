@@ -327,10 +327,14 @@ int main(int argc, char* argv[]) {
     if (argv[current_arg][1] == 'm') {
       if (argv[current_arg][2] == 'G' && argv[current_arg][3] == 'L') {
         solver = GLPK_SIMPLEX;
-      } else if (argv[current_arg][3] == 'I') {
+      } else if (argv[current_arg][2] == 'G' && argv[current_arg][3] == 'I') {
         solver = GLPK_IPT;
       } else if (argv[current_arg][2] == 'C') {
-        solver = CPLEX;
+        if (argv[current_arg][3] == 'L') {
+          solver = CPLEX;
+        } else { 
+          solver = CIPT;
+        }
       }
       
     } else if (argv[current_arg][1] == 'v') {
