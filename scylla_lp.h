@@ -6,7 +6,7 @@
 #include "rational.h"
 #include "scylla_classes.h"
 
-enum scylla_lp_solver {GLPK_SIMPLEX, GLPK_IPT, EXLP};
+enum scylla_lp_solver {GLPK_SIMPLEX, GLPK_IPT, EXLP, CPLEX};
 
 
 void scylla_lp(Chain& C, 

@@ -303,13 +303,13 @@ int main(int argc, char* argv[]) {
   //int i;
   int VERBOSE = 1;
   int LP_VERBOSE = 0;
-  bool IPT = false;
+  scylla_lp_solver solver = GLPK_SIMPLEX;
   bool LIMIT_CENTRAL_SIDES = false;
   bool WRITE_LP = false;
   std::string LP_filename;
   
   if (argc < 3 || std::string(argv[1]) == "-h") {
-    std::cout << "usage: ./scylla [-h] [-v[n]] [-L <filename>] [-l] [-i] <gen string> <chain>\n";
+    std::cout << "usage: ./scylla [-h] [-v[n]] [-L <filename>] [-l] [-m<GLPK,GIPT,CLPEX>] <gen string> <chain>\n";
     std::cout << "\twhere <gen string> is of the form <gen1><order1><gen2><order2>...\n";
     std::cout << "\te.g. a5b0 computes in Z/5Z * Z\n";
     std::cout << "\tand <chain> is an integer linear combination of words in the generators\n";
@@ -320,11 +320,19 @@ int main(int argc, char* argv[]) {
     std::cout << "\t-l: limit the number of central sides to 1 (see readme)\n";
     std::cout << "\t-i: use the interior point LP method (faster but rational output is sometimes wrong)\n";
     std::cout << "\t-L <filename>: write out a sparse lp to the filename .A, .b, and .c\n";
+    std::cout << "\t-m<format>: use the solver specified\n";
     exit(0);
   }
   while (argv[current_arg][0] == '-') {
-    if (argv[current_arg][1] == 'i') {
-      IPT = true;
+    if (argv[current_arg][1] == 'm') {
+      if (argv[current_arg][2] == 'G' && argv[current_arg][3] == 'L') {
+        solver = GLPK_SIMPLEX;
+      } else if (argv[current_arg][3] == 'I') {
+        solver = GLPK_IPT;
+      } else if (argv[current_arg][2] == 'C') {
+        solver = CPLEX;
+      }
+      
     } else if (argv[current_arg][1] == 'v') {
       if (argv[current_arg][2] == '\0') {
         VERBOSE = 2;
@@ -387,7 +395,7 @@ int main(int argc, char* argv[]) {
   scylla_lp(C, IEL, CEL, CP, GT, GR, 
             &scl, 
             &solution_vector, 
-            (IPT ? GLPK_IPT : GLPK_SIMPLEX),
+            solver,
             WRITE_LP, LP_filename,
             VERBOSE,
             LP_VERBOSE); 

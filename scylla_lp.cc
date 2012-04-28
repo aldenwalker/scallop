@@ -1,6 +1,11 @@
 #include <vector>
 #include <fstream>
 
+extern "C" {
+  #include <ilcplex/cplex.h>
+}
+
+
 #include <glpk.h>
 
 #include "scylla_lp.h"
@@ -457,9 +462,33 @@ void scylla_lp(Chain& C,
 	  glp_delete_prob(lp);
 	  
 	  
-	  
 	} else if (solver == EXLP) {
     //not implemented
+  } else if (solver == CPLEX) {
+    CPXENVptr     env = NULL;
+    CPXLPptr      lp = NULL;
+    int           status = 0;
+    env = CPXopenCPLEX (&status);
+    
+    std::vector<double> double_rhs(RHS.size());
+    for (i=0; i<(int)RHS.size(); i++) {
+      double_rhs[i] = RHS[i];
+    }
+    
+    status = CPXnewrows (env, lp, 
+                         num_rows, 
+                         &double_rhs[0], 
+                         NULL /*sense*/, NULL/*range*/, NULL/*names*/);
+    
+    status = CPXnewcols (env, lp, num_cols, 
+                         &objective[0], 
+                         NULL/*lb;default 0*/, 
+                         NULL/*ub;default +inf*/, NULL/*type*/, NULL/*name*/);
+    
+    status = CPXchgcoeflist (env, lp, (int)ia.size()-1, &ia[1], &ja[1], &ar[1]);
+    
+    CPXchgobjsen (env, lp, CPX_MIN);  /* Problem is minimization */
+    
   }
   
   
