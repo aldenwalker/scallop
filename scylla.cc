@@ -330,7 +330,7 @@ int main(int argc, char* argv[]) {
       } else if (argv[current_arg][2] == 'G' && argv[current_arg][3] == 'I') {
         solver = GLPK_IPT;
       } else if (argv[current_arg][2] == 'C') {
-        if (argv[current_arg][3] == 'L') {
+        if (argv[current_arg][3] == 'P') {
           solver = CPLEX;
         } else { 
           solver = CIPT;

@@ -481,7 +481,7 @@ void scylla_lp(Chain& C,
     if (solver == CIPT) {
       status = CPXsetintparam (env, CPX_PARAM_LPMETHOD, CPX_ALG_BARRIER);
     } else {
-      status = CPXsetintparam (env, CPX_PARAM_LPMETHOD, CPX_ALG_AUTOMATIC);
+      //status = CPXsetintparam (env, CPX_PARAM_LPMETHOD, CPX_ALG_AUTOMATIC);
     }
 
     //add the rows and columns
