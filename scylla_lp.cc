@@ -5,6 +5,10 @@ extern "C" {
   #include <ilcplex/cplex.h>
 }
 
+extern "C" {
+  #include <gurobi_c.h>
+}
+
 
 #include <glpk.h>
 
@@ -481,7 +485,7 @@ void scylla_lp(Chain& C,
     if (solver == CIPT) {
       status = CPXsetintparam (env, CPX_PARAM_LPMETHOD, CPX_ALG_BARRIER);
     } else {
-      //status = CPXsetintparam (env, CPX_PARAM_LPMETHOD, CPX_ALG_AUTOMATIC);
+      //status = CPXsetintparam (env, CPX_PARAM_LPMETHOD, CPX_ALG_DUAL);
     }
 
     //add the rows and columns
@@ -553,6 +557,73 @@ void scylla_lp(Chain& C,
     }
     status = CPXfreeprob (env, &lp);
     status = CPXcloseCPLEX (&env);
+  
+    
+    
+    
+  } else if (solver == GUROBI_SIMPLEX || solver == GUROBI_IPT ) {
+    
+    //std::vector<double> double_rhs(RHS.size());
+    //for (i=0; i<(int)RHS.size(); i++) {
+    //  double_rhs[i] = RHS[i];
+    //}
+    
+    GRBenv   *env   = NULL;
+    GRBmodel *model = NULL;
+    double obj_val;
+    std::vector<double> double_solution_vector(num_cols);
+    
+    GRBloadenv( &env, "gurobi.log" );
+    
+    //create a new model and immediately load in all the columns
+    GRBnewmodel( env, &model, "scylla", num_cols, &objective[0], NULL, NULL, NULL, NULL);
+    
+    //add the constraints (rows)  here we make them empty equality rows and fix the RHS
+    for (i=0; i<num_rows; i++) {
+      GRBaddconstr( model, 0, NULL, NULL, GRB_EQUAL, RHS[i], NULL);
+    }
+    GRBupdatemodel(model);
+    
+    //add the matrix:
+    
+    //first fix the matrix entries, because all the rows and columns are 1-based
+    for (i=0; i<(int)ia.size(); i++) {
+      ia[i] = ia[i+1]-1;
+      ja[i] = ja[i+1]-1;
+      ar[i] = ar[i+1];
+    }
+    GRBchgcoeffs( model, (int)ia.size()-1, &ia[0], &ja[0], &ar[0] );
+    
+    //set the correct optimization method
+    if (solver == GUROBI_SIMPLEX) {
+      GRBsetintparam(GRBgetenv(model), "Method", 1);
+    } else {
+      GRBsetintparam(GRBgetenv(model), "Method", 2);
+    }
+    
+    //set the output
+    GRBsetintparam(GRBgetenv(model), "OutputFlag", (VERBOSE > 1 || LP_VERBOSE ? 1 : 0) );
+    GRBsetintparam(GRBgetenv(model), "DisplayInterval", 60 );
+        
+    
+    //optimize
+    GRBoptimize( model );
+    
+    //get the objective minimum
+    GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &obj_val);
+    *scl = approxRat(obj_val/4.0);
+    
+    //get the solution vector
+    GRBgetdblattrarray( model, GRB_DBL_ATTR_X, 0, num_cols, &double_solution_vector[0] );
+    (*solution_vector).resize(num_cols);
+    for (i=0; i<num_cols; i++) {
+      (*solution_vector)[i] = approxRat(double_solution_vector[i]);
+    }
+    
+    //free stuff
+    GRBfreemodel(model);
+    GRBfreeenv(env);
+
   }
   
   

@@ -309,7 +309,7 @@ int main(int argc, char* argv[]) {
   std::string LP_filename;
   
   if (argc < 3 || std::string(argv[1]) == "-h") {
-    std::cout << "usage: ./scylla [-h] [-v[n]] [-L <filename>] [-l] [-m<GLPK,GIPT,CLPEX>] <gen string> <chain>\n";
+    std::cout << "usage: ./scylla [-h] [-v[n]] [-L <filename>] [-l] [-m<GLPK,GIPT,CLPEX,GUROBI,GURIPT>] <gen string> <chain>\n";
     std::cout << "\twhere <gen string> is of the form <gen1><order1><gen2><order2>...\n";
     std::cout << "\te.g. a5b0 computes in Z/5Z * Z\n";
     std::cout << "\tand <chain> is an integer linear combination of words in the generators\n";
@@ -334,6 +334,12 @@ int main(int argc, char* argv[]) {
           solver = CPLEX;
         } else { 
           solver = CIPT;
+        }
+      } else if (argv[current_arg][2] == 'G') {
+        if (argv[current_arg][5] == 'O') {
+          solver = GUROBI_SIMPLEX;
+        } else {
+          solver = GUROBI_IPT;
         }
       }
       

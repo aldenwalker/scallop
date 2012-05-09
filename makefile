@@ -12,6 +12,13 @@ CPLEXLIBDIR=$(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
 CLNFLAGS=-L$(CPLEXLIBDIR) -lcplex -lm -pthread
 CPLEXFLAGS=-I$(CPLEXINCDIR)
 
+#gurobi stuff
+GURDIR = /home/awalker/Documents/research/software/gurobi500/linux64
+GURINCDIR = $(GURDIR)/include
+GURLIBDIR = $(GURDIR)/lib
+GURINC = -I$(GURINCDIR) 
+GURLIB = -L$(GURLIBDIR) -lgurobi50
+
 all: scallop scylla
 
 scallop.o: scallop.cc
@@ -36,7 +43,7 @@ scylla.o: scylla.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c scylla.cc
 
 scylla_lp.o:	scylla_lp.cc
-	$(CC) $(CFLAGS) $(IFLAGS) $(CPLEXFLAGS) -c scylla_lp.cc
+	$(CC) $(CFLAGS) $(IFLAGS) $(CPLEXFLAGS) $(GURINC) -c scylla_lp.cc
 
 scylla_classes.o: scylla_classes.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c scylla_classes.cc
@@ -49,7 +56,7 @@ scallop: exlp-package scallop.o word.o draw.o rational.o lp.o io.o
 	$(CC) $(CFLAGS) -o scallop scallop.o word.o draw.o rational.o lp.o io.o exlp-package/*.o $(LDFLAGS)
 
 scylla: exlp-package scylla.o rational.o scylla_lp.o scylla_classes.o word.o
-	$(CC) $(CFLAGS) -o scylla scylla.o scylla_lp.o scylla_classes.o rational.o word.o exlp-package/*.o $(CLNFLAGS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o scylla scylla.o scylla_lp.o scylla_classes.o rational.o word.o exlp-package/*.o $(CLNFLAGS) $(GURLIB) $(LDFLAGS)
 
 clean: 
 	rm scylla
