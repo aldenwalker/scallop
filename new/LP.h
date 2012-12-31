@@ -1,25 +1,37 @@
+#ifndef LP_H
+#define LP_H
+
 #include <vector>
+#include "rational.h"
 
+enum SparseLPEqualityType {EQ, LE, GE};
 
-enum {EQ, LE, GE} SparseLPEqualityType;
+enum SparseLPSolver {GLPK, 
+                      GLPK_SIMPLEX, 
+                      GLPK_IPT, 
+                      GUROBI, 
+                      GUROBI_SIMPLEX, 
+                      GUROBI_IPT, 
+                      EXLP};
 
-enum {GLPK, GUROBI, EXLP} SparseLPSolver;
-
-enum {LP_OPTIMAL, LP_INFEASIBLE, LP_ERROR} SparseLPSolveCode;
+enum SparseLPSolveCode {LP_OPTIMAL, LP_INFEASIBLE, LP_ERROR};
 
 class SparseLP {
 
 private:
-  vector<int> ia;
-  vector<int> ja;
-  vector<int> ar;
-  vector<double> double_ar;
-  vector<int> objective;
-  vector<double> double_objective;
-  vector<int> RHS;
-  vector<double> double_RHS;
-  vector<SparseLPEqualityType> eq_type;
-
+  std::vector<int> ia;
+  std::vector<int> ja;
+  std::vector<int> ar;
+  std::vector<double> double_ar;
+  std::vector<int> objective;
+  std::vector<double> double_objective;
+  std::vector<int> RHS;
+  std::vector<double> double_RHS;
+  std::vector<Rational> soln_vector;
+  std::vector<double> double_soln_vector;
+  Rational op_val;
+  double double_op_val;
+  std::vector<SparseLPEqualityType> eq_type;
 
   int num_cols;
   int num_rows;
@@ -41,8 +53,13 @@ public:
   void set_RHS(int i, int r);
   void set_RHS(int i, double r);
   void set_equality_type(int i, SparseLPEqualityType et);
+  void get_soln_vector(std::vector<double>& sv);
+  void get_soln_vector(std::vector<Rational>& sv);
+  void get_optimal_value(double& ov);
+  void get_optimal_value(Rational& ov);
   
   SparseLPSolveCode solve(int verbose);
   
-  
 };
+
+#endif
