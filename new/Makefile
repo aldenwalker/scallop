@@ -22,8 +22,11 @@ rational.o: rational.cc
 lp.o: lp.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c LP.cc
 
-scallop_with_gurobi: exlp-package rational.o lp.o
+scallop.o: scallop.cc
+	$(CC) $(CFLAGS) $(IFLAGS) -c scallop.cc
 
+scallop_with_gurobi: exlp-package scallop.o rational.o lp.o
+	$(CC) $(CFLAGS) -o scallop scallop.o rational.o lp.o exlp-package/*.o $(LDFLAGS)
 
 scallop: exlp-package scallop.o word.o draw.o rational.o lp.o io.o
 	$(CC) $(CFLAGS) -o scallop scallop.o word.o draw.o rational.o lp.o io.o exlp-package/*.o $(LDFLAGS)
