@@ -10,30 +10,34 @@ GURLIBDIR = $(GURDIR)/lib
 GURINC = -I$(GURINCDIR) 
 GURLIB = -L$(GURLIBDIR) -lgurobi50
 
-all: scallop_with_gurobi
+DIRS = scylla exlp-package
 
-.PHONY: exlp-package
-exlp-package: 
-	cd exlp-package; make
+all: scallop
+
+.PHONY : $(DIRS)
+$(DIRS) :
+	$(MAKE) -C $@
 
 rational.o: rational.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c rational.cc
 
+word.o: word.cc
+	$(CC) $(CFLAGS) $(IFLAGS) -c word.cc
+
 lp.o: lp.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c LP.cc
+	$(CC) $(CFLAGS) $(IFLAGS) -c lp.cc
+
+lp.o_GUR: lp.cc
+	$(CC) $(CFLAGS) $(IFLAGS) $(GURINC) -DGUROBI_INSTALLED -c lp.cc
 
 scallop.o: scallop.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c scallop.cc
 
-scallop_with_gurobi: exlp-package scallop.o rational.o lp.o
-	$(CC) $(CFLAGS) -o scallop scallop.o rational.o lp.o exlp-package/*.o $(LDFLAGS)
+scallop_with_gurobi: $(DIRS) scallop.o rational.o word.o lp.o_GUR exlp-package
+	$(CC) $(CFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o $(GURLIB) $(LDFLAGS)
 
-scallop: exlp-package scallop.o word.o draw.o rational.o lp.o io.o
-	$(CC) $(CFLAGS) -o scallop scallop.o word.o draw.o rational.o lp.o io.o exlp-package/*.o $(LDFLAGS)
-
-scylla: exlp-package scylla.o rational.o scylla_lp.o scylla_classes.o word.o
-	$(CC) $(CFLAGS) -o scylla scylla.o scylla_lp.o scylla_classes.o rational.o word.o exlp-package/*.o $(CLNFLAGS) $(GURLIB) $(LDFLAGS)
-
+scallop: $(DIRS) scallop.o rational.o word.o lp.o exlp-package
+	$(CC) $(CFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o $(LDFLAGS)
 
 clean: 
 	rm *.o

@@ -39,8 +39,8 @@ class Rational {
 
 
 Rational cont_frac_value(std::vector<int> a);
-Rational approxRat(double a);
-Rational approxRat_be_nice(double a);
+Rational approx_rat(double a);
+Rational approx_rat_be_nice(double a);
 int lcm(int a, int b);
 int gcd(int a, int b);
 

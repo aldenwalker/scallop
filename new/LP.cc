@@ -1,4 +1,5 @@
 #include <vector>
+#include <string>
 #include <iostream>
 
 #include <glpk.h>
@@ -10,6 +11,7 @@ extern "C" {
 #endif
 
 #include "LP.h"
+#include "rational.h"
 
 extern "C" {
 #include "exlp-package/lpstruct.h"
@@ -66,6 +68,9 @@ SparseLP::SparseLP(SparseLPSolver s, int nr, int nc) {
   solver = s;
   op_val = Rational(-1,1);
   double_op_val = -1;
+}
+
+void SparseLP::write_to_file(std::string filename) {
 }
 
 void SparseLP::set_num_rows(int nr) {
@@ -177,15 +182,27 @@ void SparseLP::set_equality_type(int i, SparseLPEqualityType et) {
 
 void SparseLP::get_soln_vector(std::vector<double>& sv) {
   sv.resize(num_cols);
-  for (int i; i<num_cols; ++i) {
-    sv[i] = double_soln_vector[i];
+  if (solver == EXLP) {
+    for (int i; i<num_cols; ++i) {
+      sv[i] = soln_vector[i].get_d();
+    }
+  } else {
+    for (int i; i<num_cols; ++i) {
+      sv[i] = double_soln_vector[i];
+    }
   }
 }
 
 void SparseLP::get_soln_vector(std::vector<Rational>& sv) {
   sv.resize(num_cols);
-  for (int i; i<num_cols; ++i) {
-    sv[i] = soln_vector[i];
+  if (solver == EXLP) {
+    for (int i; i<num_cols; ++i) {
+      sv[i] = soln_vector[i];
+    }
+  } else {
+    for (int i; i<num_cols; ++i) {
+      sv[i] = approx_rat(double_soln_vector[i]);
+    }
   }
 }
 
@@ -199,8 +216,10 @@ void SparseLP::get_optimal_value(double& ov) {
 void SparseLP::get_optimal_value(Rational& ov) {
   if (solver != EXLP) {
     std::cout << "Getting rational optimal value from non-EXLP?\n";
+    ov = approx_rat(double_op_val);
+  } else {
+    ov = op_val;
   }
-  ov = op_val;
 }
 
 SparseLPSolveCode SparseLP::solve(int verbose) {

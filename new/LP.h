@@ -2,6 +2,7 @@
 #define LP_H
 
 #include <vector>
+#include <string>
 #include "rational.h"
 
 enum SparseLPEqualityType {EQ, LE, GE};
@@ -42,6 +43,7 @@ public:
   
   SparseLP(SparseLPSolver s);
   SparseLP(SparseLPSolver s, int nr, int nc);
+  void write_to_file(std::string filename);
   void set_num_rows(int nr);
   void set_num_cols(int nc);
   void add_entry(int i, int j, int a);

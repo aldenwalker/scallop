@@ -215,7 +215,7 @@ Rational cont_frac_value(vector<int> a) {
   return answer;
 }
 
-Rational approxRat(double b) {
+Rational approx_rat(double b) {
   double a;
   vector<int> As(0);
   a = b;
@@ -234,7 +234,7 @@ Rational approxRat(double b) {
   return currentR;
 } 
 
-Rational approxRat_be_nice(double b) {
+Rational approx_rat_be_nice(double b) {
   double a;
   vector<int> As(0);
   a = b - 0.000000001;

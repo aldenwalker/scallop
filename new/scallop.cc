@@ -1,9 +1,12 @@
 #include <iostream>
 
+#include "scylla/scylla.h"
+
 int main(int argc, char* argv[]) {
 
   enum {CYCLIC, LOCAL, TRAIN} comp_func;
   char** arg_array = NULL;
+  int num_args;
   
   if (argc < 2 || std::string(argv[1]) == "-h") {
     std::cout << "Scallop\n";
@@ -33,15 +36,35 @@ int main(int argc, char* argv[]) {
   if (argv[1][0] != '-') {
     comp_func = CYCLIC;
     arg_array = &argv[1];
-  } else if (argv[1][1] == 'c') {
-    comp_func = CYCLIC;
+    num_args = argc-1;
+  } else if (argv[1][1] == 't') {
+    comp_func = TRAIN;
     arg_array = &argv[2];
+    num_args = argc-2;
   } else if (argv[1][1] == 'l') {
     comp_func = LOCAL;
     arg_array = &argv[2];
-  } else {
-    comp_func = TRAIN;
+    num_args = argc-2;
+  } else if (argv[1][1] == 'c') {
+    comp_func = CYCLIC;
     arg_array = &argv[2];
+    num_args = argc-2;
+  } else {
+    comp_func = CYCLIC;
+    arg_array = &argv[1];
+    num_args = argc-1;
+  }
+  
+  switch (comp_func) {
+    case CYCLIC:
+      scylla(num_args, arg_array);
+      break;
+    case LOCAL:
+      //gallop(num_args, arg_array);
+      break;
+    case TRAIN:
+      //trollop(num_args, arg_array);
+      break;
   }
   
   return 0;
