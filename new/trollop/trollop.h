@@ -1,3 +1,9 @@
+#include <vector>
+#include <string>
+#include "trollop_classes.h"
+#include "../rational.h"
+#include "../lp.h"
+
 namespace TROLLOP {
 
   void read_matrix(std::vector<std::vector<int> >& matrix, 
@@ -63,8 +69,8 @@ namespace TROLLOP {
                   std::vector<std::vector<int> >& M,
                   std::vector<std::vector<int> >& N,
                   std::vector<int>& b,
-                  rational& ans,
-                  std::vector<rational>& solution_vector,
+                  Rational& ans,
+                  std::vector<Rational>& solution_vector,
                   SparseLPSolver solver,
                   int VERBOSE,
                   int LP_VERBOSE);

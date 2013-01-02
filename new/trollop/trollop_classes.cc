@@ -12,7 +12,7 @@
 using namespace TROLLOP;
 
 //this is useful; subtract one mod something
-int sub_1_mod(int a, int m) {
+int TROLLOP::sub_1_mod(int a, int m) {
   //std::cout << "Called with " << a << " and " << m << "\n";
   return (a+m-1)%m;
 }
@@ -20,7 +20,7 @@ int sub_1_mod(int a, int m) {
 
 //raise an integer to an integer power -- this isn't in the 
 //standard library?
-int int_pow(int a, int b) {
+int TROLLOP::int_pow(int a, int b) {
   int e = b;
   int current_base = a;
   int collect = 1;
@@ -37,7 +37,7 @@ int int_pow(int a, int b) {
 
 
 //convert a character to a number (for base 2*rank or 2*rank-1)
-int letter_to_number(char let, int rank, char letter_removed) {
+int TROLLOP::letter_to_number(char let, int rank, char letter_removed) {
   int letter_val;
   int removed_val;
   //std::cout << "Finding number for " << let << " with " << letter_removed 
@@ -69,7 +69,7 @@ int letter_to_number(char let, int rank, char letter_removed) {
 }
 
 //convert a number to a character 
-char number_to_letter(int n, int rank, char letter_removed) {
+char TROLLOP::number_to_letter(int n, int rank, char letter_removed) {
   int looking_for;
   int val_removed;
   if (letter_removed != '\0') {
@@ -100,7 +100,7 @@ char number_to_letter(int n, int rank, char letter_removed) {
 //note which digits the letters represent changes with every letter!
 //the leftmost letter is the most significant
 //note we can't include the starting letter
-int word_to_int(std::string& S, int start_index, int rank) {
+int TROLLOP::word_to_int(std::string& S, int start_index, int rank) {
   int val = 0;
   int i;
   int len = S.size();
@@ -115,7 +115,7 @@ int word_to_int(std::string& S, int start_index, int rank) {
 
 //here S is assumed to have the correct size
 //also, a word of length 1 is done
-void int_to_word(std::string &S, int n, int rank) {
+void TROLLOP::int_to_word(std::string &S, int n, int rank) {
   int Q, R;
   int i;
   int len = S.size();
@@ -383,7 +383,7 @@ char WordTable::get_outgoing_h(int index) {
 /**************************************************************************
  WVec methods
  **************************************************************************/
-void get_cyclic_subword(std::string &S, std::string &T, int start, int n) {
+void TROLLOP::get_cyclic_subword(std::string &S, std::string &T, int start, int n) {
   int i;
   int TLen = T.size();
   S.resize(n);
@@ -492,7 +492,7 @@ void WVec::print_words(std::ostream& os) {
   }
 }
 
-std::ostream& operator<<(std::ostream& os, WVec& C) {
+std::ostream& TROLLOP::operator<<(std::ostream& os, WVec& C) {
   int i;
   for (i=0; i<(int)C.original_input.size(); i++) {
     std::cout  << C.original_input[i] << " ";
@@ -562,7 +562,7 @@ void ArcPairList::print(std::ostream& os) {
 
 
 
-std::ostream& operator<<(std::ostream& os, Triangle& T) {
+std::ostream& TROLLOP::operator<<(std::ostream& os, Triangle& T) {
   os << "T verts: (" << T.v0 << "," << T.v1 << "," << T.v2 
      << ") arcs: (";
   if (T.a0 < 0) { os << "-" << -T.a0-1; } else { os<< T.a0-1;} os << ",";
@@ -571,7 +571,7 @@ std::ostream& operator<<(std::ostream& os, Triangle& T) {
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, Rectangle& R) {
+std::ostream& TROLLOP::operator<<(std::ostream& os, Rectangle& R) {
   int sign, index;
   extract_signed_index(&sign, &index, R.a0);
   if (sign < 0) {
@@ -593,7 +593,7 @@ std::ostream& operator<<(std::ostream& os, Rectangle& R) {
 
 
 
-void extract_signed_index(int* sign, int* index, int signed_index) {
+void TROLLOP::extract_signed_index(int* sign, int* index, int signed_index) {
   if (signed_index < 0) {
     *sign = -1;
     *index = -signed_index-1;

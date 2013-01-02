@@ -23,6 +23,9 @@ char swapCaseChar(char c) {
   return (char)((int)c > 96 ? (int)c-32 : (int)c+32);
 }
 
+char inverse_char(char c) {
+  return (char)((int)c > 96 ? (int)c-32 : (int)c+32);
+}
 
 void swapCase(string& s) {
   int i;

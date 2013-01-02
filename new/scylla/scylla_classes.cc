@@ -9,7 +9,7 @@
 #include "scylla_classes.h"
 #include "../word.h"
 
-
+using namespace SCYLLA;
 
 //this is useful; subtract one mod something
 int sub_1_mod(int a, int m) {
@@ -21,7 +21,7 @@ int sub_1_mod(int a, int m) {
 /****************************************************************************
  print a chain letter
  ***************************************************************************/
-std::ostream &operator<<(std::ostream &os, ChainLetter &CL) {
+std::ostream& SCYLLA::operator<<(std::ostream &os, ChainLetter &CL) {
   os << CL.letter << " (" << CL.word << "," << CL.index << ","
      << CL.index_in_group_reg_inv_list << ")";
   return os;
@@ -211,7 +211,7 @@ void CyclicProduct::cyc_red(std::string &S) {
   }
 }    
     
-std::ostream &operator<<(std::ostream &os, CyclicProduct &G) {
+std::ostream& SCYLLA::operator<<(std::ostream &os, CyclicProduct &G) {
   int i;
   int len = G.orders.size();
   for (i=0; i<len-1; i++) {
@@ -370,7 +370,7 @@ void Chain::print_group_letters(std::ostream &os) {
 }
 
 
-std::ostream &operator<<(std::ostream &os, Chain &C) {
+std::ostream& SCYLLA::operator<<(std::ostream &os, Chain &C) {
   int i;
   int len = (int)C.words.size();
   for (i=0; i<len; i++) {
@@ -614,7 +614,7 @@ void CentralPolygon::compute_ia_etc_for_edges(int col,
   
   
 
-std::ostream &operator<<(std::ostream &os, CentralPolygon &CP) {
+std::ostream& SCYLLA::operator<<(std::ostream &os, CentralPolygon &CP) {
   int j;
   os << "CP: ";
   for (j=0; j<(int)CP.edges.size(); j++) {
@@ -715,7 +715,7 @@ void GroupTooth::compute_ia_etc_for_words(int offset,
   //std::cout << "Pushed " << row+1 << " " << col+1 << " " << 1 << "\n";
 }
 
-std::ostream &operator<<(std::ostream &os, GroupTooth &GT) {
+std::ostream& SCYLLA::operator<<(std::ostream &os, GroupTooth &GT) {
   os << "GT: gp" << GT.group_index << " (" << GT.first << "," << GT.last << ") " << GT.position << " " << GT.base_letter;
   return os;
 }
@@ -773,7 +773,7 @@ void GroupRectangle::compute_ia_etc_for_words(int offset,
 }
 
 
-std::ostream &operator<<(std::ostream &os, GroupRectangle &GR) {
+std::ostream& SCYLLA::operator<<(std::ostream &os, GroupRectangle &GR) {
   os << "GR: gp" << GR.group_index << " (" << GR.first << "," << GR.last << ")";
   return os;
 }

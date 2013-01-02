@@ -2,6 +2,7 @@
 
 #include "scylla/scylla.h"
 #include "gallop/gallop.h"
+#include "trollop/trollop.h"
 
 int main(int argc, char* argv[]) {
 
@@ -48,13 +49,13 @@ int main(int argc, char* argv[]) {
   
   switch (comp_func) {
     case CYCLIC:
-      scylla(num_args, arg_array);
+      SCYLLA::scylla(num_args, arg_array);
       break;
     case LOCAL:
       GALLOP::gallop(num_args, arg_array);
       break;
     case TRAIN:
-      //trollop(num_args, arg_array);
+      TROLLOP::trollop(num_args, arg_array);
       break;
   }
   

@@ -18,8 +18,12 @@ struct WVec;
 
 int letter_to_number(char let, int rank, char letter_removed);
 char number_to_letter(int n, int rank, char letter_removed);
-
-
+  void int_to_word(std::string &S, int n, int rank);
+  int word_to_int(std::string& S, int start_index, int rank);
+  int sub_1_mod(int a, int m);
+  int int_pow(int a, int b);
+  void get_cyclic_subword(std::string &S, std::string &T, int start, int n);
+    
 
 
 /*****************************************************************************

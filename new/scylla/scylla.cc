@@ -11,17 +11,20 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include "scylla.h"
 #include "scylla_classes.h"
 #include "../rational.h"
 #include "../lp.h"
 #include "../word.h"
 
 
+using namespace SCYLLA;
+
 
 /*****************************************************************************
  * Make the list of group polygons and rectangles. 
  * ***************************************************************************/
-void compute_group_teeth_and_rectangles(Chain &C, 
+void SCYLLA::compute_group_teeth_and_rectangles(Chain &C, 
                                        std::vector<GroupTooth > &GT,
                                        std::vector<GroupRectangle > &GR) {
   int i,j,k,l,m;
@@ -126,7 +129,7 @@ void compute_group_teeth_and_rectangles(Chain &C,
  one in a triangle.  This effectively duplicates the nonrigorous scallop
  (the intention is that it should be faster)
  *****************************************************************************/
-void compute_central_polys(Chain &C, 
+void SCYLLA::compute_central_polys(Chain &C, 
                            InterfaceEdgeList &IEL, 
                            std::vector<CentralPolygon> &CP,
                            bool limit_central_sides) {
@@ -250,7 +253,7 @@ void compute_central_polys(Chain &C,
 
 
 
-void print_central_polys(std::vector<CentralPolygon> &CP, 
+void SCYLLA::print_central_polys(std::vector<CentralPolygon> &CP, 
                          std::ostream &os, 
                          int level) {
   int i;
@@ -265,7 +268,7 @@ void print_central_polys(std::vector<CentralPolygon> &CP,
 }
 
 
-void print_group_teeth_and_rectangles(std::vector<GroupTooth> &GT,
+void SCYLLA::print_group_teeth_and_rectangles(std::vector<GroupTooth> &GT,
                                   std::vector<GroupRectangle> &GR,
                                   std::ostream &os,
                                   int level) {
@@ -302,7 +305,7 @@ void print_group_teeth_and_rectangles(std::vector<GroupTooth> &GT,
  * 
  * it's this order for simplicity later
  * ***************************************************************************/
-void scylla_lp(Chain& C, 
+void SCYLLA::scylla_lp(Chain& C, 
                InterfaceEdgeList &IEL,
                CentralEdgePairList &CEL, 
                std::vector<CentralPolygon> &CP,
@@ -525,7 +528,7 @@ void scylla_lp(Chain& C,
 
 
 
-void scylla(int argc, char** argv) {
+void SCYLLA::scylla(int argc, char** argv) {
   int current_arg = 0;
   //int i;
   int VERBOSE = 1;

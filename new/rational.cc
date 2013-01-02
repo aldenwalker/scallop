@@ -196,6 +196,10 @@ bool operator<(Rational first, Rational other) {
   return (mpq_cmp(first.R, other.R) == -1);
 }
 
+bool operator>(Rational first, int other) {
+  return (mpq_cmp_si(first.R, other, 1) > 0);
+}
+
 bool operator==(Rational first, Rational other) {
   return (mpq_cmp(first.R, other.R)==0);
 }

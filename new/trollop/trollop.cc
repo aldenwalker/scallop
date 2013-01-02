@@ -566,8 +566,8 @@ void TROLLOP::trollop_lp(WordTable& WT,
                 std::vector<std::vector<int> >& M,
                 std::vector<std::vector<int> >& N,
                 std::vector<int>& b,
-                rational& ans,
-                std::vector<rational>& solution_vector,
+                Rational& ans,
+                std::vector<Rational>& solution_vector,
                 SparseLPSolver solver,
                 int VERBOSE,
                 int LP_VERBOSE) {
@@ -668,9 +668,10 @@ void TROLLOP::trollop_lp(WordTable& WT,
       }
       offset = AL.num_arcs + 2*WT.num_edges + b_len;
       for (i=0; i<WT.num_edges; i++) {    //set the matrix constraint rows
-        RHS[offset+i+1] = 0; //glp_set_row_bnds(lp, offset+i+1, GLP_FX, 0, 0);
+        LP.set_RHS(offset+i, 0);
+        //RHS[offset+i+1] = 0; //glp_set_row_bnds(lp, offset+i+1, GLP_FX, 0, 0);
         if (VERBOSE > 3) {
-          std::cout << "Set (matrix) row " << offset+i+1 << " fixed to " << 0 << "\n";
+          std::cout << "Set (matrix) row " << offset+i << " fixed to " << 0 << "\n";
         }
       }
       
@@ -678,21 +679,24 @@ void TROLLOP::trollop_lp(WordTable& WT,
     } else {
       offset = AL.num_arcs;      
       for (i=0; i<WT.num_edges; i++) {    //set the edge rows
-        RHS[offset+i+1] = 0; //glp_set_row_bnds(lp, offset+i+1, GLP_FX, 0, 0);
+        LP.set_RHS(offset+i, 0);
+        //RHS[offset+i+1] = 0; //glp_set_row_bnds(lp, offset+i+1, GLP_FX, 0, 0);
         if (VERBOSE > 3) {
           std::cout << "Set (edge) row " << offset+i+1 << " fixed to " << 0 << "\n";
         }
       }
       offset = AL.num_arcs + WT.num_edges;  //set the b rows
       for (i=0; i<b_len; i++) {
-        RHS[offset+i+1] = b[i]; //glp_set_row_bnds(lp, offset+i+1, GLP_FX, b[i], b[i]);        
+        LP.set_RHS(offset+i, b[i]);
+        //RHS[offset+i+1] = b[i]; //glp_set_row_bnds(lp, offset+i+1, GLP_FX, b[i], b[i]);        
         if (VERBOSE > 3) {
           std::cout << "Set (b) row " << offset+i+1 << " fixed to " << b[i] << "\n";
         }
       }
       offset = AL.num_arcs + WT.num_edges + b_len;  //set the make-sure-x-is-weight rows
       for (i=0; i<WT.num_verts; i++) {
-        RHS[offset+i+1] = 0; //glp_set_row_bnds(lp, offset+i+1, GLP_FX, 0,0);        
+        LP.set_RHS(offset+i, 0);
+        //RHS[offset+i+1] = 0; //glp_set_row_bnds(lp, offset+i+1, GLP_FX, 0,0);        
         if (VERBOSE > 3) {
           std::cout << "Set (traintrack) row " << offset+i+1 << " fixed to " << 0 << "\n";
         }
@@ -702,7 +706,8 @@ void TROLLOP::trollop_lp(WordTable& WT,
   } else {  //usual computation
     offset = AL.num_arcs;
     for (i=0; i<WT.num_edges; i++) {
-      RHS[offset+i+1] = C.index_coefficients[i]; //glp_set_row_bnds(lp, offset+i+1, GLP_FX, C.index_coefficients[i], C.index_coefficients[i]);
+      LP.set_RHS(offset+i, C.index_coefficients[i]);
+      //RHS[offset+i+1] = C.index_coefficients[i]; //glp_set_row_bnds(lp, offset+i+1, GLP_FX, C.index_coefficients[i], C.index_coefficients[i]);
       if (VERBOSE > 3) {
         std::cout << "Set (edge) row " << offset+i+1 << " fixed to " << C.index_coefficients[i] << "\n";
       }
@@ -712,7 +717,8 @@ void TROLLOP::trollop_lp(WordTable& WT,
   //COLS
   for(i=0; i<(int)RE.size(); i++){
     //glp_set_col_bnds(lp, i+1, GLP_LO, 0.0, 0.0);
-    objective[i+1] = 0; //glp_set_obj_coef(lp, i+1, 0);
+    LP.set_obj(i, 0);
+    //objective[i+1] = 0; //glp_set_obj_coef(lp, i+1, 0);
     if (VERBOSE>3) {
       std::cout << "Set objective rectangle" << i+1 << " to " << 0 << "\n";
     }
@@ -720,7 +726,8 @@ void TROLLOP::trollop_lp(WordTable& WT,
   offset = RE.size();
   for (i=0; i<(int)TR.size(); i++) {
     //glp_set_col_bnds(lp, offset+i+1, GLP_LO, 0.0, 0.0);
-    objective[offset+i+1] = 1; //glp_set_obj_coef(lp, offset+i+1, 1);
+    LP.set_obj(offset+i, 1);
+    //objective[offset+i+1] = 1; //glp_set_obj_coef(lp, offset+i+1, 1);
     if (VERBOSE>3) {
       std::cout << "Set objective triangle" << offset+i+1 << " to " << 1 << "\n";
     }
@@ -731,7 +738,8 @@ void TROLLOP::trollop_lp(WordTable& WT,
       offset = RE.size() + TR.size();
       for (i=0; i<2*WT.num_edges; i++) {
         //glp_set_col_bnds(lp, offset+i+1, GLP_LO, 0, 0);
-        objective[offset+i+1] = 0; //glp_set_obj_coef(lp, offset+i+1, 0); 
+        LP.set_obj(offset+i, 0);
+        //objective[offset+i+1] = 0; //glp_set_obj_coef(lp, offset+i+1, 0); 
         if (VERBOSE>3) {
           std::cout << "Set objective side value" << offset+i+1 << " to " << 0 << "\n";
         }
@@ -741,7 +749,8 @@ void TROLLOP::trollop_lp(WordTable& WT,
       offset = RE.size() + TR.size();
       for (i=0; i<M_cols; i++) {
         //glp_set_col_bnds(lp, offset+i+1, GLP_LO, 0, 0);
-        objective[offset+i+1] = 0; //glp_set_obj_coef(lp, offset+i+1, 0);      
+        LP.set_obj(offset+i, 0);
+        //objective[offset+i+1] = 0; //glp_set_obj_coef(lp, offset+i+1, 0);      
         if (VERBOSE>3) {
           std::cout << "Set objective M value" << offset+i+1 << " to " << 0 << "\n";
         }
@@ -751,12 +760,9 @@ void TROLLOP::trollop_lp(WordTable& WT,
   
   if (DO_SUP) {
     //glp_set_col_bnds(lp, num_cols, GLP_LO, 0.0, 0.0);
-    objective[num_cols] = 0;  //glp_set_obj_coef(lp, num_cols, 0);
+    LP.set_obj(num_cols-1, 0);
+    //objective[num_cols] = 0;  //glp_set_obj_coef(lp, num_cols, 0);
   }
-  
-  ia.push_back(0);
-  ja.push_back(0);
-  ar.push_back(0);	
   
   for (i=0; i<(int)RE.size(); i++) {
     if (VERBOSE > 3) {
@@ -766,16 +772,16 @@ void TROLLOP::trollop_lp(WordTable& WT,
     //the arcs
     temp_ia.resize(0); temp_ja.resize(0); temp_ar.resize(0);
     extract_signed_index(&sign, &index, RE[i].a0);
-    temp_ia.push_back(index+1);
-    temp_ja.push_back(i+1);
+    temp_ia.push_back(index);
+    temp_ja.push_back(i);
     if (sign < 0) {
       temp_ar.push_back(-1);
     } else {
       temp_ar.push_back(1);
     }
     extract_signed_index(&sign, &index, RE[i].a1);
-    temp_ia.push_back(index+1);
-    temp_ja.push_back(i+1);
+    temp_ia.push_back(index);
+    temp_ja.push_back(i);
     if (sign < 0) {
       temp_ar.push_back(-1);
     } else {
@@ -783,15 +789,16 @@ void TROLLOP::trollop_lp(WordTable& WT,
     }
     
     //the edges; we still do this even for MAT_COMP (MAT_SEPARATE_DOMAIN is also ok in here)
-    temp_ia.push_back(AL.num_arcs + (RE[i].side0 * WT.num_edges) +  RE[i].e0 + 1);
-    temp_ja.push_back(i+1);
+    temp_ia.push_back(AL.num_arcs + (RE[i].side0 * WT.num_edges) +  RE[i].e0 );
+    temp_ja.push_back(i);
     temp_ar.push_back(1);
-    temp_ia.push_back(AL.num_arcs + (RE[i].side1 * WT.num_edges) + RE[i].e1 + 1);
-    temp_ja.push_back(i+1);
+    temp_ia.push_back(AL.num_arcs + (RE[i].side1 * WT.num_edges) + RE[i].e1 );
+    temp_ja.push_back(i);
     temp_ar.push_back(1);
     
     //ACTUALLY push the rectangle stuff into the matrix
-    collect_dups_and_push(temp_ia, temp_ja, temp_ar, ia, ja, ar, VERBOSE);
+    LP.extend_entries_no_dups(temp_ia, temp_ja, temp_ar);
+    //collect_dups_and_push(temp_ia, temp_ja, temp_ar, ia, ja, ar, VERBOSE);
   }
   
   if (VERBOSE>1) {
@@ -806,15 +813,16 @@ void TROLLOP::trollop_lp(WordTable& WT,
     }
     for (j=0; j<3; j++) {
       extract_signed_index(&sign, &index, (j==0 ? TR[i].a0 : (j==1 ? TR[i].a1 : TR[i].a2) ) ) ;
-      ia.push_back(index+1);
-      ja.push_back(offset+i+1);
-      if (sign < 0) {
-        ar.push_back(-1);
-      } else {
-        ar.push_back(1);
-      }
+      LP.add_entry(index, offset+i, (sign<0 ? -1 : 1));
+      //ia.push_back(index+1);
+      //ja.push_back(offset+i+1);
+      //if (sign < 0) {
+      //  ar.push_back(-1);
+      //} else {
+      //  ar.push_back(1);
+      //}
       if (VERBOSE>3) {
-        std::cout << "put " << ia[ia.size()-1] << " " << ja[ja.size()-1] << " " << ar[ar.size()-1] <<"\n";
+        //std::cout << "put " << ia[ia.size()-1] << " " << ja[ja.size()-1] << " " << ar[ar.size()-1] <<"\n";
       }
     }
   }
@@ -830,9 +838,10 @@ void TROLLOP::trollop_lp(WordTable& WT,
       row_offset = AL.num_arcs;
       col_offset = RE.size() + TR.size();
       for (i=0; i<2*WT.num_edges; i++) {
-        ia.push_back(row_offset + i + 1);
-        ja.push_back(col_offset + i + 1);
-        ar.push_back(-1);
+        LP.add_entry(row_offset+i, col_offset+i, -1); 
+        //ia.push_back(row_offset + i + 1);
+        //ja.push_back(col_offset + i + 1);
+        //ar.push_back(-1);
       }
       //load in the N matrix (the b's are already set on the RHS)
       row_offset = AL.num_arcs + 2*WT.num_edges;
@@ -840,9 +849,10 @@ void TROLLOP::trollop_lp(WordTable& WT,
       for (i=0; i<WT.num_edges; i++) { //these are the columns (weights form the input x weight)
         for (j=0; j<b_len; j++) { //these are the ROWS, the output rows of the N matrix
           if (N[j][i] == 0) continue;
-          ia.push_back(row_offset + j + 1);
-          ja.push_back(col_offset + i + 1);
-          ar.push_back(N[j][i]);
+          LP.add_entry(row_offset+j, col_offset+i, N[j][i]);
+          //ia.push_back(row_offset + j + 1);
+          //ja.push_back(col_offset + i + 1);
+          //ar.push_back(N[j][i]);
         }
       }
       //load in the matrix constraint
@@ -853,18 +863,20 @@ void TROLLOP::trollop_lp(WordTable& WT,
           //for each column, compute how much it contributes to each row, 
           //that is, we are simply putting the ith column of M in
           if (M[j][i] == 0) continue;
-          ia.push_back(row_offset + j + 1);
-          ja.push_back(col_offset + i + 1);
-          ar.push_back(M[j][i]);
+          LP.add_entry(row_offset+j, col_offset+i, M[j][i]);
+          //ia.push_back(row_offset + j + 1);
+          //ja.push_back(col_offset + i + 1);
+          //ar.push_back(M[j][i]);
         }
       }
       //we also need the negative identity on the right (for the side1)
       row_offset = AL.num_arcs+2*WT.num_edges + b_len;
       col_offset = RE.size() + TR.size() + WT.num_edges;
       for (i=0; i<WT.num_edges; i++) {
-        ia.push_back(row_offset + i + 1);
-        ja.push_back(col_offset + i + 1);
-        ar.push_back(-1);
+        LP.add_entry(row_offset+i, col_offset+i, -1);
+        //ia.push_back(row_offset + i + 1);
+        //ja.push_back(col_offset + i + 1);
+        //ar.push_back(-1);
       }        
       
       if (VERBOSE>1) { 
@@ -882,9 +894,10 @@ void TROLLOP::trollop_lp(WordTable& WT,
           //and add these as negatives.
           //that is, we are simply putting the ith column of M in, with minus signs
           if (M[j][i] == 0) continue;
-          ia.push_back(row_offset + j + 1);
-          ja.push_back(col_offset + i + 1);
-          ar.push_back(-M[j][i]);
+          LP.add_entry(row_offset+j, col_offset+i, -M[j][i]);
+          //ia.push_back(row_offset + j + 1);
+          //ja.push_back(col_offset + i + 1);
+          //ar.push_back(-M[j][i]);
         }
       }
       
@@ -894,9 +907,10 @@ void TROLLOP::trollop_lp(WordTable& WT,
       for (i=0; i<WT.num_edges; i++) { //these are the columns (weights form the input x weight)
         for (j=0; j<b_len; j++) { //these are the ROWS, the output rows of the N matrix
           if (N[j][i] == 0) continue;
-          ia.push_back(row_offset + j + 1);
-          ja.push_back(col_offset + i + 1);
-          ar.push_back(N[j][i]);
+          LP.add_entry(row_offset+j, col_offset+i, N[j][i]);
+          //ia.push_back(row_offset + j + 1);
+          //ja.push_back(col_offset + i + 1);
+          //ar.push_back(N[j][i]);
         }
       }
       if (VERBOSE>1) { 
@@ -916,7 +930,8 @@ void TROLLOP::trollop_lp(WordTable& WT,
         temp_ia.push_back(row_offset + row2 + 1);
         temp_ja.push_back(col_offset + i + 1);
         temp_ar.push_back(-1);
-        collect_dups_and_push(temp_ia, temp_ja, temp_ar, ia, ja, ar, VERBOSE);
+        LP.extend_entries_no_dups(temp_ia, temp_ja, temp_ar);
+        //collect_dups_and_push(temp_ia, temp_ja, temp_ar, ia, ja, ar, VERBOSE);
       }
     }
   }
@@ -925,9 +940,10 @@ void TROLLOP::trollop_lp(WordTable& WT,
   if (DO_SUP) {
     offset = AL.num_arcs;
     for (i=0; i<WT.num_edges; i++) {
-      ia.push_back(offset + i + 1);
-      ja.push_back(num_cols);
-      ar.push_back(-1);
+      LP.add_entry(offset+i, num_cols-1, -1);
+      //ia.push_back(offset + i + 1);
+      //ja.push_back(num_cols);
+      //ar.push_back(-1);
     }
   }
   
@@ -936,8 +952,15 @@ void TROLLOP::trollop_lp(WordTable& WT,
   }  
   
   if (VERBOSE > 1) {
-    std::cout << "Created " << ia.size() << " nonzeroes on " << num_rows << " rows and " << num_cols << " columns\n";
+    //std::cout << "Created " << ia.size() << " nonzeroes on " << num_rows << " rows and " << num_cols << " columns\n";
   }
+  
+  LP.solve(VERBOSE);
+  
+  LP.get_optimal_value(ans);
+  LP.get_soln_vector(solution_vector);
+  
+  
 }
 
 
@@ -1011,7 +1034,7 @@ int TROLLOP::trollop(int argc, char* argv[]) {
       MAT_SEPARATE_DOMAIN = true;
       num_copies=2;
       
-    } else if (argv[current_arg][1] == 'm' && argv[current_arg][2] == 'a';) {
+    } else if (argv[current_arg][1] == 'm' && argv[current_arg][2] == 'a') {
       MAT_COMP = true;
       M_filename = std::string(argv[current_arg+1]);
       N_filename = std::string(argv[current_arg+2]);
@@ -1034,7 +1057,7 @@ int TROLLOP::trollop(int argc, char* argv[]) {
     rank = atoi(argv[current_arg]);
     current_arg++;
   } else {
-    rank = find_rank(&argv[current_arg+1], argc-current_arg-1);
+    rank = chain_rank(argc-current_arg-1, &argv[current_arg+1]);
   }
   WordTable WT(rank, atoi(argv[current_arg]), DO_SUP || MAT_COMP);
   WVec C;
@@ -1136,8 +1159,8 @@ int TROLLOP::trollop(int argc, char* argv[]) {
     }
   } else {
 
-    rational ans;
-    std::vector<rational> solution_vector(0);                           //run the LP
+    Rational ans;
+    std::vector<Rational> solution_vector(0);                           //run the LP
     
     trollop_lp(WT, C, AL, num_copies, TR, RE, DO_SUP,
                MAT_COMP,
@@ -1162,7 +1185,7 @@ int TROLLOP::trollop(int argc, char* argv[]) {
         //output for MAT_COMP
       } else if (MAT_COMP) {
         if (MAT_SEPARATE_DOMAIN) {
-          std::vector<std::vector<rational> > weight_vector;
+          std::vector<std::vector<Rational> > weight_vector;
           weight_vector.resize(num_copies);
           for (i=0; i<num_copies; i++) {
             weight_vector[i].resize(WT.num_edges);
@@ -1190,11 +1213,11 @@ int TROLLOP::trollop(int argc, char* argv[]) {
           std::cout << "\nwith scl = " << ans << " = " << ans.get_d() << "\n";
           
         } else {
-          std::vector<rational> weight_vector(WT.num_edges);
-          std::vector<rational> input_weight_vector(WT.num_edges);
+          std::vector<Rational> weight_vector(WT.num_edges);
+          std::vector<Rational> input_weight_vector(WT.num_edges);
           for (i=0; i<(int)weight_vector.size(); i++) {
-            weight_vector[i] = rational(0,1);
-            input_weight_vector[i] = rational(0,1);
+            weight_vector[i] = Rational(0,1);
+            input_weight_vector[i] = Rational(0,1);
           }
           for (i=0; i<(int)RE.size(); i++) {
             if (solution_vector[i] > 0) {

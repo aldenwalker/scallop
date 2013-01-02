@@ -12,7 +12,7 @@
 
 #include "../lp.h"
 
-
+namespace SCYLLA {
 
 /*****************************************************************************
  * a letter in a chain
@@ -196,7 +196,7 @@ struct GroupRectangle {
 std::ostream &operator<<(std::ostream &os, GroupRectangle &GR);
 
 
-
+}
 
 
 #endif 
