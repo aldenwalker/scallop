@@ -1,0 +1,9 @@
+scallop
+
+Copyright 20, 2013 by Alden Walker
+
+Computes scl in free products of cyclic groups (-cyclic),
+Computes minimal surfaces satisfying a local constraint (-local),
+and computes with traintracks (-train)
+
+Type ./scallop for help.
