@@ -11,5 +11,6 @@ void cyc_red(std::string& s);
 std::string inverse(std::string& s);
 std::string reverse(std::string s);
 std::string multiply_words(std::string& s1, std::string& s2);
+int chain_rank(int num_words, char** words); 
 
 #endif

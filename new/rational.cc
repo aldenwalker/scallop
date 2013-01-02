@@ -182,6 +182,16 @@ Rational operator*(Rational first, Rational other) {
   return r;
 }
 
+Rational operator*(Rational first, int other) {
+  mpq_t temp;
+  mpq_init(temp);
+  mpq_set_si(temp, other, 1);
+  mpq_mul(temp, first.R, temp);
+  Rational r = Rational(temp);
+  mpq_clear(temp);
+  return r;
+}
+
 bool operator<(Rational first, Rational other) {
   return (mpq_cmp(first.R, other.R) == -1);
 }

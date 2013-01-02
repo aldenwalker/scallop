@@ -573,9 +573,13 @@ void CentralPolygon::compute_ia_etc_for_edges(int col,
                                               Chain &C,
                                               InterfaceEdgeList &IEL,
                                               CentralEdgePairList &CEL,
-                                              SparseLP LP) {
-  int j,row,val;
-  for (j=0; j<(int)edges.size(); j++) {
+                                              SparseLP& LP) {
+  int i,j,row,val;
+  int num_sides = (int)edges.size();
+  std::vector<int> temp_ia(0);
+  std::vector<int> temp_ja(0);
+  std::vector<int> temp_ar(0);
+  for (j=0; j<num_sides; j++) {
     if (interface[j]) {
       row = IEL.get_index_from_poly_side(edges[j].first, edges[j].second);
       val = 1;
@@ -591,7 +595,20 @@ void CentralPolygon::compute_ia_etc_for_edges(int col,
         val = 1;
       }
     }
-    LP.add_entry_catch_dups(row, col, val, 3);
+    for (i=0; i<(int)temp_ia.size(); ++i) {
+      if (temp_ia[i] == row && temp_ja[i] == col) {
+        temp_ar[i] += val;
+        break;
+      }
+    }
+    if (i==(int)temp_ia.size()) {
+      temp_ia.push_back(row);
+      temp_ja.push_back(col);
+      temp_ar.push_back(val);
+    }
+  }
+  for (i=0; i<(int)temp_ia.size(); ++i) {
+    LP.add_entry(temp_ia[i], temp_ja[i], temp_ar[i]);
   }
 }  
   
@@ -629,7 +646,7 @@ void GroupTooth::compute_ia_etc_for_edges(int offset,
                                           Chain &C,
                                           InterfaceEdgeList &IEL, 
                                           std::vector<std::vector<std::vector<int> > > &group_teeth_rows, 
-                                          SparseLP LP) {
+                                          SparseLP& LP) {
   int row;
   int col = offset;
   int row1_offset, row2_offset;
@@ -683,7 +700,7 @@ void GroupTooth::compute_ia_etc_for_edges(int offset,
 void GroupTooth::compute_ia_etc_for_words(int offset, 
                                           Chain &C,
                                           int row_offset,
-                                          SparseLP LP) {
+                                          SparseLP& LP) {
   int col = offset;
   int row;
   int word;
@@ -710,7 +727,7 @@ std::ostream &operator<<(std::ostream &os, GroupTooth &GT) {
  ****************************************************************************/
 void GroupRectangle::compute_ia_etc_for_edges(int col, 
                                               InterfaceEdgeList &IEL,
-                                              SparseLP LP) {
+                                              SparseLP& LP) {
   int row;
   row = IEL.get_index_from_group_side(first, last);
   LP.add_entry(row, col, -1);
@@ -731,7 +748,7 @@ void GroupRectangle::compute_ia_etc_for_words(int offset,
                                               Chain &C, 
                                               int row_offset,
                                               InterfaceEdgeList &IEL,
-                                              SparseLP LP) {
+                                              SparseLP& LP) {
   int col = offset;
   int row;
   int word;

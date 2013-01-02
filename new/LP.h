@@ -15,7 +15,7 @@ enum SparseLPSolver {GLPK,
                       GUROBI_IPT, 
                       EXLP};
 
-enum SparseLPSolveCode {LP_OPTIMAL, LP_INFEASIBLE, LP_ERROR};
+enum SparseLPSolveCode {LP_OPTIMAL, LP_INFEASIBLE, LP_ERROR, LP_TIME_LIMIT};
 
 class SparseLP {
 
@@ -48,8 +48,12 @@ public:
   void set_num_cols(int nc);
   void add_entry(int i, int j, int a);
   void add_entry(int i, int j, double a);
-  void add_entry_catch_dups(int i, int j, int a, int how_far_back);
-  void add_entry_catch_dups(int i, int j, double a, int how_far_back);
+  void extend_entries_no_dups(std::vector<int>& temp_ia, 
+                              std::vector<int>& temp_ja,
+                              std::vector<int>& temp_ar);
+  void extend_entries_no_dups(std::vector<int>& temp_ia, 
+                              std::vector<int>& temp_ja,
+                              std::vector<double>& temp_ar);
   void set_obj(int i, int v);
   void set_obj(int i, double v);
   void set_RHS(int i, int r);
@@ -61,6 +65,8 @@ public:
   void get_optimal_value(Rational& ov);
   
   SparseLPSolveCode solve(int verbose);
+  
+  void print_LP();
   
 };
 

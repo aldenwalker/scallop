@@ -144,7 +144,7 @@ struct CentralPolygon {
                                 Chain &C,
                                 InterfaceEdgeList &IEL,
                                 CentralEdgePairList &CEL,
-                                SparseLP LP);
+                                SparseLP& LP);
 };
 
 std::ostream &operator<<(std::ostream &os, CentralPolygon &CP);
@@ -164,11 +164,11 @@ struct GroupTooth {
                                 Chain &C,
                                 InterfaceEdgeList &IEL, 
                                 std::vector<std::vector<std::vector<int> > > &group_teeth_rows, 
-                                SparseLP LP);
+                                SparseLP& LP);
   void compute_ia_etc_for_words(int offset, 
                                 Chain &C,
                                 int row_offset,
-                                SparseLP LP);
+                                SparseLP& LP);
                                 
 };
 
@@ -184,12 +184,12 @@ struct GroupRectangle {
   int last;             //the second letter of the rectangle
   void compute_ia_etc_for_edges(int offset, 
                                 InterfaceEdgeList &IEL, 
-                                SparseLP LP);
+                                SparseLP& LP);
   void compute_ia_etc_for_words(int offset, 
                                 Chain &C, 
                                 int row_offset,
                                 InterfaceEdgeList &IEL,
-                                SparseLP LP);
+                                SparseLP& LP);
                                 
 };
  

@@ -68,6 +68,7 @@ SparseLP::SparseLP(SparseLPSolver s, int nr, int nc) {
   solver = s;
   op_val = Rational(-1,1);
   double_op_val = -1;
+  //std::cout << "Made new LP problem with solver: " << solver << "\n";
 }
 
 void SparseLP::write_to_file(std::string filename) {
@@ -122,27 +123,34 @@ void SparseLP::add_entry(int i, int j, double a) {
   }
 }
 
-void SparseLP::add_entry_catch_dups(int i, int j, int a, int how_far_back) {
-  if (solver == EXLP) {
-    ia.push_back(i);
-    ja.push_back(j);
-    ar.push_back(a);
-  } else {
-    ia.push_back(i);
-    ja.push_back(j);
-    double_ar.push_back((double)a);
+
+void SparseLP::extend_entries_no_dups(std::vector<int> &temp_ia,
+                                       std::vector<int> &temp_ja,
+                                       std::vector<int> &temp_ar) {
+  int j, k, temp;
+  for (j=0; j<(int)temp_ia.size(); j++) {
+    if (temp_ar[j] == 0) {
+      continue;
+    }
+    temp = 0;
+    for (k=0; k<(int)temp_ia.size(); k++) {
+      if (temp_ia[k] == temp_ia[j]) {
+        temp += temp_ar[k];
+        temp_ar[k] = 0;
+      }
+    }
+    add_entry(temp_ia[j], temp_ja[j], temp);
+    //ja.push_back(temp_ja[j]);
+    //ia.push_back(temp_ia[j]);
+    //ar.push_back(temp);
   }
 }
 
-void SparseLP::add_entry_catch_dups(int i, int j, double a, int how_far_back) {
-  if (solver == EXLP) {
-    std::cout << "Can't input a double for rational LP\n";
-  } else {
-    ia.push_back(i);
-    ja.push_back(j);
-    double_ar.push_back(a);
-  }
-}  
+void SparseLP::extend_entries_no_dups(std::vector<int>& temp_ia, 
+                                      std::vector<int>& temp_ja,
+                                      std::vector<double>& temp_ar) {
+}
+
 
 void SparseLP::set_obj(int i, int v) {
   if (solver == EXLP) {
@@ -196,11 +204,11 @@ void SparseLP::get_soln_vector(std::vector<double>& sv) {
 void SparseLP::get_soln_vector(std::vector<Rational>& sv) {
   sv.resize(num_cols);
   if (solver == EXLP) {
-    for (int i; i<num_cols; ++i) {
+    for (int i=0; i<num_cols; ++i) {
       sv[i] = soln_vector[i];
     }
   } else {
-    for (int i; i<num_cols; ++i) {
+    for (int i=0; i<num_cols; ++i) {
       sv[i] = approx_rat(double_soln_vector[i]);
     }
   }
@@ -208,14 +216,16 @@ void SparseLP::get_soln_vector(std::vector<Rational>& sv) {
 
 void SparseLP::get_optimal_value(double& ov) {
   if (solver == EXLP) {
-    std::cout << "Getting double optimal value from EXLP?\n";
+    //std::cout << "Getting double optimal value from EXLP?\n";
+    ov = op_val.get_d();
+  } else {
+    ov = double_op_val;
   }
-  ov = double_op_val;
 }
 
 void SparseLP::get_optimal_value(Rational& ov) {
   if (solver != EXLP) {
-    std::cout << "Getting rational optimal value from non-EXLP?\n";
+    //std::cout << "Getting rational optimal value from non-EXLP?\n";
     ov = approx_rat(double_op_val);
   } else {
     ov = op_val;
@@ -277,7 +287,19 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
       glp_interior(lp, &ipt_parm);
     }
     
-     double_op_val = glp_get_obj_val(lp)/4.0;	
+    int stat = glp_get_status(lp);
+    if (stat != GLP_OPT) {
+      if (stat == GLP_NOFEAS || stat == GLP_UNDEF) {
+        glp_delete_prob(lp);
+        return LP_INFEASIBLE;
+      } else {
+        std::cout << "GLPK Linear programming error: " << stat << "\n";
+      }
+      glp_delete_prob(lp);
+      return LP_ERROR;
+    }
+    
+    double_op_val = glp_get_obj_val(lp)/4.0;	
     
     double_soln_vector.resize(num_cols);
     for (int i=0; i<num_cols; i++) {
@@ -299,20 +321,20 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     char buf[100];
     int varNum;
     
-    if (verbose==1) 
+    if (verbose>1) 
       std::cout << "About to create a new lp\n";    
     lp = new_lp(NULL);
     
-    if (verbose==1) 
+    if (verbose>1) 
       std::cout << "Done\n";
     
-    if (verbose)
+    if (verbose>1)
       std::cout << "Init hash\n";
     
     lp_hash_str_init(lp, lp->hash_entries);
     //my_hash_mpq_init(lp->hash_entries);
     
-    if (verbose)
+    if (verbose>1)
       std::cout << "Done\n";
     
     
@@ -339,7 +361,7 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
       }
     }
     
-    if (verbose==1) {
+    if (verbose>1) {
       std::cout << "Entered the row names and equalities\n";
     }
     
@@ -366,7 +388,7 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
       //}
     }
     
-    if (verbose==1) {
+    if (verbose>1) {
       std::cout << "Added the columns\n";
     }
     
@@ -414,7 +436,7 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
       lp->lower.is_valid[varNum] = TRUE;
     }
     
-    if (verbose>=1) {
+    if (verbose>1) {
       std::cout << "Rows: " << lp->rows << "\n";;
       std::cout << "Vars: " << lp->vars << "\n";
     }
@@ -423,7 +445,14 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     result = solve_lp(lp);
     
     if (result != LP_RESULT_OPTIMAL) {
-      std::cout << "got error code " << result << "\n";
+      //std::cout << "got error code " << result << "\n";
+      if (result == 2) {
+        lp_free(lp);
+        return LP_INFEASIBLE;
+      } else {
+        lp_free(lp);
+        return LP_ERROR;
+      }
     }
     
     lp_get_object_value(lp, &entry);
@@ -501,6 +530,30 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     //optimize
     GRBoptimize( model );
     
+    //determine if the problem had a solution
+    int problem_status;
+    GRBgetintattr( model, GRB_INT_ATTR_STATUS, &problem_status );
+    if (problem_status != GRB_OPTIMAL) {
+      if (problem_status == GRB_TIME_LIMIT) {
+        std::cout << "Time limit\n";
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return LP_TIME_LIMIT;
+      } else if (problem_status != GRB_INF_OR_UNBD && 
+                 problem_status != GRB_INFEASIBLE &&
+                 problem_status != GRB_UNBOUNDED) {
+        std::cout << "Gurobi Linear programming error\n";
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return LP_ERROR;
+      } else {
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return LP_INFEASIBLE;
+      }
+    }
+    
+    
     //get the objective minimum
     GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &double_op_val);
     op_val /= 4.0;
@@ -520,8 +573,24 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
 
 
 
-
-
+void SparseLP::print_LP() {
+  if (solver != EXLP) {
+    std::cout << "Objective: ";
+    for (int i=0; i<num_cols; ++i) {
+      std::cout << double_objective[i] << " ";
+    }
+    std::cout << "\n";
+    std::cout << "RHS: ";
+    for (int i=0; i<num_rows; ++i) {
+      std::cout << double_RHS[i] << " ";
+    }
+    std::cout << "\nEntries: ";
+    for (int i=0; i<(int)ia.size(); ++i) {
+      std::cout << "(" << ia[i] << "," << ja[i] << "," << double_ar[i] << "), ";
+    }
+    std::cout << "\n";
+  }
+}
 
 
 

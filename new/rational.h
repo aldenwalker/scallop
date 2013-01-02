@@ -29,6 +29,7 @@ class Rational {
     friend Rational operator/(Rational first, Rational other);
     friend Rational operator/(Rational first, int other);
     friend Rational operator*(Rational first, Rational other);
+    friend Rational operator*(Rational first, int other);
     friend bool operator==(Rational first, Rational other);
     friend bool operator<(Rational first, Rational other);
     friend std::ostream& operator<<(std::ostream& os, Rational r);

@@ -14,6 +14,7 @@
 #include "scylla_classes.h"
 #include "../rational.h"
 #include "../lp.h"
+#include "../word.h"
 
 
 
@@ -423,7 +424,7 @@ void scylla_lp(Chain& C,
     //objective[offset+i] = 0; //glp_set_obj_coef(lp, offset+i+1, 0);
     LP.set_obj(offset+i, 0);
     if (VERBOSE>2) {
-      std::cout << "GR Set objective " << offset+i+1 << " to " << 0 << "\n";
+      std::cout << "GR Set objective " << offset+i << " to " << 0 << "\n";
     }
   }    
   
@@ -507,6 +508,11 @@ void scylla_lp(Chain& C,
     return;
   }
   
+  if (VERBOSE > 2) {
+    std::cout << "LP problem:\n";
+    LP.print_LP();
+  }
+  
   LP.solve(VERBOSE);
   
   LP.get_optimal_value(*scl);
@@ -529,19 +535,18 @@ void scylla(int argc, char** argv) {
   bool WRITE_LP = false;
   std::string LP_filename;
   
-  if (argc < 3 || std::string(argv[1]) == "-h") {
-    std::cout << "usage: ./scylla [-h] [-v[n]] [-L <filename>] [-l] [-m<GLPK,GIPT,EXLP,GUROBI>] <gen string> <chain>\n";
+  if (argc < 1 || std::string(argv[0]) == "-h") {
+    std::cout << "usage: ./scallop -cyclic [-h] [-v[n]] [-L <filename>] [-l] [-m<GLPK,GIPT,EXLP,GUROBI>] <gen string> <chain>\n";
     std::cout << "\twhere <gen string> is of the form <gen1><order1><gen2><order2>...\n";
     std::cout << "\te.g. a5b0 computes in Z/5Z * Z\n";
     std::cout << "\tand <chain> is an integer linear combination of words in the generators\n";
-    std::cout << "\te.g. ./scyllop a5b0 aabaaaB\n";
+    std::cout << "\te.g. ./scallop -cyclic a5b0 aabaaaB\n";
+    std::cout << "\tIf the gen string is omitted, the group is assumed to be free\n";
     std::cout << "\t-h: print this message\n";
     std::cout << "\t-v[n]: verbose output (n=0,1,2,3); 0 gives quiet output\n";
     std::cout << "\t-V: verbose LP output\n";
-    std::cout << "\t-l: limit the number of central sides to 1 (see readme)\n";
-    std::cout << "\t-i: use the interior point LP method (faster but rational output is sometimes wrong)\n";
     std::cout << "\t-L <filename>: write out a sparse lp to the filename .A, .b, and .c\n";
-    std::cout << "\t-m<format>: use the solver specified\n";
+    std::cout << "\t-m<format>: use the LP solver specified (EXLP uses GMP for exact output)\n";
     exit(0);
   }
   while (argv[current_arg][0] == '-') {
@@ -556,7 +561,7 @@ void scylla(int argc, char** argv) {
         } else {
           solver = GUROBI_IPT;
         }
-      } else if (argv[current_arg][1] == 'E') {
+      } else if (argv[current_arg][2] == 'E') {
         solver = EXLP;
       }
       
@@ -579,9 +584,22 @@ void scylla(int argc, char** argv) {
     current_arg++;
   }
   
-  std::string G_in = std::string(argv[current_arg]);
-  CyclicProduct G(G_in);                                                         //create the group
-  current_arg++;
+  //if the first argument is a group string, then good
+  //otherwise, assume it's a free group
+  std::string first_arg = std::string(argv[current_arg]);
+  std::string G_in = "";
+  if (first_arg.size() < 2 || isalpha(first_arg[1])) {
+    //it's not a group string
+    int r = chain_rank(argc-current_arg, &argv[current_arg]);
+    for (int i=0; i<r; ++i) {
+      G_in += (char)(97+i);
+      G_in += "0";
+    }
+  } else {  
+    G_in = std::string(argv[current_arg]);                                                        //create the group
+    current_arg++;
+  }
+  CyclicProduct G(G_in); 
   
   Chain C(&G, &argv[current_arg], argc-current_arg);                              //process the chain argument
 
