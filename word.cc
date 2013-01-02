@@ -23,6 +23,9 @@ char swapCaseChar(char c) {
   return (char)((int)c > 96 ? (int)c-32 : (int)c+32);
 }
 
+char inverse_char(char c) {
+  return (char)((int)c > 96 ? (int)c-32 : (int)c+32);
+}
 
 void swapCase(string& s) {
   int i;
@@ -79,6 +82,26 @@ string multiply_words(string& s1, string& s2) {
   red(ans);
   return ans;
 }
+
+int chain_rank(int num_words, char** words) {
+  int max_found = 0;
+  for (int i=0; i<num_words; ++i) {
+    int j=0; 
+    while (words[i][j] != '\0') {
+      int val = (int)words[i][j];
+      if (val < 97) val += 32;
+      val -= 97;
+      val += 1;
+      if (val > max_found) {
+        max_found = val;
+      }
+      j++;
+    }
+  }
+  return max_found;
+}
+
+
 
 /*
 pair fix_find(string s, int pos){	// find last biggest cancelling substring with fixed initial

@@ -1,16 +1,17 @@
 #include <vector>
+#include <string>
 #include <iostream>
-#include <stdlib.h>
 
 #include <glpk.h>
 
-#include "lp.h"
-//#include "sssgmp.h"
-#include <gmp.h>
-//#include "gmp/gmp-exec/include/gmp.h"
+#ifdef GUROBI_INSTALLED
+extern "C" {
+#include <gurobi_c.h>
+}
+#endif
 
-
-
+#include "LP.h"
+#include "rational.h"
 
 extern "C" {
 #include "exlp-package/lpstruct.h"
@@ -22,206 +23,359 @@ extern "C" {
 #include "exlp-package/mylib.h"
 }
 
+SparseLP::SparseLP(SparseLPSolver s) {
+  ia.resize(0);
+  ja.resize(0);
+  ar.resize(0);
+  double_ar.resize(0);
+  objective.resize(0);
+  double_objective.resize(0);
+  RHS.resize(0);
+  double_RHS.resize(0);
+  eq_type.resize(0);
+  soln_vector.resize(0);
+  double_soln_vector.resize(0);
+  num_rows = 0;
+  num_cols = 0;
+  solver = s;
+  op_val = Rational(-1,1);
+  double_op_val = -1;
+}
 
-
-void do_linear_program(   vector<string> &w,
-                          vector<int> &weight,
-                          vector<arc> &arc_list, 
-                          vector<polygon> &polygon_list, 
-                          rational &scl, 
-                          vector<rational> &solutionVector,
-                          scallop_lp_solver solver,
-                          int VERBOSE,
-                          int LP_VERBOSE){
-     
-
-
-	vector<int> ia(0);
-	vector<int> ja(0);
-	vector<double> ar(0); 
-	vector<double> s(w.size());  
-  int i,j,k,l,m,n;       
-  int numWords = w.size();       
-  int arc_list_length = arc_list.size();
-  int polygon_list_length = polygon_list.size();
-    
-  if (VERBOSE == 1) {
-    cout << "Started linear programming setup\n";
+SparseLP::SparseLP(SparseLPSolver s, int nr, int nc) {
+  ia.resize(0);
+  ja.resize(0);
+  ar.resize(0);
+  double_ar.resize(0);
+  if (s == EXLP) {
+    objective.resize(nc);
+    double_objective.resize(0);
+    RHS.resize(nr);
+    double_RHS.resize(0);
+    soln_vector.resize(nc);
+    double_soln_vector.resize(0);
+  } else {
+    objective.resize(0);
+    double_objective.resize(nc);
+    RHS.resize(0);
+    double_RHS.resize(nr);
+    soln_vector.resize(0);
+    double_soln_vector.resize(nc);
   }
-  
-  
-  if (solver == GLPK_DOUBLE || solver == GLPK_EXACT) {   
-	  glp_prob *lp;
-    glp_smcp parm;
-	
-	  //the maximum possible matrix size is polygon_list_length*((arc_list_length/2)+WORD)
-	  ia.reserve(polygon_list_length*((arc_list_length/2)+numWords));
-	  ja.reserve(polygon_list_length*((arc_list_length/2)+numWords));
-	  ar.reserve(polygon_list_length*((arc_list_length/2)+numWords));
-	
-	  lp = glp_create_prob();
-	  glp_init_smcp(&parm);
-	  parm.presolve=GLP_OFF;
-	  
-    if (LP_VERBOSE == 1  || VERBOSE == 1) {
-      parm.msg_lev=GLP_MSG_ALL;
-    } else { 
-      parm.msg_lev=GLP_MSG_OFF;
-    }
-	  glp_set_prob_name(lp, "scl");
-	  glp_set_obj_dir(lp,GLP_MIN);
-	
-	  glp_add_rows(lp, (arc_list_length/2) + numWords );
-	  for(i=1;i<=arc_list_length/2;i++){
-		  glp_set_row_bnds(lp,i, GLP_FX, 0.0, 0.0);
-	  };
-	
-	  // boundary condition
-	  for(i=0;i<numWords;i++){
-		  glp_set_row_bnds(lp, ((arc_list_length)/2)+1+i, GLP_FX, w[i].size()*weight[i], w[i].size()*weight[i]);	
-	  };
-	
-	  glp_add_cols(lp, polygon_list_length);
-	  for(i=1;i<=polygon_list_length;i++){
-		  glp_set_col_bnds(lp,i, GLP_LO, 0.0, 0.0);
-		  glp_set_obj_coef(lp,i, (polygon_list[i-1].size-2));
-	  };
-	  l=0;
-	  //start the vectors with the dummy zeroth element
-	  ia.push_back(0);
-	  ja.push_back(0);
-	  ar.push_back(0);	
-	  for(j=0;j<polygon_list_length;j++){
-		  for(m=0;m<arc_list_length/2;m++){
-			  n=0;
-			  for(k=0;k<polygon_list[j].size;k++){
-				  if(polygon_list[j].arc[k]==2*m){
-					  n=n+1;
-				  }
-				  if(polygon_list[j].arc[k]==2*m+1){
-					  n=n-1;
-				  }
-			  }
-			  if(n!=0){
-				  l++;
-				  //ia[l]=m+1;
-				  //ja[l]=j+1;
-				  //ar[l]=n;
-				  ia.push_back(m+1);
-				  ja.push_back(j+1);
-				  ar.push_back(n);				
-		  //		cout << "entry " << l << " i = " << m+1 << " j = " << j+1 << " entry = " << n << "\n";
-			  }
-		  }
-		
-		  for(i=0;i<numWords;i++){
-			  s[i]=0;
-		  }
-		
-		  for(k=0;k<polygon_list[j].size;k++){
-			  s[arc_list[polygon_list[j].arc[k]].first_word]++;
-		  }
-		
-		  for(i=0;i<numWords;i++){
-		    l++;
-		    //ia[l]=(arc_list_length/2)+1+i;
-		    //ja[l]=j+1;
-		    //ar[l]=s[i];
-		    ia.push_back((arc_list_length/2)+1+i);
-		    ja.push_back(j+1);
-		    ar.push_back(s[i]);
-		  };
+  eq_type.resize(nr);
+  num_rows = nr;
+  num_cols = nc;
+  solver = s;
+  op_val = Rational(-1,1);
+  double_op_val = -1;
+  //std::cout << "Made new LP problem with solver: " << solver << "\n";
+}
 
-	  };
-	
-	  if (VERBOSE == 1) {
-	    cout << "Created constraints\n";
-	  }
-	
-    //cout << ia.size() << " nonzeros in " << ((arc_list_length/2) + numWords) << " rows and " << polygon_list_length << " columns\n";
-	
-	  //the contents of a vector<> are guaranteed to be contiguous in memory, 
-	  //so this should be ok
-	  glp_load_matrix(lp, ia.size()-1, &(ia[0]), &(ja[0]), &(ar[0]));
-	
-   
-   
-    glp_simplex(lp,&parm);
-   	if (solver == GLPK_EXACT) {
-   //////////////////////  this line might not compile with older glpk ////////
-    //glp_exact(lp, &parm);
-    ///////////////////////////////////////////////////////////////////////////
-	  }
-	
-	
-	
-  //	lpx_exact(lp);
-    scl = approxRat(glp_get_obj_val(lp)/4.0);	
-	
-	  for (i=0; i<polygon_list_length; i++) {
-	    solutionVector[i] = approxRat(glp_get_col_prim(lp,i+1));
-	  }	
-	
+void SparseLP::write_to_file(std::string filename) {
+}
+
+void SparseLP::set_num_rows(int nr) {
+  if (solver == EXLP) {
+    RHS.resize(nr);
+    double_RHS.resize(0);
+  } else {
+    RHS.resize(0);
+    double_RHS.resize(nr);
+  }
+  eq_type.resize(nr);
+  num_rows = nr;
+}
+
+void SparseLP::set_num_cols(int nc) {
+  if (solver == EXLP) {
+    objective.resize(nc);
+    double_objective.resize(0);
+    soln_vector.resize(nc);
+    double_soln_vector.resize(0);
+  } else {
+    objective.resize(0);
+    double_objective.resize(nc);
+    soln_vector.resize(0);
+    double_soln_vector.resize(nc);
+  }
+  num_cols = nc;
+}
+
+void SparseLP::add_entry(int i, int j, int a) {
+  if (solver == EXLP) {
+    ia.push_back(i);
+    ja.push_back(j);
+    ar.push_back(a);
+  } else {
+    ia.push_back(i);
+    ja.push_back(j);
+    double_ar.push_back((double)a);
+  }
+}
+    
+void SparseLP::add_entry(int i, int j, double a) {
+  if (solver == EXLP) {
+    std::cout << "Can't input a double for rational LP\n";
+  } else {
+    ia.push_back(i);
+    ja.push_back(j);
+    double_ar.push_back(a);
+  }
+}
+
+
+void SparseLP::extend_entries_no_dups(std::vector<int> &temp_ia,
+                                       std::vector<int> &temp_ja,
+                                       std::vector<int> &temp_ar) {
+  int j, k, temp;
+  for (j=0; j<(int)temp_ia.size(); j++) {
+    if (temp_ar[j] == 0) {
+      continue;
+    }
+    temp = 0;
+    for (k=0; k<(int)temp_ia.size(); k++) {
+      if (temp_ia[k] == temp_ia[j]) {
+        temp += temp_ar[k];
+        temp_ar[k] = 0;
+      }
+    }
+    add_entry(temp_ia[j], temp_ja[j], temp);
+    //ja.push_back(temp_ja[j]);
+    //ia.push_back(temp_ia[j]);
+    //ar.push_back(temp);
+  }
+}
+
+void SparseLP::extend_entries_no_dups(std::vector<int>& temp_ia, 
+                                      std::vector<int>& temp_ja,
+                                      std::vector<double>& temp_ar) {
+}
+
+
+void SparseLP::set_obj(int i, int v) {
+  if (solver == EXLP) {
+    objective[i] = v;
+  } else {
+    double_objective[i] = (double)v;
+  }
+}
+
+void SparseLP::set_obj(int i, double v) {
+  if (solver == EXLP) {
+    std::cout << "Can't input a double for rational LP\n";
+  } else {
+    double_objective[i] = v;
+  }
+}
+
+void SparseLP::set_RHS(int i, int r) {
+  if (solver == EXLP) {
+    RHS[i] = r;
+  } else {
+    double_RHS[i] = (double)r;
+  }
+}
+
+void SparseLP::set_RHS(int i, double r) {
+  if (solver == EXLP) {
+    std::cout << "Can't input a double for rational LP\n";
+  } else {
+    double_RHS[i] = r;
+  }
+}
+
+void SparseLP::set_equality_type(int i, SparseLPEqualityType et) {
+  eq_type[i]= et;
+}
+
+void SparseLP::get_soln_vector(std::vector<double>& sv) {
+  sv.resize(num_cols);
+  if (solver == EXLP) {
+    for (int i; i<num_cols; ++i) {
+      sv[i] = soln_vector[i].get_d();
+    }
+  } else {
+    for (int i; i<num_cols; ++i) {
+      sv[i] = double_soln_vector[i];
+    }
+  }
+}
+
+void SparseLP::get_soln_vector(std::vector<Rational>& sv) {
+  sv.resize(num_cols);
+  if (solver == EXLP) {
+    for (int i=0; i<num_cols; ++i) {
+      sv[i] = soln_vector[i];
+    }
+  } else {
+    for (int i=0; i<num_cols; ++i) {
+      sv[i] = approx_rat(double_soln_vector[i]);
+    }
+  }
+}
+
+void SparseLP::get_optimal_value(double& ov) {
+  if (solver == EXLP) {
+    //std::cout << "Getting double optimal value from EXLP?\n";
+    ov = op_val.get_d();
+  } else {
+    ov = double_op_val;
+  }
+}
+
+void SparseLP::get_optimal_value(Rational& ov) {
+  if (solver != EXLP) {
+    //std::cout << "Getting rational optimal value from non-EXLP?\n";
+    ov = approx_rat(double_op_val);
+  } else {
+    ov = op_val;
+  }
+}
+
+SparseLPSolveCode SparseLP::solve(int verbose) {
+  
+  /************************************  GLPK *******************************/ 
+  
+  if (solver == GLPK || solver == GLPK_SIMPLEX || solver == GLPK_IPT) {   
+    
+    glp_prob *lp;
+    glp_smcp parm;
+    glp_iptcp ipt_parm;
+    
+    lp = glp_create_prob();
+    
+    glp_set_prob_name(lp, "scl");
+    glp_set_obj_dir(lp, GLP_MIN);
+    
+    glp_add_rows(lp, num_rows );
+    
+    glp_add_cols(lp, num_cols);
+    
+    for (int i=0; i<num_rows; i++) {
+      glp_set_row_bnds(lp, i+1, GLP_FX, double_RHS[i], double_RHS[i]);
+    }
+    for (int i=0; i<num_cols; i++) {
+      glp_set_col_bnds(lp, i+1, GLP_LO, 0.0, 0.0);
+      glp_set_obj_coef(lp, i+1, double_objective[i]);
+    }
+    ia.push_back(0);
+    ja.push_back(0);
+    double_ar.push_back(0);
+    for (int i=ia.size()-1; i>0; --i) {
+      ia[i] = ia[i-1]+1;
+      ja[i] = ja[i-1]+1;
+      double_ar[i] = double_ar[i-1];
+    }
+	  glp_load_matrix(lp, ia.size()-1, &ia[0], &ja[0], &double_ar[0]);
+    
+    if (solver == GLPK || solver == GLPK_SIMPLEX) {
+      glp_init_smcp(&parm);
+      parm.presolve=GLP_ON;
+      if (verbose > 1) {
+        parm.msg_lev = GLP_MSG_ALL;
+      } else {
+        parm.msg_lev = GLP_MSG_OFF;
+      }
+      glp_simplex(lp, &parm);
+    } else if (solver == GLPK_IPT) {
+      glp_init_iptcp(&ipt_parm);
+      if (verbose > 1) {
+        ipt_parm.msg_lev = GLP_MSG_ALL;
+      } else {
+        ipt_parm.msg_lev = GLP_MSG_OFF;
+      }
+      glp_interior(lp, &ipt_parm);
+    }
+    
+    int stat = glp_get_status(lp);
+    if (stat != GLP_OPT) {
+      if (stat == GLP_NOFEAS || stat == GLP_UNDEF) {
+        glp_delete_prob(lp);
+        return LP_INFEASIBLE;
+      } else {
+        std::cout << "GLPK Linear programming error: " << stat << "\n";
+      }
+      glp_delete_prob(lp);
+      return LP_ERROR;
+    }
+    
+    double_op_val = glp_get_obj_val(lp)/4.0;	
+    
+    double_soln_vector.resize(num_cols);
+    for (int i=0; i<num_cols; i++) {
+      double_soln_vector[i] = glp_get_col_prim(lp,i+1);
+    }	
+    
 	  glp_delete_prob(lp);
 	  
-	  
+  /***************************************  EXLP ****************************/  
+    
 	  
 	} else if (solver == EXLP) {
-	  
-	  //exlp init
+    
+    //exlp init
 	  mylib_init();
 	  
 	  LP* lp;
     int  result;
     char buf[100];
     int varNum;
-
-    if (VERBOSE==1) 
-      cout << "About to create a new lp\n";    
+    
+    if (verbose>1) 
+      std::cout << "About to create a new lp\n";    
     lp = new_lp(NULL);
     
-    if (VERBOSE==1) 
-      cout << "Done\n";
+    if (verbose>1) 
+      std::cout << "Done\n";
     
-    if (VERBOSE)
-      cout << "Init hash\n";
-        
+    if (verbose>1)
+      std::cout << "Init hash\n";
+    
     lp_hash_str_init(lp, lp->hash_entries);
     //my_hash_mpq_init(lp->hash_entries);
     
-    if (VERBOSE)
-      cout << "Done\n";
-
+    if (verbose>1)
+      std::cout << "Done\n";
     
     
-    sprintf(buf, "scabble");
+    sprintf(buf, "scl");
     lp_set_name(lp, buf);
     
     //the lp by default (set in lpstruct.c)
     //has all the right stuff, I think
     
     //now we input the rows -- it likes to name them
-    for (i=0; i<(arc_list_length/2)+numWords; i++) {
+    for (int i=0; i<num_rows; i++) {
       sprintf(buf, "r%d", i);
       lp_add_row(lp, buf);
-      lp_set_row_equality(lp, lp_get_row_num(lp, buf), 'E');
+      switch (eq_type[i]) {
+        case EQ:
+          lp_set_row_equality(lp, lp_get_row_num(lp, buf), 'E');
+          break;
+        case LE:
+          lp_set_row_equality(lp, lp_get_row_num(lp, buf), 'L');
+          break;
+        case GE:
+          lp_set_row_equality(lp, lp_get_row_num(lp, buf), 'G');
+          break;
+      }
     }
     
-    if (VERBOSE==1) {
-      cout << "Entered the row names and equalities\n";
+    if (verbose>1) {
+      std::cout << "Entered the row names and equalities\n";
     }
     
     //add the objective function row
     sprintf(buf, "obj");
     lp_set_obj_name(lp, buf);
     
-    int* columnIndices = new int[polygon_list_length]; //this is probably useless
+    int* columnIndices = new int[num_cols]; //this is probably useless
     int rowNum;
     int objectiveIndex = lp_get_row_num(lp, (char*)"obj");
     mpq_t entry;
     mpq_init(entry);
     
-    for (i=0; i<polygon_list_length; i++) {
+    for (int i=0; i<num_cols; i++) {
       //since we only enter entries from a column once, we only need to do this once,
       //as opposed to read_columns in mps.c
       sprintf(buf, "col%d", i);
@@ -229,13 +383,13 @@ void do_linear_program(   vector<string> &w,
       columnIndices[i] = varNum;
       
       //for (j=0; j<nRows; j++) {
-        //we're going to enter something in the varNum column, in the right row
-        //with coefficient from constraints, but we will know what to do 
+      //we're going to enter something in the varNum column, in the right row
+      //with coefficient from constraints, but we will know what to do 
       //}
     }
     
-    if (VERBOSE==1) {
-      cout << "Added the columns\n";
+    if (verbose>1) {
+      std::cout << "Added the columns\n";
     }
     
     //this is from mps.c
@@ -246,44 +400,18 @@ void do_linear_program(   vector<string> &w,
     
     
     //now we actually enter the data
-    int numTimesAppears;
-    for (i=0; i<polygon_list_length; i++) {
+    for (int i=0; i<(int)ia.size(); ++i) {
+      varNum = columnIndices[ja[i]];
+      sprintf(buf, "r%d", ia[i]);
+      rowNum = lp_get_row_num(lp, buf);
+      mpq_set_si(entry, ar[i], 1);
+      lp_set_coefficient(lp, entry, rowNum, varNum);
+    }
+    
+    //set the objective function
+    for (int i=0; i<num_cols; ++i) {
       varNum = columnIndices[i];
-      
-      //set the arc constraints
-      for (j=0; j<(arc_list_length/2); j++) {
-        sprintf(buf, "r%d", j);
-        rowNum = lp_get_row_num(lp, buf);
-        //put the entry in
-        numTimesAppears = 0;
-        for (k=0; k<polygon_list[i].size; k++) {
-          if (polygon_list[i].arc[k]==2*j){
-            numTimesAppears++;
-          } else if (polygon_list[i].arc[k]==2*j+1){
-            numTimesAppears--;
-          }
-        }
-        mpq_set_si(entry, numTimesAppears, 1);
-        lp_set_coefficient(lp, entry, rowNum, varNum);
-      }
-      
-      //set the chain constraints
-      for (j=0; j<numWords; j++) {
-        sprintf(buf, "r%d", (arc_list_length/2)+j);
-        rowNum = lp_get_row_num(lp, buf);
-        numTimesAppears = 0;
-        for (k=0; k<polygon_list[i].size; k++) {
-          if (arc_list[polygon_list[i].arc[k]].first_word == j &&
-              arc_list[polygon_list[i].arc[k]].first == 0) { //it's the first letter of my word
-            numTimesAppears++;
-          }
-        }
-        mpq_set_si(entry, numTimesAppears, 1);
-        lp_set_coefficient(lp, entry, rowNum, varNum);
-      }
-      
-      //set the objective function
-      mpq_set_si(entry, polygon_list[i].size-2, 1);
+      mpq_set_si(entry, objective[i], 1);
       lp_set_coefficient(lp, entry, objectiveIndex, varNum);
     }
     
@@ -291,24 +419,16 @@ void do_linear_program(   vector<string> &w,
     vector_rev_sgn(lp->c);
     
     //set the right hand sides for the arcs
-    mpq_set_si(entry, 0,1);
-    for (i=0; i<(arc_list_length/2); i++) {
+    for (int i=0; i<num_rows; ++i) {
       sprintf(buf, "r%d", i);
       rowNum = lp_get_row_num(lp, buf);
+      mpq_set_si(entry, RHS[i], 1);
       lp_set_rhs(lp, rowNum, entry);
     }
-    //set it for the chain constraints
-    for (i=0; i<numWords; i++) {
-      sprintf(buf, "r%d", (arc_list_length/2)+i);
-      rowNum = lp_get_row_num(lp, buf);
-      mpq_set_si(entry, weight[i], 1);
-      lp_set_rhs(lp, rowNum, entry);
-    }
-    
     
     //read the bounds on the columns
     mpq_set_si(entry, 0,1);
-    for (i=0; i<polygon_list_length; i++) {
+    for (int i=0; i<num_cols; i++) {
       varNum = columnIndices[i];
       if (lp->lower.is_valid[varNum] == FALSE) //this will always be the case I think
         mpq_init(lp->lower.bound[varNum]);
@@ -316,42 +436,168 @@ void do_linear_program(   vector<string> &w,
       lp->lower.is_valid[varNum] = TRUE;
     }
     
-    if (VERBOSE==1) {
-      cout << "Rows: " << lp->rows << "\n";;
-      cout << "Vars: " << lp->vars << "\n";
+    if (verbose>1) {
+      std::cout << "Rows: " << lp->rows << "\n";;
+      std::cout << "Vars: " << lp->vars << "\n";
     }
     
     
     result = solve_lp(lp);
-      
+    
     if (result != LP_RESULT_OPTIMAL) {
-      cout << "got error code " << result << "\n";
+      //std::cout << "got error code " << result << "\n";
+      if (result == 2) {
+        lp_free(lp);
+        return LP_INFEASIBLE;
+      } else {
+        lp_free(lp);
+        return LP_ERROR;
+      }
     }
     
     lp_get_object_value(lp, &entry);
     
-    scl = rational(entry)/rational(4,1);
+    op_val = Rational(entry)/Rational(4,1);
     
-    for (i=0; i<polygon_list_length; i++) {
+    for (int i=0; i<num_cols; i++) {
       mpq_set(entry, *vector_get_element_ptr(lp->x, columnIndices[i]));
-      solutionVector[i] = rational(entry);
+      soln_vector[i] = Rational(entry);
     }
     
     lp_free(lp);
     
-  }    
-	
-	
-	
+    
+    
+ /************************  GUROBI *******************************************/   
+    
+    
+
+  } else if (solver == GUROBI || 
+             solver == GUROBI_SIMPLEX || 
+             solver == GUROBI_IPT ) {
+    
+#ifndef GUROBI_INSTALLED
+
+    std::cout << "Not compiled with gurobi support\n";
+    return LP_ERROR;
+
+#else
+    
+    GRBenv   *env   = NULL;
+    GRBmodel *model = NULL;
+    double_solution_vector.resize(num_cols);
+    
+    GRBloadenv( &env, "gurobi.log" );
+    
+    //create a new model and immediately load in all the columns
+    GRBnewmodel( env, &model, "scl", num_cols, &double_objective[0], NULL, NULL, NULL, NULL);
+    
+    //add the constraints (rows)  here we make them empty equality rows and fix the RHS
+    for (int i=0; i<num_rows; i++) {
+      switch (eq_type[i]) {
+        case EQ: 
+          GRBaddconstr( model, 0, NULL, NULL, GRB_EQUAL, double_RHS[i], NULL);
+          break;
+        case LE:
+          GRBaddconstr( model, 0, NULL, NULL, GRB_LESS_EQUAL, double_RHS[i], NULL);
+          break;
+        case GE:
+          GRBaddconstr( model, 0, NULL, NULL, GRB_GREATER_EQUAL, double_RHS[i], NULL);
+          break;
+      } 
+    }
+    GRBupdatemodel(model);
+    
+    //add the matrix:
+    
+    //first fix the matrix entries, because all the rows and columns are 1-based
+    GRBchgcoeffs( model, (int)ia.size(), &ia[0], &ja[0], &double_ar[0] );
+    
+    //set the correct optimization method
+    if (solver == GUROBI_SIMPLEX) {
+      GRBsetintparam(GRBgetenv(model), "Method", 1);
+    } else if (solver == GUROBI_IPT) {
+      GRBsetintparam(GRBgetenv(model), "Method", 2);
+    } else { 
+      //do nothing -- default
+    }
+    
+    //set the output
+    GRBsetintparam(GRBgetenv(model), "OutputFlag", (verbose > 1 ? 1 : 0) );
+    GRBsetintparam(GRBgetenv(model), "DisplayInterval", 60 );
+    
+    
+    //optimize
+    GRBoptimize( model );
+    
+    //determine if the problem had a solution
+    int problem_status;
+    GRBgetintattr( model, GRB_INT_ATTR_STATUS, &problem_status );
+    if (problem_status != GRB_OPTIMAL) {
+      if (problem_status == GRB_TIME_LIMIT) {
+        std::cout << "Time limit\n";
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return LP_TIME_LIMIT;
+      } else if (problem_status != GRB_INF_OR_UNBD && 
+                 problem_status != GRB_INFEASIBLE &&
+                 problem_status != GRB_UNBOUNDED) {
+        std::cout << "Gurobi Linear programming error\n";
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return LP_ERROR;
+      } else {
+        GRBfreemodel(model);
+        GRBfreeenv(env);
+        return LP_INFEASIBLE;
+      }
+    }
+    
+    
+    //get the objective minimum
+    GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &double_op_val);
+    op_val /= 4.0;
+    
+    //get the solution vector
+    GRBgetdblattrarray( model, GRB_DBL_ATTR_X, 0, num_cols, &double_soln_vector[0] );
+    
+    //free stuff
+    GRBfreemodel(model);
+    GRBfreeenv(env);
+#endif
+  }
+  
+  return LP_OPTIMAL;
 }
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+
+
+
+
+void SparseLP::print_LP() {
+  if (solver != EXLP) {
+    std::cout << "Objective: ";
+    for (int i=0; i<num_cols; ++i) {
+      std::cout << double_objective[i] << " ";
+    }
+    std::cout << "\n";
+    std::cout << "RHS: ";
+    for (int i=0; i<num_rows; ++i) {
+      std::cout << double_RHS[i] << " ";
+    }
+    std::cout << "\nEntries: ";
+    for (int i=0; i<(int)ia.size(); ++i) {
+      std::cout << "(" << ia[i] << "," << ja[i] << "," << double_ar[i] << "), ";
+    }
+    std::cout << "\n";
+  }
+}
+
+
+
+
+
+
+
+
+
+

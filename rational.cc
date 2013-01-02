@@ -32,41 +32,41 @@ int lcm(int a, int b) {
 /******************************************************************************/
 /* member functions for the rational class                                    */
 /******************************************************************************/
-rational::rational() {
+Rational::Rational() {
   mpq_init(R);
   inited = 1;
   mpq_set_si(R,0,1);
 }
 
-rational::rational(int a, int b) {
+Rational::Rational(int a, int b) {
   mpq_init(R);
   inited = 1;
   mpq_set_si(R, a,b);
 }
 
 
-rational::rational(mpq_t q) {
+Rational::Rational(mpq_t q) {
   mpq_init(R);
   inited = 1;
   mpq_set(R, q);
 }
 
 
-rational::rational(const rational& other) {
+Rational::Rational(const Rational& other) {
   mpq_init(R);
   mpq_set(R, other.R);
 }
 
-rational::~rational() {
+Rational::~Rational() {
   mpq_clear(R);
 }
 
 
-void rational::get_mpq(mpq_t q) {
+void Rational::get_mpq(mpq_t q) {
   mpq_set(q,R);
 }
 
-rational& rational::operator=(const rational& rhs) {
+Rational& Rational::operator=(const Rational& rhs) {
   if (this == &rhs) {
     return *this;
   }
@@ -76,21 +76,21 @@ rational& rational::operator=(const rational& rhs) {
     
 
 
-int rational::d() {
+int Rational::d() {
   return mpz_get_si(mpq_denref(R));;
 }
 
-int rational::n() {
+int Rational::n() {
   return mpz_get_si(mpq_numref(R));;
 }
 
-double rational::get_d() {
+double Rational::get_d() {
   return mpq_get_d(R);
 }
 
 
 
-void rational::canonicalize() {
+void Rational::canonicalize() {
   /*
   int sign = (denom < 0 ? -1 : 1);
   num *= sign;
@@ -106,92 +106,106 @@ void rational::canonicalize() {
 }
 
 
-rational rational::add(rational other) {
+Rational Rational::add(Rational other) {
   mpq_t temp;
   mpq_init(temp);
   mpq_add(temp, R, other.R);
-  rational r = rational(temp);
+  Rational r = Rational(temp);
   mpq_clear(temp);
   return r;
 }
     
     
-rational rational::div(rational other) {
+Rational Rational::div(Rational other) {
   mpq_t temp;
   mpq_init(temp);
   mpq_div(temp, R, other.R);
-  rational r = rational(temp);
+  Rational r = Rational(temp);
   mpq_clear(temp);
   return r;
 }
 
-rational operator+(rational first, rational other) {
+Rational operator+(Rational first, Rational other) {
   mpq_t temp;
   mpq_init(temp);
   mpq_add(temp, first.R, other.R);
-  rational r = rational(temp);
+  Rational r = Rational(temp);
   mpq_clear(temp);
   return r;
 }
 
-rational rational::operator-(rational& other){
+Rational Rational::operator-(Rational& other){
   mpq_t temp;
   mpq_init(temp);
   mpq_sub(temp, R, other.R);
-  rational r = rational(temp);
+  Rational r = Rational(temp);
   mpq_clear(temp);
   return r;
 }
 
-rational rational::operator-(){
+Rational Rational::operator-(){
   mpq_t temp;
   mpq_init(temp);
   mpq_neg(temp, R);
-  rational r = rational(temp);
+  Rational r = Rational(temp);
   mpq_clear(temp);
   return r;
 }
 
 
-rational operator/(rational first, rational other) {
+Rational operator/(Rational first, Rational other) {
   mpq_t temp;
   mpq_init(temp);
   mpq_div(temp, first.R, other.R);
-  rational r = rational(temp);
+  Rational r = Rational(temp);
   mpq_clear(temp);
   return r;
 }
 
-rational operator/(rational first, int other) {
+Rational operator/(Rational first, int other) {
   mpq_t temp;
   mpq_init(temp);
   mpq_set_si(temp, other, 1);
   mpq_div(temp, first.R, temp);
-  rational r = rational(temp);
+  Rational r = Rational(temp);
   mpq_clear(temp);
   return r;
 }
 
 
-rational operator*(rational first, rational other) {
+Rational operator*(Rational first, Rational other) {
   mpq_t temp;
   mpq_init(temp);
   mpq_mul(temp, first.R, other.R);
-  rational r = rational(temp);
+  Rational r = Rational(temp);
   mpq_clear(temp);
   return r;
 }
 
-bool operator<(rational first, rational other) {
+Rational operator*(Rational first, int other) {
+  mpq_t temp;
+  mpq_init(temp);
+  mpq_set_si(temp, other, 1);
+  mpq_mul(temp, first.R, temp);
+  Rational r = Rational(temp);
+  mpq_clear(temp);
+  return r;
+}
+
+bool operator<(Rational first, Rational other) {
   return (mpq_cmp(first.R, other.R) == -1);
 }
 
-bool operator==(rational first, rational other) {
+bool operator>(Rational first, int other) {
+  return (mpq_cmp_si(first.R, other, 1) > 0);
+}
+
+bool operator==(Rational first, Rational other) {
   return (mpq_cmp(first.R, other.R)==0);
 }
 
 
-ostream& operator<<(ostream& os, rational r) {
+ostream& operator<<(ostream& os, Rational r) {
   if (mpz_cmp_si(mpq_denref(r.R), 1) == 0) {
     os << mpz_get_si(mpq_numref(r.R));
   } else { 
@@ -205,17 +219,17 @@ ostream& operator<<(ostream& os, rational r) {
 /* Helper functions                                                          */
 /*****************************************************************************/
 
-rational cont_frac_value(vector<int> a) {
+Rational cont_frac_value(vector<int> a) {
   int lenA = a.size();
-  rational answer = rational(a[lenA-1], 1);
+  Rational answer = Rational(a[lenA-1], 1);
   int i;
   for (i=lenA-2; i>=0; i--) {
-    answer = rational(a[i], 1).add( rational(1,1).div(answer));
+    answer = Rational(a[i], 1).add( Rational(1,1).div(answer));
   }
   return answer;
 }
 
-rational approxRat(double b) {
+Rational approx_rat(double b) {
   double a;
   vector<int> As(0);
   a = b;
@@ -223,7 +237,7 @@ rational approxRat(double b) {
   As.push_back((int)floor(a));
   //cout << "Floor: " << (int)floor(a) << "\n";
   double currentRem = a - (double)As[As.size()-1];
-  rational currentR = rational(As[0], 1);
+  Rational currentR = Rational(As[0], 1);
   while (fabs(currentR.get_d() - a) > 0.00000001) {
     //cout << "last conv element: " << As[As.size()-1] << " and current Rem: "<< currentRem << "\n";
     As.push_back((int)floor(1.0/currentRem));
@@ -234,7 +248,7 @@ rational approxRat(double b) {
   return currentR;
 } 
 
-rational approxRat_be_nice(double b) {
+Rational approx_rat_be_nice(double b) {
   double a;
   vector<int> As(0);
   a = b - 0.000000001;
@@ -242,7 +256,7 @@ rational approxRat_be_nice(double b) {
   As.push_back((int)floor(a));
   //cout << "Floor: " << (int)floor(a) << "\n";
   double currentRem = a - (double)As[As.size()-1];
-  rational currentR = rational(As[0], 1);
+  Rational currentR = Rational(As[0], 1);
   while (fabs(currentR.get_d() - a) > 0.00000001) {
     //cout << "last conv element: " << As[As.size()-1] << " and current Rem: "<< currentRem << "\n";
     As.push_back((int)floor(1.0/currentRem));

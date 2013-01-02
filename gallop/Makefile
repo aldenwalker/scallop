@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-g -Wall
+CFLAGS=-O3 #-g -Wall
 IFLAGS=-I/sw/include
 
 all: gallop.o graph.o

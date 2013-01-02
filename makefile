@@ -3,15 +3,6 @@ CFLAGS=-O3 #-g -Wall
 IFLAGS=-I/sw/include
 LDFLAGS=-L/sw/lib -lglpk -lgmp
 
-#cplex stuff
-SYSTEM     = x86-64_sles10_4.1
-LIBFORMAT  = static_pic
-CPLEXDIR=/opt/ibm/ILOG/CPLEX_Studio124/cplex
-CPLEXINCDIR=$(CPLEXDIR)/include
-CPLEXLIBDIR=$(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
-CLNFLAGS=-L$(CPLEXLIBDIR) -lcplex -lm -pthread
-CPLEXFLAGS=-I$(CPLEXINCDIR)
-
 #gurobi stuff
 GURDIR = /home/awalker/Documents/research/software/gurobi500/linux64
 GURINCDIR = $(GURDIR)/include
@@ -19,47 +10,39 @@ GURLIBDIR = $(GURDIR)/lib
 GURINC = -I$(GURINCDIR) 
 GURLIB = -L$(GURLIBDIR) -lgurobi50
 
-all: scallop scylla
+DIRS = exlp-package scylla gallop trollop
 
-scallop.o: scallop.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c scallop.cc
+all: scallop
 
-word.o: word.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c word.cc
-
-draw.o: draw.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c draw.cc
+.PHONY : $(DIRS)
+$(DIRS) :
+	$(MAKE) -C $@
 
 rational.o: rational.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c rational.cc
 
+word.o: word.cc
+	$(CC) $(CFLAGS) $(IFLAGS) -c word.cc
+
 lp.o: lp.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c lp.cc
 
-io.o: io.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c io.cc
+lp.o_GUR: lp.cc
+	$(CC) $(CFLAGS) $(IFLAGS) $(GURINC) -DGUROBI_INSTALLED -c lp.cc
 
-scylla.o: scylla.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c scylla.cc
+scallop.o: scallop.cc
+	$(CC) $(CFLAGS) $(IFLAGS) -c scallop.cc
 
-scylla_lp.o:	scylla_lp.cc
-	$(CC) $(CFLAGS) $(IFLAGS) $(CPLEXFLAGS) $(GURINC) -c scylla_lp.cc
+scallop_with_gurobi: $(DIRS) scallop.o rational.o word.o lp.o_GUR scylla gallop trollop exlp-package
+	$(CC) $(CFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o $(GURLIB) $(LDFLAGS)
 
-scylla_classes.o: scylla_classes.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c scylla_classes.cc
-
-.PHONY: exlp-package
-exlp-package: 
-	cd exlp-package; make
-
-scallop: exlp-package scallop.o word.o draw.o rational.o lp.o io.o
-	$(CC) $(CFLAGS) -o scallop scallop.o word.o draw.o rational.o lp.o io.o exlp-package/*.o $(LDFLAGS)
-
-scylla: exlp-package scylla.o rational.o scylla_lp.o scylla_classes.o word.o
-	$(CC) $(CFLAGS) -o scylla scylla.o scylla_lp.o scylla_classes.o rational.o word.o exlp-package/*.o $(CLNFLAGS) $(GURLIB) $(LDFLAGS)
+scallop: $(DIRS) scallop.o rational.o word.o lp.o scylla gallop trollop exlp-package
+	$(CC) $(CFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o $(LDFLAGS)
 
 clean: 
-	rm scylla
-	rm scallop
 	rm *.o
-	cd exlp-package; rm *.o
+	rm exlp-package/*.o
+	rm scylla/*.o
+	rm gallop/*.o
+	rm trollop/*.o
+	rm scallop

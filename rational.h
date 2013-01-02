@@ -1,5 +1,5 @@
-#ifndef __rational__
-#define __rational__
+#ifndef rational_H
+#define rational_H
 
 #include <iostream>
 #include <vector>
@@ -8,39 +8,41 @@
 /******************************************************************************/
 /** rational class  hiding gmp                                                */
 /******************************************************************************/
-class rational {
+class Rational {
   private:
     int inited;
     mpq_t R;
   public:
-    rational();
-    rational(int a, int b);
-    rational(mpq_t q);
-    rational(const rational& other);
-    ~rational();
+    Rational();
+    Rational(int a, int b);
+    Rational(mpq_t q);
+    Rational(const Rational& other);
+    ~Rational();
     void get_mpq(mpq_t q);
-    rational& operator=(const rational& rhs);
+    Rational& operator=(const Rational& rhs);
     double get_d();
-    rational add(rational other);
-    rational div(rational other);
-    friend rational operator+(rational first,  rational other);
-    rational operator-(rational& other);
-    rational operator-();
-    friend rational operator/(rational first, rational other);
-    friend rational operator/(rational first, int other);
-    friend rational operator*(rational first, rational other);
-    friend bool operator==(rational first, rational other);
-    friend bool operator<(rational first, rational other);
-    friend std::ostream& operator<<(std::ostream& os, rational r);
+    Rational add(Rational other);
+    Rational div(Rational other);
+    friend Rational operator+(Rational first,  Rational other);
+    Rational operator-(Rational& other);
+    Rational operator-();
+    friend Rational operator/(Rational first, Rational other);
+    friend Rational operator/(Rational first, int other);
+    friend Rational operator*(Rational first, Rational other);
+    friend Rational operator*(Rational first, int other);
+    friend bool operator==(Rational first, Rational other);
+    friend bool operator<(Rational first, Rational other);
+    friend bool operator>(Rational first, int other);
+    friend std::ostream& operator<<(std::ostream& os, Rational r);
     void canonicalize();
     int d();
     int n();
 };
 
 
-rational cont_frac_value(std::vector<int> a);
-rational approxRat(double a);
-rational approxRat_be_nice(double a);
+Rational cont_frac_value(std::vector<int> a);
+Rational approx_rat(double a);
+Rational approx_rat_be_nice(double a);
 int lcm(int a, int b);
 int gcd(int a, int b);
 

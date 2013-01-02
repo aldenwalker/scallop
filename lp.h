@@ -1,26 +1,73 @@
-#ifndef __lp__
-#define __lp__
-
+#ifndef LP_H
+#define LP_H
 
 #include <vector>
-
-#include "scallop.h"
+#include <string>
 #include "rational.h"
 
+enum SparseLPEqualityType {EQ, LE, GE};
 
-using namespace std;
+enum SparseLPSolver {GLPK, 
+                      GLPK_SIMPLEX, 
+                      GLPK_IPT, 
+                      GUROBI, 
+                      GUROBI_SIMPLEX, 
+                      GUROBI_IPT, 
+                      EXLP};
 
-enum scallop_lp_solver {GLPK_DOUBLE, GLPK_EXACT, QSOPT_EXACT, EXLP};
+enum SparseLPSolveCode {LP_OPTIMAL, LP_INFEASIBLE, LP_ERROR, LP_TIME_LIMIT};
 
-void do_linear_program(   vector<string> &w,
-                          vector<int>& weight,
-                          vector<arc> &arc_list, 
-                          vector<polygon> &polygon_list, 
-                          rational &scl, 
-                          vector<rational> &solutionVector,
-                          scallop_lp_solver solver, 
-                          int VERBOSE,
-                          int LP_VERBOSE);
+class SparseLP {
 
+private:
+  std::vector<int> ia;
+  std::vector<int> ja;
+  std::vector<int> ar;
+  std::vector<double> double_ar;
+  std::vector<int> objective;
+  std::vector<double> double_objective;
+  std::vector<int> RHS;
+  std::vector<double> double_RHS;
+  std::vector<Rational> soln_vector;
+  std::vector<double> double_soln_vector;
+  Rational op_val;
+  double double_op_val;
+  std::vector<SparseLPEqualityType> eq_type;
+
+  int num_cols;
+  int num_rows;
+  
+  SparseLPSolver solver;
+
+public:
+  
+  SparseLP(SparseLPSolver s);
+  SparseLP(SparseLPSolver s, int nr, int nc);
+  void write_to_file(std::string filename);
+  void set_num_rows(int nr);
+  void set_num_cols(int nc);
+  void add_entry(int i, int j, int a);
+  void add_entry(int i, int j, double a);
+  void extend_entries_no_dups(std::vector<int>& temp_ia, 
+                              std::vector<int>& temp_ja,
+                              std::vector<int>& temp_ar);
+  void extend_entries_no_dups(std::vector<int>& temp_ia, 
+                              std::vector<int>& temp_ja,
+                              std::vector<double>& temp_ar);
+  void set_obj(int i, int v);
+  void set_obj(int i, double v);
+  void set_RHS(int i, int r);
+  void set_RHS(int i, double r);
+  void set_equality_type(int i, SparseLPEqualityType et);
+  void get_soln_vector(std::vector<double>& sv);
+  void get_soln_vector(std::vector<Rational>& sv);
+  void get_optimal_value(double& ov);
+  void get_optimal_value(Rational& ov);
+  
+  SparseLPSolveCode solve(int verbose);
+  
+  void print_LP();
+  
+};
 
 #endif

@@ -36,7 +36,7 @@ int Graph::get_edge_from_label(char label) {
 
 
 
-int Graph::set_standard_rose(int rank, int verbose) {
+void Graph::set_standard_rose(int rank, int verbose) {
   num_verts = 1;
   num_edges = rank;
   verts.resize(1);
