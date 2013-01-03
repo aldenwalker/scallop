@@ -1,0 +1,4 @@
+Scallop requires GMP and GLPK.  You should simply have to type "make".  
+If you have Gurobi installed, you can compile scallop with Gurobi 
+support using "make scallop_with_gurobi", although you may have to edit 
+the makefile if you have olde version.
