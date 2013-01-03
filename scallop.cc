@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
     std::cout << "\n";
     std::cout << "\t-train:\n";
     std::cout << "\t\tCompute with traintracks\n";
-    exit(0);
+    return 0;
   }
   
   if (argv[1][0] != '-') {

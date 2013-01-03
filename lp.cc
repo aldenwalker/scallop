@@ -10,7 +10,7 @@ extern "C" {
 }
 #endif
 
-#include "LP.h"
+#include "lp.h"
 #include "rational.h"
 
 extern "C" {
@@ -485,8 +485,6 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     
     GRBenv   *env   = NULL;
     GRBmodel *model = NULL;
-    double_solution_vector.resize(num_cols);
-    
     GRBloadenv( &env, "gurobi.log" );
     
     //create a new model and immediately load in all the columns
@@ -556,9 +554,10 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     
     //get the objective minimum
     GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &double_op_val);
-    op_val /= 4.0;
+    double_op_val /= 4.0;
     
     //get the solution vector
+    double_soln_vector.resize(num_cols);
     GRBgetdblattrarray( model, GRB_DBL_ATTR_X, 0, num_cols, &double_soln_vector[0] );
     
     //free stuff

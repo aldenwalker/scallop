@@ -4,7 +4,7 @@ IFLAGS=-I/sw/include
 LDFLAGS=-L/sw/lib -lglpk -lgmp
 
 #gurobi stuff
-GURDIR = /home/awalker/Documents/research/software/gurobi500/linux64
+GURDIR = /home/akwalker/Documents/software/gurobi501/linux64
 GURINCDIR = $(GURDIR)/include
 GURLIBDIR = $(GURDIR)/lib
 GURINC = -I$(GURINCDIR) 
