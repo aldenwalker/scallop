@@ -1,5 +1,11 @@
+#ifndef _scabble_H
+#define _scabble_H
 
+#include <vector>
+#include <string>
+#include <utility>
 
+#include "../lp.h"
 
 namespace SCABBLE {
 
@@ -42,7 +48,8 @@ namespace SCABBLE {
   * ***************************************************************************/
   struct Chain { 
     Chain(void);
-    Chain(CyclicProduct* G, char** input, int num_strings);
+    Chain(CyclicProduct* G, const char** input, int num_strings);
+    Chain(CyclicProduct* G, std::vector<std::string>& words);
 
     int next_letter(int n);
     int prev_letter(int n);
@@ -182,7 +189,71 @@ namespace SCABBLE {
   };
   
   std::ostream &operator<<(std::ostream &os, GroupRectangle &GR);
+   
+
     
+  void print_central_polys(std::vector<SCABBLE::CentralPolygon> &CP, 
+                         std::ostream &os, 
+                         int level);
+  
+  void print_group_teeth_and_rectangles(std::vector<SCABBLE::GroupTooth> &GT,
+                                  std::vector<SCABBLE::GroupRectangle> &GR,
+                                  std::ostream &os,
+                                  int level);
+  
+  
+  void compute_central_polys(SCABBLE::Chain &C, 
+                             SCABBLE::InterfaceEdgeList &IEL, 
+                             std::vector<SCABBLE::CentralPolygon> &CP);
+  
+  void compute_group_teeth_and_rectangles(SCABBLE::Chain &C, 
+                                          std::vector<SCABBLE::GroupTooth > &GT,
+                                          std::vector<SCABBLE::GroupRectangle > &GR);
+  
+  /****************************************************************************
+   * an n-dimensional point
+   * **************************************************************************/
+  struct Pt {
+    std::vector<double> x;
+  };
+  
+  void SCABBLE::point_scl(std::vector<std::pair<int, int> >& chain_locs,
+                        SparseLP& LP,
+                        SCABBLE::Pt& p,
+                        Rational& scl,
+                        int verbose);
+
+  //compute the min scl over a face
+  void SCABBLE::face_scl(std::vector<std::pair<int, int> >& chain_locs,
+                       SparseLP& LP,
+                       std::vector<SCABBLE::Pt>& face,
+                       Rational& scl,
+                       SCABBLE::Pt& min_p,
+                       int verbose);
+    
+void compute_ball( std::vector<std::pair<int, int> >& chain_locs,
+                            SCABBLE::Chain& C, 
+                            SCABBLE::InterfaceEdgeList& IEL, 
+                            std::vector<SCABBLE::CentralPolygon>& CP, 
+                            std::vector<SCABBLE::GroupTooth>& GT, 
+                            std::vector<SCABBLE::GroupRectangle>& GR, 
+                            std::vector<SCABBLE::Pt>& verts, 
+                            std::vector<std::vector<SCABBLE::Pt> >& faces, 
+                            int verbose);
+  
+  void write_ball_to_file(std::string output_filename, 
+                          std::vector<SCABBLE::Pt>& verts, 
+                          std::vector<std::vector<SCABBLE::Pt> >& faces, 
+                          int verbose);
+  
+  void draw_ball_to_file(std::string output_filename, 
+                          std::vector<SCABBLE::Pt>& verts, 
+                          std::vector<std::vector<SCABBLE::Pt> >& faces, 
+                          int verbose);
+  
   int scabble(int argc, char** argv);
   
+
 }
+
+#endif
