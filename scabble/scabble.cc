@@ -1052,15 +1052,16 @@ void SCABBLE::compute_central_polys(SCABBLE::Chain &C,
 
 
 //this create the LP -- everything except the final row
-void SCABBLE::init_ball_lp(std::vector<std::pair<int, int> >& chain_locs,
-                           SCABBLE::Chain& C, 
-                           SCABBLE::InterfaceEdgeList& IEL, 
-                           std::vector<SCABBLE::CentralPolygon>& CP, 
-                           std::vector<SCABBLE::GroupTooth>& GT, 
-                           std::vector<SCABBLE::GroupRectangle>& GR,
-                           SparseLP& LP,
-                           int verbose) {
-     //ROWS (see above)
+void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
+                              SCABBLE::Chain& C, 
+                              SCABBLE::InterfaceEdgeList& IEL, 
+                              std::vector<SCABBLE::CentralPolygon>& CP, 
+                              std::vector<SCABBLE::GroupTooth>& GT, 
+                              std::vector<SCABBLE::GroupRectangle>& GR,
+                              SparseLP& LP,
+                              SparseLPSolver solver,
+                              int verbose) {
+  //ROWS (see above)
   //we need to construct something to tell us the row 
   //number for the group teeth rows
   // group_teeth_rows_reg[i][j][k] gives the row of 
@@ -1097,22 +1098,23 @@ void SCABBLE::init_ball_lp(std::vector<std::pair<int, int> >& chain_locs,
   }   
   
   num_equality_rows = num_rows;
-  num_rows += num_words;
+  num_rows += (num_words-(int)chain_locs.size());
+  num_rows += chain_locs.size();
   
   num_cols = CP.size() + GT.size() + GR.size();
   
-  if (VERBOSE > 2) {
+  if (verbose > 2) {
     std::cout << "Num equality rows: " << num_equality_rows
     << "Num rows: " << num_rows << "\n";
   }
   
-  if (VERBOSE>1) {
+  if (verbose>1) {
     std::cout << "Started linear programming setup\n";
   }
   
   
   //Create the LP problem
-  SparseLP LP(solver, num_rows, num_cols);
+  LP = SparseLP(solver, num_rows, num_cols);
   
   for(i=0; i<(int)num_equality_rows; i++){
     LP.set_RHS(i, 0); // glp_set_row_bnds(lp, i+1, GLP_FX, 0.0, 0.0);
@@ -1121,6 +1123,7 @@ void SCABBLE::init_ball_lp(std::vector<std::pair<int, int> >& chain_locs,
       std::cout << "Set row " << i << " bounded to " << 0 << "\n";
     }
   }
+  //we need to set all words as appearing as many times as the first word
   for(i=0; i<(int)num_words; i++){
     //RHS[num_equality_rows+i] = C.weights[i];
     LP.set_RHS(num_equality_rows+i, C.weights[i]);
@@ -1272,37 +1275,185 @@ void SCABBLE::face_scl(std::vector<std::pair<int, int> >& chain_locs,
 }
 
 
-
-void SCABBLE::compute_ball( std::vector<std::pair<int, int> >& chain_locs,
-                            SCABBLE::Chain& C, 
-                            SCABBLE::InterfaceEdgeList& IEL, 
-                            std::vector<SCABBLE::CentralPolygon>& CP, 
-                            std::vector<SCABBLE::GroupTooth>& GT, 
-                            std::vector<SCABBLE::GroupRectangle>& GR, 
-                            std::vector<SCABBLE::Pt>& verts, 
-                            std::vector<std::vector<SCABBLE::Pt> >& faces, 
-                            int verbose) {
-  
+//computes an (arbitrary dimenion) positive orthant of the ball
+void SCABBLE::compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
+                               SCABBLE::Chain& C, 
+                               std::vector<SCABBLE::Pt>& orthant_verts, 
+                               std::vector<std::vector<SCABBLE::Pt> >& orthant_faces, 
+                               SparseLPSolver solver,
+                               int verbose) {
   int dim = (int)chain_locs.size();
-  SparseLP LP;
   
-  //  Step 1 is to make the linear program
-  SCABBLE::init_ball_lp(chain_locs, C, IEL, CP, GT, GR, LP, verbose);
- 
-  //Step 2: now we find the scl of all of the basis vectors, and scale them 
-  //so they have scl 1
-  for (int i=0; i<dim; ++i) {
-    //recsale
+  //now we build the rectangles and whatever for the *whole* chain
+  //we'll restrict later
+  SCABBLE::InterfaceEdgeList IEL(C);
+  if (verbose>1) IEL.print(std::cout);
+  
+  SCABBLE::CentralEdgePairList CEL(C);
+  if (verbose>1) CEL.print(std::cout);
+  
+  std::vector<SCABBLE::CentralPolygon> CP;
+  SCABBLE::compute_central_polys(C, IEL, CP);
+  if (verbose > 1) {
+    std::cout << "computed polys (" << CP.size() << ")\n"; std::cout.flush();
+    SCABBLE::print_central_polys(CP, std::cout, verbose);
   }
   
-  //Step 3:push onto the stack all of the simplicies
+  std::vector<SCABBLE::GroupTooth> GT;
+  std::vector<SCABBLE::GroupRectangle> GR;
+  SCABBLE::compute_group_teeth_and_rectangles(C, GT, GR);
+  if (verbose > 1) {
+    std::cout << "computed group teeth and rectangles\n"; std::cout.flush();
+    SCABBLE::print_group_teeth_and_rectangles(GT, GR, std::cout, verbose);
+  }
   
-  //Step 4: iteratively clear the stack
+  SparseLP LP;
   
+  SCABBLE::init_orthant_lp(chain_locs, C, IEL, CP, GT, GR, LP, solver, verbose);
   
+  //find the scls of the basis vectors
+  std::vector<SCABBLE::Pt> initial_face(dim);
+  for (int i=0; i<dim; ++i) {
+    initial_face[i] = SCABBLE::Pt(dim, 0);
+    initial_face[i][i] = 1;
+    Rational s;
+    point_scl(chain_locs, LP, initial_face[i], s, verbose);
+    initial_face[i][i] /= s;
+  }
   
+  //create the stack
+  std::vector<std::vector<SCABBLE::Pt> > face_stack(0);
+  face_stack.push_back(initial_face);
+  
+  //enter the main loop
+  orthant_verts.resize(0);
+  orthant_faces.resize(0);
+  while (face_stack.size() > 0) {
+    std::vector<SCABBLE::Pt> working_face = face_stack.back();
+    face_stack.pop_back();
+    Rational s;
+    SCABBLE::Pt new_vert(dim,0);
+    
+    face_scl(chain_locs, LP, working_face, s, new_vert, verbose);
+    
+    if (s == 1) {
+      orthant_faces.push_back(working_face);
+      continue;
+    }
+    
+    new_vert /= s;
+    std::vector<SCABBLE:Pt> new_face(dim);
+    for (int i=0; i<dim; ++i) {
+      for (int j=0; j<dim; ++j) {
+        if (j==i) {
+          new_face[j] = new_vert;
+        } else {
+          new_face[j] = working_face[j];
+        }
+      }
+      face_stack.push_back(new_face);
+    }
+  }
   
 }
+
+
+
+void SCABBLE::compute_ball( SCABBLE::CyclicProduct& G,
+                            std::vector<std::string>& words,
+                            std::vector<std::pair<int,int>& chain_locs,
+                            std::vector<SCABBLE::Pt>& verts,
+                            std::vector<std::vector<SCABBLE::Pt> >& faces ) {
+  
+  int dim = (int)chain_locs.size();
+  
+  verts.resize(0);
+  faces.resize(0);
+  
+  //we run through all the orthants that we need to
+  int num_orthants = (1<<dim);
+  int orthant_mask = 0;
+  for (i=0; i<dim; ++i) {
+    orthant_mask |= (1<<i);
+  }
+  std::vector<int> orthant_done(num_orthants, 0);
+  
+  std::vector<SCABBLE::Pt> orthant_verts(0);
+  std::vecotr<std::vector<SCABBLE::Pt> > orthant_faces(0);
+  std::vector<std::string> orthant_words(words.size());
+  
+  for (int i=0; i<num_orthants; ++i) {
+    if (orthant_done[i] != 0) continue;
+    
+    //invert the chains as necessary
+    for (int j=0; j<dim; ++j) {
+      bool invert = ( ((i>>j)&1) == 1 ? true : false );  //invert this chain?
+      if (invert) {
+        for (int k=chain_locs[j].first; k<chain_locs[j].second; ++k) {
+          orthant_words[k] = inverse(words[k]);
+        }
+      } else {
+        for (int k=chain_locs[j].first; k<chain_locs[j].second; ++k) {
+          orthant_words[k] = words[k];
+        }
+      }
+    }
+    
+    //load the chain from the orthant words
+    SCABBLE::Chain C(&G, words);                  //process the chain argument
+    
+    //print if verbose
+    if (verbose>1) {
+      std::cout << "Group: " << G << "\n";
+      std::cout << "Chain: " << C << "\n";
+      if (verbose>2) {
+        std::cout << "Letters:\n";
+        C.print_letters(std::cout);
+        std::cout << "Group letters:\n";
+        C.print_group_letters(std::cout);
+      }
+    }
+    
+    //now produce the positive orthant
+    SCABBLE::compute_ball_ant(chain_locs,
+                              C, 
+                              orthant_verts, 
+                              orthant_faces, 
+                              verbose);
+    
+    //append the verts and faces to the list
+    for (int j=0; j<(int)orthant_verts.size(); ++j) {
+      verts.push_back(orthant_verts[j]);
+    }
+    for (int j=0; j<(int)orthant_faces.size(); ++j) {
+      faces.push_back(orthant_faces[j]);
+    }
+    
+    //mark this orthant, and its reflection, as done
+    orthant_done[i] = 1;
+    orthant_done[ (~i)&orthant_mask ] = 1;
+    
+  }
+  
+  //now we must reflect every face and vertex through the origin
+  int old_num_verts = (int)verts.size();
+  for (int i=0; i<old_num_verts; ++i) {
+    verts.push_back(-verts[i]);
+  }
+  int old_num_faces = (int)faces.size();
+  for (int i=0; i<old_num_faces; ++i) {
+    std::vector<SCABBLE::Pt> temp_face(faces[i].size());
+    for (j=0; j<(int)faces[i].size(); ++j) {
+      temp_face[j] = -faces[i][j];
+    }
+    faces.push_back(temp_face);
+  }
+  
+}
+    
+  
+  
+  
 
 
 void SCABBLE::write_ball_to_file(std::string output_filename, 
@@ -1411,47 +1562,11 @@ int SCABBLE::scabble(int argc, char** argv) {
   }
   //push on the last chain data
   chain_locs.push_back(std::make_pair(word_start, words.size()-word_start));
-    
-  SCABBLE::Chain C(&G, words);                              //process the chain argument
-
-  if (verbose>1) {
-    std::cout << "Group: " << G << "\n";
-    std::cout << "Chain: " << C << "\n";
-    if (verbose>2) {
-      std::cout << "Letters:\n";
-      C.print_letters(std::cout);
-      std::cout << "Group letters:\n";
-      C.print_group_letters(std::cout);
-    }
-  }
-  
-  //now we build the rectangles and whatever for the *whole* chain
-  //we'll restrict later
-  
-  SCABBLE::InterfaceEdgeList IEL(C);
-  if (verbose>1) IEL.print(std::cout);
-  
-  SCABBLE::CentralEdgePairList CEL(C);
-  if (verbose>1) CEL.print(std::cout);
-  
-  std::vector<SCABBLE::CentralPolygon> CP;
-  SCABBLE::compute_central_polys(C, IEL, CP);
-  if (verbose > 1) {
-    std::cout << "computed polys (" << CP.size() << ")\n"; std::cout.flush();
-    SCABBLE::print_central_polys(CP, std::cout, verbose);
-  }
-  
-  std::vector<SCABBLE::GroupTooth> GT;
-  std::vector<SCABBLE::GroupRectangle> GR;
-  SCABBLE::compute_group_teeth_and_rectangles(C, GT, GR);
-  if (verbose > 1) {
-    std::cout << "computed group teeth and rectangles\n"; std::cout.flush();
-    SCABBLE::print_group_teeth_and_rectangles(GT, GR, std::cout, verbose);
-  }
   
   std::vector<SCABBLE::Pt> verts(0);
   std::vector<std::vector<SCABBLE::Pt> > faces(0);
-  SCABBLE::compute_ball(chain_locs, C, IEL, CP, GT, GR, verts, faces, verbose);
+  
+  SCABBLE::compute_ball(G, words, chain_locs, verts, faces, solver, verbose);
   
   if (output_polyhedron) {
     SCABBLE::write_ball_to_file(output_filename, verts, faces, verbose);
@@ -1461,3 +1576,11 @@ int SCABBLE::scabble(int argc, char** argv) {
   
   return 0;
 }
+
+  
+ 
+  
+
+  
+  
+  

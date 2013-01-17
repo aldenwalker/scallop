@@ -217,29 +217,48 @@ namespace SCABBLE {
     std::vector<double> x;
   };
   
-  void SCABBLE::point_scl(std::vector<std::pair<int, int> >& chain_locs,
+  
+  
+  
+  void point_scl(std::vector<std::pair<int, int> >& chain_locs,
                         SparseLP& LP,
                         SCABBLE::Pt& p,
                         Rational& scl,
                         int verbose);
 
   //compute the min scl over a face
-  void SCABBLE::face_scl(std::vector<std::pair<int, int> >& chain_locs,
+  void face_scl(std::vector<std::pair<int, int> >& chain_locs,
                        SparseLP& LP,
                        std::vector<SCABBLE::Pt>& face,
                        Rational& scl,
                        SCABBLE::Pt& min_p,
                        int verbose);
-    
-void compute_ball( std::vector<std::pair<int, int> >& chain_locs,
-                            SCABBLE::Chain& C, 
-                            SCABBLE::InterfaceEdgeList& IEL, 
-                            std::vector<SCABBLE::CentralPolygon>& CP, 
-                            std::vector<SCABBLE::GroupTooth>& GT, 
-                            std::vector<SCABBLE::GroupRectangle>& GR, 
-                            std::vector<SCABBLE::Pt>& verts, 
-                            std::vector<std::vector<SCABBLE::Pt> >& faces, 
-                            int verbose);
+  
+  void init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
+                              SCABBLE::Chain& C, 
+                              SCABBLE::InterfaceEdgeList& IEL, 
+                              std::vector<SCABBLE::CentralPolygon>& CP, 
+                              std::vector<SCABBLE::GroupTooth>& GT, 
+                              std::vector<SCABBLE::GroupRectangle>& GR,
+                              SparseLP& LP,
+                              SparseLPSolver solver,
+                              int verbose)
+  
+  void compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
+                               SCABBLE::Chain& C, 
+                               std::vector<SCABBLE::Pt>& orthant_verts, 
+                               std::vector<std::vector<SCABBLE::Pt> >& orthant_faces, 
+                               SparseLPSolver solver,
+                               int verbose);
+  
+  
+  void compute_ball( SCABBLE::CyclicProduct& G,
+                     std::vector<std::string>& words,
+                     std::vector<std::pair<int,int>& chain_locs,
+                     std::vector<SCABBLE::Pt>& verts,
+                     std::vector<std::vector<SCABBLE::Pt> >& faces,
+                     SparseLPSolver solver,
+                     int verbose );
   
   void write_ball_to_file(std::string output_filename, 
                           std::vector<SCABBLE::Pt>& verts, 
