@@ -101,6 +101,24 @@ void SparseLP::set_num_cols(int nc) {
   num_cols = nc;
 }
 
+
+void SparseLP::add_entry(int i, int j, Rational& r) {
+  if (solver == EXLP) {
+    if (r.d() != 1) {
+      std::cout << "You can give a rational entry, but it needs to be an integer\n";
+      return;
+    }
+    ia.push_back(i);
+    ja.push_back(j);
+    ar.push_back(r.n());
+  } else {
+    ia.push_back(i);
+    ja.push_back(j);
+    double_ar.push_back(r.get_d());
+  }
+}
+  
+
 void SparseLP::add_entry(int i, int j, int a) {
   if (solver == EXLP) {
     ia.push_back(i);
@@ -168,6 +186,19 @@ void SparseLP::set_obj(int i, double v) {
   }
 }
 
+
+void SparseLP::set_RHS(int i, Rational& r) {
+  if (solver == EXLP) {
+    if (r.d() != 1) {
+      std::cout << "You can give a rational RHS, but it needs to be an integer\n";
+      return;
+    }
+    RHS[i] = r.n();
+  } else {
+    double_RHS[i] = r.get_d();
+  }
+}
+
 void SparseLP::set_RHS(int i, int r) {
   if (solver == EXLP) {
     RHS[i] = r;
@@ -187,6 +218,27 @@ void SparseLP::set_RHS(int i, double r) {
 void SparseLP::set_equality_type(int i, SparseLPEqualityType et) {
   eq_type[i]= et;
 }
+
+
+int SparseLP::get_num_entries() {
+  if (solver == EXLP) {
+    return (int)ar.size();
+  } else {
+    return (int)double_ar.size();
+  }
+}
+
+
+void SparseLP::reset_num_entries(int i) {
+  ia.resize(i);
+  ja.resize(i);
+  if (solver == EXLP) {
+    ar.resize(i);
+  } else {
+    double_ar.resize(i);
+  }
+}
+
 
 void SparseLP::get_soln_vector(std::vector<double>& sv) {
   sv.resize(num_cols);

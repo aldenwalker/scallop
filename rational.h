@@ -14,29 +14,44 @@ class Rational {
     mpq_t R;
   public:
     Rational();
+    Rational(int r);
     Rational(int a, int b);
     Rational(mpq_t q);
     Rational(const Rational& other);
+    Rational& operator=(const Rational& rhs);
     ~Rational();
     void get_mpq(mpq_t q);
-    Rational& operator=(const Rational& rhs);
-    double get_d();
-    Rational add(Rational other);
-    Rational div(Rational other);
-    friend Rational operator+(Rational first,  Rational other);
-    Rational operator-(Rational& other);
-    Rational operator-();
-    friend Rational operator/(Rational first, Rational other);
-    friend Rational operator/(Rational first, int other);
-    friend Rational operator*(Rational first, Rational other);
-    friend Rational operator*(Rational first, int other);
-    friend bool operator==(Rational first, Rational other);
-    friend bool operator<(Rational first, Rational other);
-    friend bool operator>(Rational first, int other);
-    friend std::ostream& operator<<(std::ostream& os, Rational r);
+    double get_d();    
     void canonicalize();
     int d();
     int n();
+    Rational add(const Rational& other);
+    Rational div(const Rational& other);
+    Rational operator+(const Rational& other);
+    Rational operator+(int other);
+    Rational operator-(const Rational& other);
+    Rational operator-(int other);
+    Rational operator-();
+    Rational operator/(const Rational& other);
+    Rational operator/(int other);
+    Rational operator*(const Rational& other);
+    Rational operator*(int other);
+    Rational& operator+=(const Rational& other);
+    Rational& operator+=(int other);
+    Rational& operator*=(const Rational& other);
+    Rational& operator*=(int other);
+    Rational& operator/=(const Rational& other);
+    Rational& operator/=(int other);
+    bool operator<(const Rational& other);
+    bool operator>(const Rational& other);
+    bool operator<(int other);
+    bool operator>(int other);
+    bool operator==(const Rational& other);
+    bool operator==(int other);
+    
+    
+    friend std::ostream& operator<<(std::ostream& os, Rational r);
+
 };
 
 

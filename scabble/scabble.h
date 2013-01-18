@@ -213,8 +213,25 @@ namespace SCABBLE {
   /****************************************************************************
    * an n-dimensional point
    * **************************************************************************/
-  struct Pt {
-    std::vector<double> x;
+  class Pt {
+  private:
+    std::vector<Rational> x;
+  public:
+    Pt();
+    Pt(int dim);
+    Pt(int dim, Rational& init);
+    Pt(int dim, int init);
+    Rational& operator[](int i);
+    Pt operator-(Pt& other);
+    Pt operator+(Pt& other);
+    Pt operator-();
+    Rational dot(Pt& other);
+    Pt cross(Pt& other);
+    void rescale_to_integer();
+    Pt& operator*=(Rational& m);
+    Pt& operator*=(int m);
+    Pt& operator/=(Rational& m);
+    Pt& operator/=(int m);
   };
   
   void affine_hyperplane(std::vector<SCABBLE::Pt>& face, 
@@ -241,6 +258,7 @@ namespace SCABBLE {
   void init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
                               SCABBLE::Chain& C, 
                               SCABBLE::InterfaceEdgeList& IEL, 
+                              SCABBLE::CentralEdgePairList& CEL,
                               std::vector<SCABBLE::CentralPolygon>& CP, 
                               std::vector<SCABBLE::GroupTooth>& GT, 
                               std::vector<SCABBLE::GroupRectangle>& GR,
@@ -248,7 +266,7 @@ namespace SCABBLE {
                               SparseLPSolver solver,
                               std::vector<std::vector<int> >& chain_cols,
                               std::vector<int>& chain_rows,
-                              int verbose)
+                              int verbose);
   
   void compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
                                SCABBLE::Chain& C, 
@@ -260,7 +278,7 @@ namespace SCABBLE {
   
   void compute_ball( SCABBLE::CyclicProduct& G,
                      std::vector<std::string>& words,
-                     std::vector<std::pair<int,int>& chain_locs,
+                     std::vector<std::pair<int,int> >& chain_locs,
                      std::vector<SCABBLE::Pt>& verts,
                      std::vector<std::vector<SCABBLE::Pt> >& faces,
                      SparseLPSolver solver,

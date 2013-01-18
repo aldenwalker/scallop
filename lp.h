@@ -46,6 +46,7 @@ public:
   void write_to_file(std::string filename);
   void set_num_rows(int nr);
   void set_num_cols(int nc);
+  void add_entry(int i, int j, Rational& r);
   void add_entry(int i, int j, int a);
   void add_entry(int i, int j, double a);
   void extend_entries_no_dups(std::vector<int>& temp_ia, 
@@ -56,9 +57,12 @@ public:
                               std::vector<double>& temp_ar);
   void set_obj(int i, int v);
   void set_obj(int i, double v);
+  void set_RHS(int i, Rational& r);
   void set_RHS(int i, int r);
   void set_RHS(int i, double r);
   void set_equality_type(int i, SparseLPEqualityType et);
+  int get_num_entries();
+  void reset_num_entries(int i);
   void get_soln_vector(std::vector<double>& sv);
   void get_soln_vector(std::vector<Rational>& sv);
   void get_optimal_value(double& ov);

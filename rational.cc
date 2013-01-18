@@ -27,8 +27,6 @@ int lcm(int a, int b) {
 }
 
 
-
-
 /******************************************************************************/
 /* member functions for the rational class                                    */
 /******************************************************************************/
@@ -38,12 +36,17 @@ Rational::Rational() {
   mpq_set_si(R,0,1);
 }
 
+Rational::Rational(int r) {
+  mpq_init(R);
+  inited = 1;
+  mpq_set_si(R,r,1);
+}  
+
 Rational::Rational(int a, int b) {
   mpq_init(R);
   inited = 1;
   mpq_set_si(R, a,b);
 }
-
 
 Rational::Rational(mpq_t q) {
   mpq_init(R);
@@ -51,19 +54,9 @@ Rational::Rational(mpq_t q) {
   mpq_set(R, q);
 }
 
-
 Rational::Rational(const Rational& other) {
   mpq_init(R);
   mpq_set(R, other.R);
-}
-
-Rational::~Rational() {
-  mpq_clear(R);
-}
-
-
-void Rational::get_mpq(mpq_t q) {
-  mpq_set(q,R);
 }
 
 Rational& Rational::operator=(const Rational& rhs) {
@@ -73,8 +66,22 @@ Rational& Rational::operator=(const Rational& rhs) {
   mpq_set(R, rhs.R);
   return *this;
 }
-    
 
+Rational::~Rational() {
+  mpq_clear(R);
+}
+
+void Rational::get_mpq(mpq_t q) {
+  mpq_set(q,R);
+}
+
+double Rational::get_d() {
+  return mpq_get_d(R);
+}
+
+void Rational::canonicalize() {
+  mpq_canonicalize(R);
+}
 
 int Rational::d() {
   return mpz_get_si(mpq_denref(R));;
@@ -84,29 +91,7 @@ int Rational::n() {
   return mpz_get_si(mpq_numref(R));;
 }
 
-double Rational::get_d() {
-  return mpq_get_d(R);
-}
-
-
-
-void Rational::canonicalize() {
-  /*
-  int sign = (denom < 0 ? -1 : 1);
-  num *= sign;
-  denom *= sign;
-  sign = (num < 0 ? -1 : 1);
-  num *= sign;
-  int g = gcd(num,denom);
-  num /= g;
-  denom /= g;
-  num *= sign;
-  */
-  mpq_canonicalize(R);
-}
-
-
-Rational Rational::add(Rational other) {
+Rational Rational::add(const Rational& other) {
   mpq_t temp;
   mpq_init(temp);
   mpq_add(temp, R, other.R);
@@ -116,7 +101,7 @@ Rational Rational::add(Rational other) {
 }
     
     
-Rational Rational::div(Rational other) {
+Rational Rational::div(const Rational& other) {
   mpq_t temp;
   mpq_init(temp);
   mpq_div(temp, R, other.R);
@@ -125,19 +110,39 @@ Rational Rational::div(Rational other) {
   return r;
 }
 
-Rational operator+(Rational first, Rational other) {
+Rational Rational::operator+(const Rational& other) {
   mpq_t temp;
   mpq_init(temp);
-  mpq_add(temp, first.R, other.R);
+  mpq_add(temp, R, other.R);
   Rational r = Rational(temp);
   mpq_clear(temp);
   return r;
 }
 
-Rational Rational::operator-(Rational& other){
+Rational Rational::operator+(int other) {
+  mpq_t temp;
+  mpq_init(temp);
+  mpq_set_si(temp, other, 1);
+  mpq_add(temp, R, temp);
+  Rational r = Rational(temp);
+  mpq_clear(temp);
+  return r;
+}
+
+Rational Rational::operator-(const Rational& other){
   mpq_t temp;
   mpq_init(temp);
   mpq_sub(temp, R, other.R);
+  Rational r = Rational(temp);
+  mpq_clear(temp);
+  return r;
+}
+
+Rational Rational::operator-(int other){
+  mpq_t temp;
+  mpq_init(temp);
+  mpq_set_si(temp, other, 1);
+  mpq_sub(temp, R, temp);
   Rational r = Rational(temp);
   mpq_clear(temp);
   return r;
@@ -153,55 +158,110 @@ Rational Rational::operator-(){
 }
 
 
-Rational operator/(Rational first, Rational other) {
+Rational Rational::operator/(const Rational& other) {
   mpq_t temp;
   mpq_init(temp);
-  mpq_div(temp, first.R, other.R);
+  mpq_div(temp, R, other.R);
   Rational r = Rational(temp);
   mpq_clear(temp);
   return r;
 }
 
-Rational operator/(Rational first, int other) {
-  mpq_t temp;
-  mpq_init(temp);
-  mpq_set_si(temp, other, 1);
-  mpq_div(temp, first.R, temp);
-  Rational r = Rational(temp);
-  mpq_clear(temp);
-  return r;
-}
-
-
-Rational operator*(Rational first, Rational other) {
-  mpq_t temp;
-  mpq_init(temp);
-  mpq_mul(temp, first.R, other.R);
-  Rational r = Rational(temp);
-  mpq_clear(temp);
-  return r;
-}
-
-Rational operator*(Rational first, int other) {
+Rational Rational::operator/(int other) {
   mpq_t temp;
   mpq_init(temp);
   mpq_set_si(temp, other, 1);
-  mpq_mul(temp, first.R, temp);
+  mpq_div(temp, R, temp);
   Rational r = Rational(temp);
   mpq_clear(temp);
   return r;
 }
 
-bool operator<(Rational first, Rational other) {
-  return (mpq_cmp(first.R, other.R) == -1);
+Rational Rational::operator*(const Rational& other) {
+  mpq_t temp;
+  mpq_init(temp);
+  mpq_mul(temp, R, other.R);
+  Rational r = Rational(temp);
+  mpq_clear(temp);
+  return r;
 }
 
-bool operator>(Rational first, int other) {
-  return (mpq_cmp_si(first.R, other, 1) > 0);
+Rational Rational::operator*(int other) {
+  mpq_t temp;
+  mpq_init(temp);
+  mpq_set_si(temp, other, 1);
+  mpq_mul(temp, R, temp);
+  Rational r = Rational(temp);
+  mpq_clear(temp);
+  return r;
 }
 
-bool operator==(Rational first, Rational other) {
-  return (mpq_cmp(first.R, other.R)==0);
+
+Rational& Rational::operator+=(const Rational& other) {
+  mpq_add(R, R, other.R);
+  return *this;
+}
+
+Rational& Rational::operator+=(int other) {
+  mpq_t temp;
+  mpq_init(temp);
+  mpq_set_si(temp, other, 1);
+  mpq_add(R, R, temp);
+  mpq_clear(temp);
+  return *this;
+}
+
+Rational& Rational::operator*=(const Rational& other) {
+  mpq_mul(R, R, other.R);
+  return *this;
+}
+
+Rational& Rational::operator*=(int other) {
+  mpq_t temp;
+  mpq_init(temp);
+  mpq_set_si(temp, other, 1);
+  mpq_mul(R, R, temp);
+  mpq_clear(temp);
+  return *this;
+}
+
+Rational& Rational::operator/=(const Rational& other) {
+  mpq_div(R, R, other.R);
+  return *this;
+}
+
+Rational& Rational::operator/=(int other) {
+  mpq_t temp;
+  mpq_init(temp);
+  mpq_set_si(temp, other, 1);
+  mpq_div(R, R, temp);
+  mpq_clear(temp);
+  return *this;
+}
+
+
+bool Rational::operator<(const Rational& other) {
+  return (mpq_cmp(R, other.R) < 0);
+}
+
+bool Rational::operator>(const Rational& other) {
+  return (mpq_cmp(R, other.R) > 0);
+}
+
+bool Rational::operator<(int other) {
+  return (mpq_cmp_si(R, other, 1) < 0);
+}
+
+bool Rational::operator>(int other) {
+  return (mpq_cmp_si(R, other, 1) > 0);
+}
+
+bool Rational::operator==(const Rational& other) {
+  return (mpq_cmp(R, other.R)==0);
+}
+
+bool Rational::operator==(int other) {
+  return (mpq_cmp_si(R, other, 1)==0);
 }
 
 
