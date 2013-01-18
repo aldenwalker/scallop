@@ -217,17 +217,21 @@ namespace SCABBLE {
     std::vector<double> x;
   };
   
+  void affine_hyperplane(std::vector<SCABBLE::Pt>& face, 
+                        SCABBLE::Pt normal, 
+                        Rational& normal_value);
   
   
-  
-  void point_scl(std::vector<std::pair<int, int> >& chain_locs,
-                        SparseLP& LP,
-                        SCABBLE::Pt& p,
-                        Rational& scl,
-                        int verbose);
+  void point_scl(std::vector<std::vector<int> >& chain_cols,
+                 std::vector<int>& chain_rows,
+                 SparseLP& LP,
+                 SCABBLE::Pt& p,
+                 Rational& scl,
+                 int verbose);
 
   //compute the min scl over a face
-  void face_scl(std::vector<std::pair<int, int> >& chain_locs,
+  void face_scl(std::vector<std::vector<int> >& chain_cols,
+                              std::vector<int>& chain_rows,
                        SparseLP& LP,
                        std::vector<SCABBLE::Pt>& face,
                        Rational& scl,
@@ -242,6 +246,8 @@ namespace SCABBLE {
                               std::vector<SCABBLE::GroupRectangle>& GR,
                               SparseLP& LP,
                               SparseLPSolver solver,
+                              std::vector<std::vector<int> >& chain_cols,
+                              std::vector<int>& chain_rows,
                               int verbose)
   
   void compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,

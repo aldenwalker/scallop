@@ -10,6 +10,27 @@
 
 #include "scabble.h"
 
+//compute a normal and normal value 
+void SCABBLE::affine_hyperplane(std::vector<SCABBLE::Pt>& face, 
+                                SCABBLE::Pt normal, 
+                                Rational& normal_value) {
+  if ((int)face.size() == 2) {
+    SCABBLE::Pt parallel = face[1]-face[0];
+    normal[0] = -parallel[1];
+    normal[1] = parallel[0];
+    normal_value = normal.dot(face[0]);
+  } else if ((int)face.size() == 3) {
+    SCABBLE::Pt parallel1 = face[1]-face[0];
+    SCABBLE::Pt parallel2 = face[2]-face[0];
+    normal = parallel1.cross(parallel2);
+    normal_value = normal.dot(face[0]);
+  } else {
+   std::cout << "Not implemented\n"; 
+  } 
+}
+
+
+
 
 /****************************************************************************
  print a chain letter
@@ -716,6 +737,9 @@ void SCABBLE::GroupTooth::compute_ia_etc_for_words(int offset,
   //std::cout << "Pushed " << row+1 << " " << col+1 << " " << 1 << "\n";
 }
 
+
+
+
 std::ostream& SCABBLE::operator<<(std::ostream &os, GroupTooth &GT) {
   os << "GT: gp" << GT.group_index << " (" << GT.first << "," << GT.last << ") " << GT.position << " " << GT.base_letter;
   return os;
@@ -1060,6 +1084,8 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
                               std::vector<SCABBLE::GroupRectangle>& GR,
                               SparseLP& LP,
                               SparseLPSolver solver,
+                              std::vector<std::vector<int> >& chain_cols,
+                              std::vector<int>& chain_rows,
                               int verbose) {
   //ROWS (see above)
   //we need to construct something to tell us the row 
@@ -1115,6 +1141,11 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
   
   //Create the LP problem
   LP = SparseLP(solver, num_rows, num_cols);
+  chain_cols.resize(chain_locs.size());
+  for (i=0; i<(int)chain_locs.size(); ++i) {
+    chain_cols.resize(0);
+  }
+  chain_rows.resize(chain_locs.size());
   
   for(i=0; i<(int)num_equality_rows; i++){
     LP.set_RHS(i, 0); // glp_set_row_bnds(lp, i+1, GLP_FX, 0.0, 0.0);
@@ -1126,7 +1157,7 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
   //we need to set all words as appearing as many times as the first word
   for(i=0; i<(int)num_words; i++){
     //RHS[num_equality_rows+i] = C.weights[i];
-    LP.set_RHS(num_equality_rows+i, C.weights[i]);
+    LP.set_RHS(num_equality_rows+i, 0);
     LP.set_equality_type(num_equality_rows+i, EQ);
     //glp_set_row_bnds(lp, 
     //                  num_equality_rows+i+1, 
@@ -1219,35 +1250,85 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
     std::cout << "Loaded group constraints\n";
   }
   
-  //word constraints: for every group rectangle and group polygon, for every edge, put a 1 in the 
-  //row corresponding to the word for the first letter
+  //word constraints: for every word, ensure that it appears as many times
+  //as the first word in that chain
+  //first, record which columns are the special ones
+  //(are the first letter of the first word in a chain
   offset = CP.size();
-  for (j=0; j<(int)GT.size(); j++) {
-    GT[j].compute_ia_etc_for_words(offset + j, C, num_equality_rows, LP);
+  for (i=0; i<(int)GT.size(); ++i) {
+    for (j=0; j<(int)chain_locs.size(); ++j) {
+      if (C.chain_letters[GT[i].first].word == chain_locs[j].first &&
+          C.chain_letters[GT[i].first].index == 0) {
+        chain_cols[j].push_back( offset + i );
+        break;
+      }
+    }
   }
   offset = CP.size() + GT.size();
-  for (j=0; j<(int)GR.size(); j++) {
-    if (VERBOSE > 2) {
-      std::cout << "word cons GR " << GR[j] << "\n";
+  for (i=0; i<(int)GR.size(); ++i) {
+    for (j=0; j<(int)chain_locs.size(); ++j) {
+      if (C.chain_letters[GR[i].first].word == chain_locs[j].first &&
+          C.chain_letters[GR[i].first].index == 0) {
+        chain_cols[j].push_back( offset + i );
+        break;
+      }
     }
-    GR[j].compute_ia_etc_for_words(offset + j, 
-                                   C, 
-                                   num_equality_rows, 
-                                   IEL,
-                                   LP);
+  }  
+  //now make the constraints -- for all words, they must appear the same
+  //number of times as the first word in that chain
+  //only put the -1 for non-first words
+  int row_offset = num_equality_rows;
+  offset = CP.size();
+  for (i=0; i<(int)GT.size(); ++i) {
+    if (C.chain_letters[GT[i].first].index == 0) {
+      bool its_main_word = false;
+      for (j=0; j<(int)chain_locs.size(); ++j) {
+        if (chain_locs[j].first == C.chain_letters[GT[i].first].word) {
+          its_main_word = true;
+          break;
+        }
+      }
+      if (~its_main_word) {
+        LP.add_entry( row_offset + C.chain_letters[GT[i].first].word,
+                      offset + i,
+                      -1 );
+      }
+    }
   }
+  offset = CP.size() + GT.size();
+  for (i=0; i<(int)GR.size(); ++i) {
+    if (C.chain_letters[GR[i].first].index == 0) {
+      bool its_main_word = false;
+      for (j=0; j<(int)chain_locs.size(); ++j) {
+        if (chain_locs[j].first == C.chain_letters[GR[i].first].word) {
+          its_main_word = true;
+          break;
+        }
+      }
+      if (~its_main_word) {
+        LP.add_entry( row_offset + C.chain_letters[GR[i].first].word,
+                      offset + i,
+                      -1 );
+      }
+    }
+  } 
+  //now put a 1 for all the first words, but not in the first-word rows!
+  for (i=0; i<(int)chain_locs.size(); ++i) {
+    chain_rows[i] = row_offset + chain_locs[i].first;
+    for (j=chain_locs[i].first+1, j<chain_locs[i].first + chain_locs[i].second; ++j) {
+      for (k=0; k<(int)chain_cols[i].size(); ++k) {
+        LP.add_entry( row_offset + j, 
+                      chain_cols[i][k],
+                      1 );
+      }
+    }
+  }  
   
-  if (VERBOSE > 1) {
+  if (verbose > 1) {
     std::cout << "Loaded word constraints\n";
   }
   
-  
-  if (WRITE_LP) {
-    LP.write_to_file(LP_filename);    
-    return;
-  }
-  
-  if (VERBOSE > 2) {
+  if (verbose > 2) {
     std::cout << "LP problem:\n";
     LP.print_LP();
   }
@@ -1256,22 +1337,70 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
 
 
 //compute the scl at a particular point
-void SCABBLE::point_scl(std::vector<std::pair<int, int> >& chain_locs,
+void SCABBLE::point_scl(std::vector<std::vector<int> >& chain_cols,
+                        std::vector<int>& chain_rows,
                         SparseLP& LP,
                         SCABBLE::Pt& p,
                         Rational& scl,
                         int verbose) {
+  int init_matrix_entries = LP.num_entries();
+  //just set the key rows
+  for (int i=0; i<(int)chain_cols.size(); ++i) {
+    for (int j=0; j<(int)chain_cols[i].size(); ++j) {
+      LP.add_entry( chain_rows[i], chain_cols[i][j], 1 );
+    }
+    LP.set_RHS(chain_rows[i], p[i]);
+  }
+  LP.solve();
   
+  scl = LP.get_optimal_value(scl);
+  
+  LP.reset_num_entries(init_matrix_entries);
+    
 }
 
 //compute the min scl over a face
-void SCABBLE::face_scl(std::vector<std::pair<int, int> >& chain_locs,
+void SCABBLE::face_scl(std::vector<std::vector<int> >& chain_cols,
+                       std::vector<int>& chain_rows,
                        SparseLP& LP,
                        std::vector<SCABBLE::Pt>& face,
                        Rational& scl,
                        SCABBLE::Pt& min_p,
                        int verbose) {
+  int init_matrix_entries = LP.num_entries();
   
+  SCABBLE::Pt normal((int)chain_cols.size());
+  Rational normal_value;
+  affine_hyperplane(face, normal, normal_value);  
+  
+  //set the first row, and make everything else zero
+  for (int i=0; i<(int)chain_cols.size(); ++i) {
+    for (int j=0; j<(int)chain_cols[i].size(); ++j) {
+      LP.add_entry( chain_rows[0], chain_cols[i][j], normal[i] );
+    }
+  }
+  LP.set_RHS(chain_rows[0], normal_value);
+  
+  for (int i=1; i<(int)chain_cols.size(); ++i) {
+    LP.set_RHS(chain_rows[i], 0);
+  }
+  
+  LP.solve();
+  
+  scl = LP.get_optimal_value(scl);
+  
+  std::vector<Rational> soln_vector(0);
+  LP.get_soln_vector(soln_vector);
+  for (int i=0; i<(int)chain_cols.size(); ++i) {
+    Rational sum = 0;
+    for (int j=0; j<(int)chain_cols[i].size(); ++j) {
+      sum += soln_vector[chain_cols[i][j]];
+    }
+    min_p[i] = sum;
+  }
+  
+  LP.reset_num_entries(init_matrix_entries);
+    
 }
 
 
@@ -1308,8 +1437,9 @@ void SCABBLE::compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
   }
   
   SparseLP LP;
-  
-  SCABBLE::init_orthant_lp(chain_locs, C, IEL, CP, GT, GR, LP, solver, verbose);
+  std::vector<std::vector<int> > chain_cols(0);
+  std::vector<int> chain_rows(0);
+  SCABBLE::init_orthant_lp(chain_locs, C, IEL, CP, GT, GR, LP, solver, chain_cols, verbose);
   
   //find the scls of the basis vectors
   std::vector<SCABBLE::Pt> initial_face(dim);
@@ -1317,7 +1447,7 @@ void SCABBLE::compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
     initial_face[i] = SCABBLE::Pt(dim, 0);
     initial_face[i][i] = 1;
     Rational s;
-    point_scl(chain_locs, LP, initial_face[i], s, verbose);
+    point_scl(chain_cols, LP, initial_face[i], s, verbose);
     initial_face[i][i] /= s;
   }
   
@@ -1334,7 +1464,7 @@ void SCABBLE::compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
     Rational s;
     SCABBLE::Pt new_vert(dim,0);
     
-    face_scl(chain_locs, LP, working_face, s, new_vert, verbose);
+    face_scl(chain_cols, LP, working_face, s, new_vert, verbose);
     
     if (s == 1) {
       orthant_faces.push_back(working_face);
