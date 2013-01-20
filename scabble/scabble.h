@@ -219,14 +219,15 @@ namespace SCABBLE {
   public:
     Pt();
     Pt(int dim);
+    Pt(const Pt& p);
     Pt(int dim, Rational& init);
     Pt(int dim, int init);
     Rational& operator[](int i);
-    Pt operator-(Pt& other);
-    Pt operator+(Pt& other);
+    Pt operator-(const Pt& other);
+    Pt operator+(const Pt& other);
     Pt operator-();
     Rational dot(Pt& other);
-    Pt cross(Pt& other);
+    Pt cross(const Pt& other);
     void rescale_to_integer();
     Pt& operator*=(Rational& m);
     Pt& operator*=(int m);

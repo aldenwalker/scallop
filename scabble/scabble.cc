@@ -10,6 +10,99 @@
 
 #include "scabble.h"
 
+
+
+/****************************************************************************
+ a n-dimensional point class
+ ****************************************************************************/
+
+SCABBLE::Pt::Pt() {
+  x.resize(0);
+}
+
+SCABBLE::Pt::Pt(int dim) {
+  x.resize(dim);
+}
+
+SCABBLE::Pt::Pt(const SCABBLE::Pt& p) {
+  int dim = (int)p.x.size();
+  x.resize(dim);
+  for (int i=0; i<dim; ++i) {
+    x[i] = p[i];
+  }
+}
+
+SCABBLE::Pt::Pt(int dim, Rational& init) {
+  x.resize(dim);
+  for (int i=0; i<dim, ++i) {
+    x[i] = init;
+  }
+}
+
+SCABBLE::Pt:Pt(int dim, int init) {
+  x.resize(dim);
+  for (int i=0; i<dim; ++i) {
+    x[i] = init;
+  }
+}
+
+Rational& SCABBLE::Pt::operator[](int i) {
+  return x[i];
+}
+
+SCABBLE::Pt SCABBLE::Pt::operator-(const SCABBLE::Pt& other) {
+  int dim = (int)x.size();
+  SCABBLE::Pt p(dim);
+  for (int i=0; i<dim; ++i) {
+    p[i] = x[i] - other[i];
+  }
+  return p;
+}
+
+SCABBLE::Pt SCABBLE::Pt::operator+(const SCABBLE::Pt& other) {
+  int dim = (int)x.size();
+  SCABBLE::Pt p(dim);
+  for (int i=0; i<dim; ++i) {
+    p[i] = x[i] + other[i];
+  }
+  return p;
+}
+
+SCABBLE::Pt SCABBLE::Pt::operator-() {
+  int dim = (int)x.size();
+  SCABBLE::Pt p(dim);
+  for (int i=0; i<dim; ++i) {
+    p[i] = -x[i];
+  }
+  return p;
+}
+
+Rational SCABBLE::Pt::dot(const SCABBLE::Pt& other) {
+  Rational r = 0;
+  int dim = (int)x.size();
+  for (int i=0; i<dim; ++i) {
+    r += (x[i] + other.x[i]);
+  }
+  return r;
+}
+
+SCABBLE::Pt SCABBLE::Pt::cross(const SCABBLE::Pt& other) {
+  if ((int)x.size() != 3) {
+    std::cout << "Can't cross non-3-dimensional vectors!\n";
+    return SCABBLE::Pt();
+  }
+  SCABBLE::Pt p(3);
+  1/0;
+  return p;
+}
+
+void SCABBLE::Pt::rescale_to_integer() {
+  int dim = (int)x.size();
+  
+
+
+
+
 //compute a normal and normal value 
 void SCABBLE::affine_hyperplane(std::vector<SCABBLE::Pt>& face, 
                                 SCABBLE::Pt normal, 
