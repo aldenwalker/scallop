@@ -89,6 +89,10 @@ int chain_rank(int num_words, char** words) {
     int j=0; 
     while (words[i][j] != '\0') {
       int val = (int)words[i][j];
+      if ((val < 65) || (val > 90 && val < 97) || (val > 122)) {
+        j++;
+        continue;
+      }
       if (val < 97) val += 32;
       val -= 97;
       val += 1;

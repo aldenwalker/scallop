@@ -226,17 +226,22 @@ namespace SCABBLE {
     Pt operator-(const Pt& other);
     Pt operator+(const Pt& other);
     Pt operator-();
-    Rational dot(Pt& other);
+    Rational dot(const Pt& other);
     Pt cross(const Pt& other);
     void rescale_to_integer();
-    Pt& operator*=(Rational& m);
+    Pt& operator*=(const Rational& m);
     Pt& operator*=(int m);
-    Pt& operator/=(Rational& m);
+    Pt& operator/=(const Rational& m);
     Pt& operator/=(int m);
+    Pt negate_coords(int i);
+    
+    friend std::ostream& operator<<(std::ostream& os, const SCABBLE::Pt& p);
   };
   
+  
+  
   void affine_hyperplane(std::vector<SCABBLE::Pt>& face, 
-                        SCABBLE::Pt normal, 
+                        SCABBLE::Pt& normal, 
                         Rational& normal_value);
   
   

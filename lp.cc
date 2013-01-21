@@ -310,6 +310,7 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
       glp_set_col_bnds(lp, i+1, GLP_LO, 0.0, 0.0);
       glp_set_obj_coef(lp, i+1, double_objective[i]);
     }
+    //rearrange
     ia.push_back(0);
     ja.push_back(0);
     double_ar.push_back(0);
@@ -318,7 +319,16 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
       ja[i] = ja[i-1]+1;
       double_ar[i] = double_ar[i-1];
     }
-	  glp_load_matrix(lp, ia.size()-1, &ia[0], &ja[0], &double_ar[0]);
+    glp_load_matrix(lp, ia.size()-1, &ia[0], &ja[0], &double_ar[0]);
+    //unrearrange
+    for (int i=0; i<(int)ia.size()-1; ++i) {
+      ia[i] = ia[i+1]-1;
+      ja[i] = ja[i+1]-1;
+      double_ar[i] = double_ar[i+1];
+    }    
+    ia.pop_back();
+    ja.pop_back();
+    double_ar.pop_back();
     
     if (solver == GLPK || solver == GLPK_SIMPLEX) {
       glp_init_smcp(&parm);
@@ -638,6 +648,21 @@ void SparseLP::print_LP() {
     std::cout << "\nEntries: ";
     for (int i=0; i<(int)ia.size(); ++i) {
       std::cout << "(" << ia[i] << "," << ja[i] << "," << double_ar[i] << "), ";
+    }
+    std::cout << "\n";
+  } else {
+    std::cout << "Objective: ";
+    for (int i=0; i<num_cols; ++i) {
+      std::cout << objective[i] << " ";
+    }
+    std::cout << "\n";
+    std::cout << "RHS: ";
+    for (int i=0; i<num_rows; ++i) {
+      std::cout << RHS[i] << " ";
+    }
+    std::cout << "\nEntries: ";
+    for (int i=0; i<(int)ia.size(); ++i) {
+      std::cout << "(" << ia[i] << "," << ja[i] << "," << ar[i] << "), ";
     }
     std::cout << "\n";
   }

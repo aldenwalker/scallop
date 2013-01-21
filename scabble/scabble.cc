@@ -1,8 +1,10 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <cstdlib>
 #include <utility>
+#include <cmath>
 
 #include "../rational.h"
 #include "../word.h"
@@ -28,18 +30,18 @@ SCABBLE::Pt::Pt(const SCABBLE::Pt& p) {
   int dim = (int)p.x.size();
   x.resize(dim);
   for (int i=0; i<dim; ++i) {
-    x[i] = p[i];
+    x[i] = p.x[i];
   }
 }
 
 SCABBLE::Pt::Pt(int dim, Rational& init) {
   x.resize(dim);
-  for (int i=0; i<dim, ++i) {
+  for (int i=0; i<dim; ++i) {
     x[i] = init;
   }
 }
 
-SCABBLE::Pt:Pt(int dim, int init) {
+SCABBLE::Pt::Pt(int dim, int init) {
   x.resize(dim);
   for (int i=0; i<dim; ++i) {
     x[i] = init;
@@ -54,7 +56,7 @@ SCABBLE::Pt SCABBLE::Pt::operator-(const SCABBLE::Pt& other) {
   int dim = (int)x.size();
   SCABBLE::Pt p(dim);
   for (int i=0; i<dim; ++i) {
-    p[i] = x[i] - other[i];
+    p[i] = x[i] - other.x[i];
   }
   return p;
 }
@@ -63,7 +65,7 @@ SCABBLE::Pt SCABBLE::Pt::operator+(const SCABBLE::Pt& other) {
   int dim = (int)x.size();
   SCABBLE::Pt p(dim);
   for (int i=0; i<dim; ++i) {
-    p[i] = x[i] + other[i];
+    p[i] = x[i] + other.x[i];
   }
   return p;
 }
@@ -81,7 +83,7 @@ Rational SCABBLE::Pt::dot(const SCABBLE::Pt& other) {
   Rational r = 0;
   int dim = (int)x.size();
   for (int i=0; i<dim; ++i) {
-    r += (x[i] + other.x[i]);
+    r += (x[i] * other.x[i]);
   }
   return r;
 }
@@ -92,20 +94,92 @@ SCABBLE::Pt SCABBLE::Pt::cross(const SCABBLE::Pt& other) {
     return SCABBLE::Pt();
   }
   SCABBLE::Pt p(3);
-  1/0;
+  p[0] = x[1]*other.x[2] - x[2]*other.x[1];
+  p[1] = x[2]*other.x[0] - x[0]*other.x[2];
+  p[2] = x[0]*other.x[1] - x[1]*other.x[0];
   return p;
 }
 
 void SCABBLE::Pt::rescale_to_integer() {
   int dim = (int)x.size();
+  int L = 1;
+  for (int i=0; i<dim; ++i) {
+    L = lcm(L, x[i].d());
+  }
+  for (int i=0; i<dim; ++i) {
+    x[i] *= L;
+  }
+}
+
+SCABBLE::Pt& SCABBLE::Pt::operator*=(const Rational& m) {
+  int dim = (int)x.size();
+  for (int i=0; i<dim; ++i) {
+    x[i] *= m;
+  }
+  return *this;
+}
   
+SCABBLE::Pt& SCABBLE::Pt::operator*=(int m) {
+  int dim = (int)x.size();
+  Rational r(m);
+  for (int i=0; i<dim; ++i) {
+    x[i] *= r;
+  }
+  return *this;
+}
+
+SCABBLE::Pt& SCABBLE::Pt::operator/=(const Rational& m) {
+  int dim = (int)x.size();
+  for (int i=0; i<dim; ++i) {
+    x[i] /= m;
+  }
+  return *this;
+}
+
+SCABBLE::Pt& SCABBLE::Pt::operator/=(int m) {
+  int dim = (int)x.size();
+  Rational r(m);
+  for (int i=0; i<dim; ++i) {
+    x[i] /= r;
+  }
+  return *this;
+}
+
+//negate the coordinates which are masked in i
+SCABBLE::Pt SCABBLE::Pt::negate_coords(int i) {
+  int dim = (int)x.size();
+  SCABBLE::Pt p(dim);
+  for (int j=0; j<dim; ++j) {
+    if ( ((i>>j)&1) == 1 ) {
+      p[j] = -x[j];
+    } else {
+      p[j] = x[j];
+    }
+  }
+  return p;
+}
+
+std::ostream& SCABBLE::operator<<(std::ostream& os, const SCABBLE::Pt& p) {
+  int dim = p.x.size();
+  os << "[";
+  if (dim > 0) {
+    os << p.x[0];
+  }
+  for (int i=1; i<dim; ++i) {
+    os << ", " << p.x[i];
+  }
+  os << "]";
+  return os;
+}
 
 
+
+    
 
 
 //compute a normal and normal value 
 void SCABBLE::affine_hyperplane(std::vector<SCABBLE::Pt>& face, 
-                                SCABBLE::Pt normal, 
+                                SCABBLE::Pt& normal, 
                                 Rational& normal_value) {
   if ((int)face.size() == 2) {
     SCABBLE::Pt parallel = face[1]-face[0];
@@ -348,7 +422,7 @@ SCABBLE::Chain::Chain(CyclicProduct* G, std::vector<std::string>& words) {
   for (int i=0; i<(int)h.size(); ++i) {
     h[i] = words[i].c_str();
   }
-  Chain(G, &h[0], (int)h.size());
+  //Chain(G, &h[0], (int)h.size());
 }
 
 
@@ -378,11 +452,13 @@ SCABBLE::Chain::Chain(CyclicProduct* G_in, const char** input, int num_strings) 
   
   //simplify the words
   for (i=0; i<(int)words.size(); i++) {
+    //std::cout << "Simplifying " << words[i] << " to:\n";
     (*G).cyc_red(words[i]);
     if ((int)words[i].size() == 0) {
       std::cout << "You gave me a trivial word\n";
       exit(1);
     }
+    //std::cout << words[i] << "\n";
   }
   
   //std::cout << "Done simplifying words\n";
@@ -1248,16 +1324,11 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
   
   //Create the LP problem
   LP = SparseLP(solver, num_rows, num_cols);
-  chain_cols.resize(chain_locs.size());
-  for (i=0; i<(int)chain_locs.size(); ++i) {
-    chain_cols.resize(0);
-  }
-  chain_rows.resize(chain_locs.size());
   
   for(i=0; i<(int)num_equality_rows; i++){
     LP.set_RHS(i, 0); // glp_set_row_bnds(lp, i+1, GLP_FX, 0.0, 0.0);
     LP.set_equality_type(i, EQ);
-    if (verbose > 2) {
+    if (verbose > 3) {
       std::cout << "Set row " << i << " bounded to " << 0 << "\n";
     }
   }
@@ -1271,8 +1342,8 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
     //                  GLP_FX, 
     //                  C.weights[i], 
     //                  C.weights[i]);  
-    if (verbose > 2) {
-      std::cout << "Set row " << num_equality_rows+i << " bounded to " << C.weights[i] << "\n";
+    if (verbose > 3) {
+      std::cout << "Set row " << num_equality_rows+i << " bounded to " << 0 << "\n";
     }
   }
   
@@ -1282,7 +1353,7 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
     //glp_set_col_bnds(lp, i+1, GLP_LO, 0.0, 0.0);
     //objective[i] = -CP[i].chi_times_2(); //glp_set_obj_coef(lp, i+1, -CP[i].chi_times_2());
     LP.set_obj(i, -CP[i].chi_times_2());
-    if (verbose>2) {
+    if (verbose>3) {
       std::cout << "Set objective " << i << " to " << -CP[i].chi_times_2() << "\n";
     }
   }
@@ -1291,7 +1362,7 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
     //glp_set_col_bnds(lp, offset+i+1, GLP_LO, 0.0, 0.0);
     //objective[offset + i] = -GT[i].chi_times_2(C); //glp_set_obj_coef(lp, offset+i+1, -GT[i].chi_times_2(C));
     LP.set_obj(offset+i, -GT[i].chi_times_2(C));
-    if (verbose>2) {
+    if (verbose>3) {
       std::cout << "GT Set objective " << offset+i << " to " << -GT[i].chi_times_2(C) << "\n";
     }
   }
@@ -1300,7 +1371,7 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
     //glp_set_col_bnds(lp, offset+i+1, GLP_LO, 0.0, 0.0);
     //objective[offset+i] = 0; //glp_set_obj_coef(lp, offset+i+1, 0);
     LP.set_obj(offset+i, 0);
-    if (verbose>2) {
+    if (verbose>3) {
       std::cout << "GR Set objective " << offset+i << " to " << 0 << "\n";
     }
   }    
@@ -1312,12 +1383,12 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
                                    IEL, 
                                    CEL, 
                                    LP);
-    if (verbose > 2) {
+    if (verbose > 3) {
       std::cout << "CP number " << i << ":\n";
     }
   }
   
-  if (verbose>1) { 
+  if (verbose>2) { 
     std::cout << "Loaded central polygon edge constraints\n";
   }     
   
@@ -1334,7 +1405,7 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
                                      group_teeth_rows_inv, 
                                      LP);
     } else {        
-      if (verbose > 2) {
+      if (verbose > 3) {
         std::cout << GT[m] << "\n";
       }
       GT[m].compute_ia_etc_for_edges(offset + m, 
@@ -1346,14 +1417,14 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
   }
   offset = CP.size() + GT.size();
   for (m=0; m<(int)GR.size(); m++) {
-    if (verbose>2) {
+    if (verbose>3) {
       std::cout << GR[m] << "\n";
     }
     GR[m].compute_ia_etc_for_edges(offset + m, IEL, LP);
   }
   
   
-  if (verbose>1) {
+  if (verbose>2) {
     std::cout << "Loaded group constraints\n";
   }
   
@@ -1361,6 +1432,11 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
   //as the first word in that chain
   //first, record which columns are the special ones
   //(are the first letter of the first word in a chain
+  chain_cols.resize(chain_locs.size());
+  for (i=0; i<(int)chain_locs.size(); ++i) {
+    chain_cols[i].resize(0);
+  }
+  chain_rows.resize(chain_locs.size());
   offset = CP.size();
   for (i=0; i<(int)GT.size(); ++i) {
     for (j=0; j<(int)chain_locs.size(); ++j) {
@@ -1374,13 +1450,29 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
   offset = CP.size() + GT.size();
   for (i=0; i<(int)GR.size(); ++i) {
     for (j=0; j<(int)chain_locs.size(); ++j) {
+      //std::cout << "Looking at GR " << i << " with chain " << j <<"\n";
+      //std::cout << "GR: " << GR[i] << "\n";
+      //std::cout << "Letter: " << C.chain_letters[GR[i].first] << "\n";
       if (C.chain_letters[GR[i].first].word == chain_locs[j].first &&
           C.chain_letters[GR[i].first].index == 0) {
+        //std::cout << "Yep this is a chain column\n";
         chain_cols[j].push_back( offset + i );
         break;
       }
     }
   }  
+  
+  if (verbose > 3) {
+    std::cout << "Chain columns:\n";
+    for (i=0; i<(int)chain_cols.size(); ++i) {
+      std::cout << i << ": ";
+      for (j=0; j<(int)chain_cols[i].size(); ++j) {
+        std::cout << chain_cols[i][j] << " ";
+      }
+      std::cout << "\n";
+    }
+  }
+    
   //now make the constraints -- for all words, they must appear the same
   //number of times as the first word in that chain
   //only put the -1 for non-first words
@@ -1406,13 +1498,17 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
   for (i=0; i<(int)GR.size(); ++i) {
     if (C.chain_letters[GR[i].first].index == 0) {
       bool its_main_word = false;
+      //std::cout << "GR " << i << " with word " << C.chain_letters[GR[i].first].word <<"\n";
       for (j=0; j<(int)chain_locs.size(); ++j) {
         if (chain_locs[j].first == C.chain_letters[GR[i].first].word) {
           its_main_word = true;
+          //std::cout << "This is a main word for chain " << j <<"\n";
           break;
         }
       }
-      if (~its_main_word) {
+      //std::cout << "its_main_word = " << its_main_word << "\n";
+      if (!its_main_word) {
+        //std::cout << "Since it's not a main word, I put in -1\n";
         LP.add_entry( row_offset + C.chain_letters[GR[i].first].word,
                       offset + i,
                       -1 );
@@ -1431,11 +1527,19 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
     }
   }  
   
-  if (verbose > 1) {
-    std::cout << "Loaded word constraints\n";
+  if (verbose > 3) {
+    std::cout << "Chain rows: \n";
+    for (i=0; i<(int)chain_rows.size(); ++i) {
+      std::cout << chain_rows[i] << " ";
+    }
+    std::cout << "\n";
   }
   
   if (verbose > 2) {
+    std::cout << "Loaded word constraints\n";
+  }
+  
+  if (verbose > 3) {
     std::cout << "LP problem:\n";
     LP.print_LP();
   }
@@ -1451,6 +1555,11 @@ void SCABBLE::point_scl(std::vector<std::vector<int> >& chain_cols,
                         Rational& scl,
                         int verbose) {
   int init_matrix_entries = LP.get_num_entries();
+  
+  if (verbose > 2) {
+    std::cout << "Computing the scl of the point: " << p << "\n";
+  }
+  
   //just set the key rows
   for (int i=0; i<(int)chain_cols.size(); ++i) {
     for (int j=0; j<(int)chain_cols[i].size(); ++j) {
@@ -1458,12 +1567,22 @@ void SCABBLE::point_scl(std::vector<std::vector<int> >& chain_cols,
     }
     LP.set_RHS(chain_rows[i], p[i]);
   }
+  
+  if (verbose > 3) {
+    std::cout << "Running the LP problem:\n";
+    LP.print_LP();
+  }
+  
   LP.solve(verbose);
   
   LP.get_optimal_value(scl);
   
+  if (verbose > 2) {
+    std::cout << "Got scl " << scl << "\n";
+  }
+  
   LP.reset_num_entries(init_matrix_entries);
-    
+  
 }
 
 //compute the min scl over a face
@@ -1476,9 +1595,21 @@ void SCABBLE::face_scl(std::vector<std::vector<int> >& chain_cols,
                        int verbose) {
   int init_matrix_entries = LP.get_num_entries();
   
+  if (verbose > 2) {
+    std::cout << "Computing the scl of the face: \n";
+    for (int i=0; i<(int)face.size(); ++i) {
+      std::cout << face[i] << "\n";
+    }
+  }
+  
   SCABBLE::Pt normal((int)chain_cols.size());
   Rational normal_value;
   affine_hyperplane(face, normal, normal_value);  
+  
+  if (verbose > 2) {
+    std::cout << "Got the normal vector: " << normal << "\n";
+    std::cout << "With normal value: " << normal_value << "\n";
+  }
   
   //set the first row, and make everything else zero
   for (int i=0; i<(int)chain_cols.size(); ++i) {
@@ -1492,9 +1623,18 @@ void SCABBLE::face_scl(std::vector<std::vector<int> >& chain_cols,
     LP.set_RHS(chain_rows[i], 0);
   }
   
+  if (verbose > 3) {
+    std::cout << "Running the LP problem:\n";
+    LP.print_LP();
+  }
+    
   LP.solve(verbose);
   
   LP.get_optimal_value(scl);
+  
+  if (verbose > 2) {
+    std::cout << "Got scl " << scl << "\n";
+  }
   
   std::vector<Rational> soln_vector(0);
   LP.get_soln_vector(soln_vector);
@@ -1504,6 +1644,10 @@ void SCABBLE::face_scl(std::vector<std::vector<int> >& chain_cols,
       sum += soln_vector[chain_cols[i][j]];
     }
     min_p[i] = sum;
+  }
+  
+  if (verbose > 2) {
+    std::cout << "Got min point: " << min_p << "\n";
   }
   
   LP.reset_num_entries(init_matrix_entries);
@@ -1523,14 +1667,14 @@ void SCABBLE::compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
   //now we build the rectangles and whatever for the *whole* chain
   //we'll restrict later
   SCABBLE::InterfaceEdgeList IEL(C);
-  if (verbose>1) IEL.print(std::cout);
+  if (verbose>3) IEL.print(std::cout);
   
   SCABBLE::CentralEdgePairList CEL(C);
-  if (verbose>1) CEL.print(std::cout);
+  if (verbose>3) CEL.print(std::cout);
   
   std::vector<SCABBLE::CentralPolygon> CP;
   SCABBLE::compute_central_polys(C, IEL, CP);
-  if (verbose > 1) {
+  if (verbose > 3) {
     std::cout << "computed polys (" << CP.size() << ")\n"; std::cout.flush();
     SCABBLE::print_central_polys(CP, std::cout, verbose);
   }
@@ -1538,7 +1682,7 @@ void SCABBLE::compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
   std::vector<SCABBLE::GroupTooth> GT;
   std::vector<SCABBLE::GroupRectangle> GR;
   SCABBLE::compute_group_teeth_and_rectangles(C, GT, GR);
-  if (verbose > 1) {
+  if (verbose > 3) {
     std::cout << "computed group teeth and rectangles\n"; std::cout.flush();
     SCABBLE::print_group_teeth_and_rectangles(GT, GR, std::cout, verbose);
   }
@@ -1562,6 +1706,14 @@ void SCABBLE::compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
     initial_face[i][i] /= s;
   }
   
+  if (verbose > 2) {
+    std::cout << "Computed scl of basis vectors\n";
+    std::cout << "Initial face:\n";
+    for (int i=0; i<(int)initial_face.size(); ++i) {
+      std::cout << i << ": " << initial_face[i] << "\n";
+    }
+  }
+  
   //create the stack
   std::vector<std::vector<SCABBLE::Pt> > face_stack(0);
   face_stack.push_back(initial_face);
@@ -1569,9 +1721,18 @@ void SCABBLE::compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
   //enter the main loop
   orthant_verts.resize(0);
   orthant_faces.resize(0);
-  while (face_stack.size() > 0) {
+  while (face_stack.size() > 0) {    
     std::vector<SCABBLE::Pt> working_face = face_stack.back();
     face_stack.pop_back();
+    
+    if (verbose > 2) {
+      std::cout << "Remaining stack size: " << face_stack.size() << "\n";
+      std::cout << "Working face: \n";
+      for (int i=0; i<(int)working_face.size(); ++i) {
+        std::cout << working_face[i] << "\n";
+      }
+    }
+    
     Rational s;
     SCABBLE::Pt new_vert(dim,0);
     
@@ -1579,10 +1740,18 @@ void SCABBLE::compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
     
     if (s == 1) {
       orthant_faces.push_back(working_face);
+      if (verbose > 2) {
+        std::cout << "This face is good\n";
+      }
       continue;
     }
-    
+   
     new_vert /= s;
+   
+    if (verbose > 2) {
+      std::cout << "new vertex: " << new_vert << "\n";
+    }
+   
     std::vector<SCABBLE::Pt> new_face(dim);
     for (int i=0; i<dim; ++i) {
       for (int j=0; j<dim; ++j) {
@@ -1626,24 +1795,33 @@ void SCABBLE::compute_ball( SCABBLE::CyclicProduct& G,
   std::vector<std::string> orthant_words(words.size());
   
   for (int i=0; i<num_orthants; ++i) {
+    
+    if (verbose > 1) {
+      std::cout << "Running orthant " << i << "\n";
+    }
+    
     if (orthant_done[i] != 0) continue;
     
     //invert the chains as necessary
     for (int j=0; j<dim; ++j) {
       bool invert = ( ((i>>j)&1) == 1 ? true : false );  //invert this chain?
       if (invert) {
-        for (int k=chain_locs[j].first; k<chain_locs[j].second; ++k) {
+        for (int k=chain_locs[j].first; k<chain_locs[j].first + chain_locs[j].second; ++k) {
           orthant_words[k] = inverse(words[k]);
         }
       } else {
-        for (int k=chain_locs[j].first; k<chain_locs[j].second; ++k) {
+        for (int k=chain_locs[j].first; k<chain_locs[j].first + chain_locs[j].second; ++k) {
           orthant_words[k] = words[k];
         }
       }
     }
     
     //load the chain from the orthant words
-    SCABBLE::Chain C(&G, words);                  //process the chain argument
+    std::vector<const char*> c_words(words.size());
+    for (int j=0; j<(int)words.size(); ++j) {
+      c_words[j] = orthant_words[j].c_str();
+    }
+    SCABBLE::Chain C(&G, &c_words[0], (int)c_words.size());   //process the chain argument
     
     //print if verbose
     if (verbose>1) {
@@ -1666,11 +1844,26 @@ void SCABBLE::compute_ball( SCABBLE::CyclicProduct& G,
                               verbose);
     
     //append the verts and faces to the list
+    //we have to remember to negate the coordinates which were inverted
     for (int j=0; j<(int)orthant_verts.size(); ++j) {
-      verts.push_back(orthant_verts[j]);
+      verts.push_back(orthant_verts[j].negate_coords(i));
+    }
+    if (verbose > 1) {
+      std::cout << "Finished orthant " << i <<"\n";
+      std::cout << "With faces:\n";
     }
     for (int j=0; j<(int)orthant_faces.size(); ++j) {
-      faces.push_back(orthant_faces[j]);
+      std::vector<SCABBLE::Pt> temp_face(0);
+      for (int k=0; k<(int)orthant_faces[j].size(); ++k) {
+        temp_face.push_back(orthant_faces[j][k].negate_coords(i));
+      }
+      if (verbose > 1) {
+        std::cout << "Face " << j << ":\n";
+        for (int k=0; k<(int)temp_face.size(); ++k) {
+          std::cout << temp_face[k] << "\n";
+        }
+      }
+      faces.push_back(temp_face);
     }
     
     //mark this orthant, and its reflection, as done
@@ -1704,16 +1897,62 @@ void SCABBLE::write_ball_to_file(std::string output_filename,
                                   std::vector<SCABBLE::Pt>& verts, 
                                   std::vector<std::vector<SCABBLE::Pt> >& faces, 
                                   int verbose) {
-  
-  
 }
 
 void SCABBLE::draw_ball_to_file(std::string output_filename, 
                                 std::vector<SCABBLE::Pt>& verts, 
                                 std::vector<std::vector<SCABBLE::Pt> >& faces, 
                                 int verbose) {
+    
+  if (verbose > 1) {
+    std::cout << "Drawing ball to file: " << output_filename << "\n";
+  }
   
+  std::fstream fs;
+  fs.open(output_filename.c_str(), std::fstream::out);
+  fs << "%!PS-Adobe-2.0 EPSF-2.0\n";
+  fs << "%%BoundingBox: 0 0 200 200\n";
+  fs << "100 100 translate\n";
+    fs << "0 0 0 setcolor\n";
+  //first, find the x and y scaling factors
+  double max_x = 0;
+  double max_y = 0;
+  for (int i=0; i<(int)faces.size(); ++i) {
+    for (int j=0; j<(int)faces[i].size(); ++j) {
+      double x = fabs(faces[i][j][0].get_d());
+      double y = fabs(faces[i][j][1].get_d());
+      if (x > max_x) max_x = x;
+      if (y > max_y) max_y = y;
+    }
+  }
+  //make the scaling factor so that max_x and max_y would be about 90
+  double scaling_x, scaling_y;
+  scaling_x = 90.0/max_x;
+  scaling_y = 90.0/max_y;
+  //now the drawing coords of a point are (100,100) + (scaling_x*x, scaling_y*y)
+  fs << "1 setlinewidth\n";
+  for (int i=0; i<(int)faces.size(); ++i) {
+    fs << scaling_x*faces[i][0][0].get_d() << " " << 
+          scaling_y*faces[i][0][1].get_d() << " moveto\n";
+    fs << scaling_x*faces[i][1][0].get_d() << " " << 
+          scaling_y*faces[i][1][1].get_d() << " lineto\n";
+    fs << "stroke\n";
+  }
   
+  //now draw the axes
+  fs << "0.5 setlinewidth\n";
+  fs << "-98 0 moveto\n";
+  fs << "98 0 lineto\n";
+  fs << "stroke\n";
+  fs << "0 -98 moveto\n";
+  fs << "0 98 lineto\n";
+  fs << "stroke\n";  
+  
+  fs.close();
+  
+  if (verbose > 1) {
+    std::cout << "Done drawing\n";
+  }
   
 }
 
@@ -1791,6 +2030,10 @@ int SCABBLE::scabble(int argc, char** argv) {
   }
   SCABBLE::CyclicProduct G(G_in); 
   
+  if (verbose > 1) {
+    std::cout << "Group: " << G <<"\n";
+  }
+  
   //record where the commas are and stuff
   std::vector<std::string> words(0);
   std::vector<std::pair<int,int> > chain_locs(0); //it's (start, len)
@@ -1807,8 +2050,22 @@ int SCABBLE::scabble(int argc, char** argv) {
   //push on the last chain data
   chain_locs.push_back(std::make_pair(word_start, words.size()-word_start));
   
+  if (verbose > 1) {
+    for (int i=0; i<(int)chain_locs.size(); ++i) {
+      std::cout << "Chain " << i << ": \n";
+      for (int j=chain_locs[i].first; j<chain_locs[i].first + chain_locs[i].second; ++j) {
+        std::cout << words[j] << " ";
+      }
+      std::cout << "\n";
+    }
+  }
+  
   std::vector<SCABBLE::Pt> verts(0);
   std::vector<std::vector<SCABBLE::Pt> > faces(0);
+  
+  if (verbose > 1) {
+    std::cout << "Computing ball\n";
+  }    
   
   SCABBLE::compute_ball(G, 
                         words, 
@@ -1817,6 +2074,10 @@ int SCABBLE::scabble(int argc, char** argv) {
                         faces, 
                         solver, 
                         verbose);
+  
+  if (verbose > 1) {
+    std::cout << "Writing ball output\n";
+  }
   
   if (output_polyhedron) {
     SCABBLE::write_ball_to_file(output_filename, verts, faces, verbose);
