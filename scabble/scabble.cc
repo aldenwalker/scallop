@@ -1478,54 +1478,125 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
   //only put the -1 for non-first words
   int row_offset = num_equality_rows;
   offset = CP.size();
-  for (i=0; i<(int)GT.size(); ++i) {
-    if (C.chain_letters[GT[i].first].index == 0) {
-      bool its_main_word = false;
-      for (j=0; j<(int)chain_locs.size(); ++j) {
-        if (chain_locs[j].first == C.chain_letters[GT[i].first].word) {
-          its_main_word = true;
-          break;
-        }
-      }
-      if (~its_main_word) {
-        LP.add_entry( row_offset + C.chain_letters[GT[i].first].word,
-                      offset + i,
-                      -1 );
-      }
+  for (i=0; i<(int)chain_locs.size(); ++i) {
+    int main_word = chain_locs[i].first;
+    for (j=0; j<(int)GT.size(); ++j) {
+      if (C.chain_letters[GT[i].first].index != 0) continue;
+      int w1 = C.chain_letters[GT[j].first].word;
+      if (w1 == main_word) continue;
+      LP.add_entry( row_offset + w1 ,
+                    offset + j,
+                   -1 );
     }
   }
   offset = CP.size() + GT.size();
+  //get a list of which words are main words
+  std::vector<bool> is_main_word(num_words, false);
+  for (i=0; i<(int)chain_locs.size(); ++i) {
+    is_main_word[chain_locs[i].first] = true;
+  }
+  is_main_word.push_back(true); //<-- this makes all the loops below stop
+  for (i=0; i<num_words; ++i) {
+    std::cout << is_main_word[i] << " ";
+  }
+  std::cout << "\n";
+  //now enter the word columns
+  //this is just horrible horrible
   for (i=0; i<(int)GR.size(); ++i) {
-    if (C.chain_letters[GR[i].first].index == 0) {
-      bool its_main_word = false;
-      //std::cout << "GR " << i << " with word " << C.chain_letters[GR[i].first].word <<"\n";
-      for (j=0; j<(int)chain_locs.size(); ++j) {
-        if (chain_locs[j].first == C.chain_letters[GR[i].first].word) {
-          its_main_word = true;
-          //std::cout << "This is a main word for chain " << j <<"\n";
-          break;
+    int w1 = C.chain_letters[GR[i].first].word;
+    int wi1 = C.chain_letters[GR[i].first].index;
+    int w2 = C.chain_letters[GR[i].last].word;
+    int wi2 = C.chain_letters [GR[i].last].index;
+    if (wi1 != 0 && wi2 != 0) continue;
+    if (wi1 == 0 && wi2 != 0) { //only w1 is active
+      if (is_main_word[w1]) {
+        for (j=w1+1; !is_main_word[j]; ++j) {
+          LP.add_entry(row_offset + j,
+                       offset + i,
+                       1);
+        }
+      } else {
+        LP.add_entry(row_offset + w1,
+                     offset + i,
+                     -1);
+      }
+      
+    } else if (wi1 != 0 && wi2 == 0) {
+      if (is_main_word[w2]) {
+        for (j=w2+1; !is_main_word[j]; ++j) {
+          LP.add_entry(row_offset + j,
+                       offset + i,
+                       1);
+        }
+      } else {
+        LP.add_entry(row_offset + w2,
+                     offset + i,
+                     -1);
+      }
+      
+    } else if (wi1 == 0 && wi2 == 0) {
+      if (is_main_word[w1] && is_main_word[w2]) {
+        if (w1 == w2) {
+          for (j=w1; !is_main_word[j]; ++j) {
+            LP.add_entry(row_offset + j,
+                         offset + i,
+                         2);
+          }
+        } else {
+          for (j=w1; !is_main_word[j]; ++j) {
+            LP.add_entry(row_offset + j,
+                         offset + i,
+                         1);
+          }
+          for (j=w2; !is_main_word[j]; ++j) {
+            LP.add_entry(row_offset + j,
+                         offset + i,
+                         1);
+          }
+        }
+        
+      } else if (is_main_word[w1]) { //w1 is main, w2 not
+        bool did_w2 = false;
+        for (j=w1+1; !is_main_word[j]; ++j) {
+          if (j==w2) {
+            did_w2 = true;
+            continue;
+          }
+          LP.add_entry(row_offset + j,
+                       offset + i,
+                       1);
+        }
+        if (!did_w2) LP.add_entry(row_offset + w2, offset + i, -1);
+      
+      } else if (is_main_word[w2]) { //w2 is main, w1 not
+        bool did_w1 = false;
+        for (j=w2+1; !is_main_word[j]; ++j) {
+          if (j==w1) {
+            did_w1 = true;
+            continue;
+          }
+          LP.add_entry(row_offset + j,
+                       offset + i,
+                       1);
+        }
+        if (!did_w1) LP.add_entry(row_offset + w1, offset + i, -1);
+      
+      } else { //neither are main
+        if (w1 == w2) {
+          LP.add_entry(row_offset + w1, offset + i, -2);
+        } else {
+          LP.add_entry(row_offset + w1, offset + i, -1);
+          LP.add_entry(row_offset + w2, offset + i, -1);
         }
       }
-      //std::cout << "its_main_word = " << its_main_word << "\n";
-      if (!its_main_word) {
-        //std::cout << "Since it's not a main word, I put in -1\n";
-        LP.add_entry( row_offset + C.chain_letters[GR[i].first].word,
-                      offset + i,
-                      -1 );
-      }
     }
-  } 
-  //now put a 1 for all the first words, but not in the first-word rows!
+  }
+  
+  //find the chain rows
+  chain_rows.resize(chain_locs.size());
   for (i=0; i<(int)chain_locs.size(); ++i) {
     chain_rows[i] = row_offset + chain_locs[i].first;
-    for (j=chain_locs[i].first+1; j<chain_locs[i].first + chain_locs[i].second; ++j) {
-      for (k=0; k<(int)chain_cols[i].size(); ++k) {
-        LP.add_entry( row_offset + j, 
-                      chain_cols[i][k],
-                      1 );
-      }
-    }
-  }  
+  }
   
   if (verbose > 3) {
     std::cout << "Chain rows: \n";
