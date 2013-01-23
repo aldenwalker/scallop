@@ -532,7 +532,15 @@ void SCYLLA::scylla_lp(Chain& C,
 
 
 
-
+void SCYLLA::write_solution_to_fatgraph(std::string& output_filename,
+                                        Chain& C,
+                                        InterfaceEdgeList& IEL,
+                                        CentralEdgePairList &CEL, 
+                                        std::vector<CentralPolygon> &CP,
+                                        std::vector<GroupTooth> &GT,
+                                        std::vector<GroupRectangle> &GR,
+                                        std::vector<Rational>& solution_vector,
+                                        int verbose ) {}
 
 void SCYLLA::scylla(int argc, char** argv) {
   int current_arg = 0;
@@ -544,9 +552,11 @@ void SCYLLA::scylla(int argc, char** argv) {
   bool WRITE_LP = false;
   bool CL = false;
   std::string LP_filename;
+  bool WRITE_FATGRAPH = false;
+  std::string fatgraph_file = "";
   
   if (argc < 1 || std::string(argv[0]) == "-h") {
-    std::cout << "usage: ./scallop -cyclic [-h] [-v[n]] [-L <filename>] [-l] [-C] [-m<GLPK,GIPT,EXLP,GUROBI>] <gen string> <chain>\n";
+    std::cout << "usage: ./scallop -cyclic [-h] [-v[n]] [-o <filename>] [-L <filename>] [-l] [-C] [-m<GLPK,GIPT,EXLP,GUROBI>] <gen string> <chain>\n";
     std::cout << "\twhere <gen string> is of the form <gen1><order1><gen2><order2>...\n";
     std::cout << "\te.g. a5b0 computes in Z/5Z * Z\n";
     std::cout << "\tand <chain> is an integer linear combination of words in the generators\n";
@@ -554,7 +564,7 @@ void SCYLLA::scylla(int argc, char** argv) {
     std::cout << "\tIf the gen string is omitted, the group is assumed to be free\n";
     std::cout << "\t-h: print this message\n";
     std::cout << "\t-v[n]: verbose output (n=0,1,2,3); 0 gives quiet output\n";
-    std::cout << "\t-V: verbose LP output\n";
+    std::cout << "\t-o <filename>: write out *a* (not necessarily *the*) minimal surface as a fatgraph\n";
     std::cout << "\t-L <filename>: write out a sparse lp to the filename .A, .b, and .c\n";
     std::cout << "\t-C compute commutator length (not scl)\n";
     std::cout << "\t-m<format>: use the LP solver specified (EXLP uses GMP for exact output)\n";
@@ -596,6 +606,12 @@ void SCYLLA::scylla(int argc, char** argv) {
     
     } else if (argv[current_arg][1] == 'C') {
       CL = true;
+    
+      
+    } else if (argv[current_arg][1] == 'o') {
+      WRITE_FATGRAPH = true;
+      fatgraph_file = std::string(argv[current_arg+1]);
+      current_arg++;
     }
     
     current_arg++;
@@ -668,10 +684,25 @@ void SCYLLA::scylla(int argc, char** argv) {
     return;
   }
   
+  if (scl == -1) {
+    std::cout << "There was some linear programming error\n";
+    return;
+  }
+  
   if (VERBOSE>0) {
-    std::cout << "scl_{" << G << "}( " << C << ") = " << scl << " = " << scl.get_d() << "\n";    //output the answer
+    if (CL) {
+      std::cout << "cl_{" << G.short_rep() << "}(" << C << ") = " << scl << " = " << scl.get_d() << "\n";
+    } else {
+      std::cout << "scl_{" << G.short_rep() << "}( " << C << ") = " << scl << " = " << scl.get_d() << "\n";    //output the answer
+    } 
   } else {
     std::cout << scl.get_d() << "\n";
   }
+  
+  if (WRITE_FATGRAPH) {
+    write_solution_to_fatgraph(fatgraph_file,
+                               C, IEL, CEL, CP, GT, GR, solution_vector, VERBOSE);
+  }
+  
   return;
 }

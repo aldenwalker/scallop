@@ -222,6 +222,7 @@ namespace SCABBLE {
     Pt(const Pt& p);
     Pt(int dim, Rational& init);
     Pt(int dim, int init);
+    int dim();
     Rational& operator[](int i);
     Pt operator-(const Pt& other);
     Pt operator+(const Pt& other);
@@ -273,6 +274,11 @@ namespace SCABBLE {
                               std::vector<std::vector<int> >& chain_cols,
                               std::vector<int>& chain_rows,
                               int verbose);
+  
+  void subdivide_face(std::vector<SCABBLE::Pt>& working_face, 
+                      SCABBLE::Pt& new_vert, 
+                      std::vector<std::vector<SCABBLE::Pt> >& face_stack, 
+                      int verbose);
   
   void compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
                                SCABBLE::Chain& C, 

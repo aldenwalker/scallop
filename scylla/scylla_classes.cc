@@ -1,6 +1,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <utility>
 
 #include <ctype.h>
@@ -210,6 +211,31 @@ void CyclicProduct::cyc_red(std::string &S) {
     }
   }
 }    
+
+
+std::string SCYLLA::CyclicProduct::short_rep() {
+  std::string rep = "";
+  int len = (int)gens.size();
+  if (len == 0) return rep;
+  std::stringstream ss;
+  if (orders[0] == 0) {
+    rep += std::string(1,gens[0]);
+  } else {
+    ss << orders[0];
+    rep += "(" + std::string(1,gens[0]) + "/" + ss.str() + std::string(1,gens[0]) + ")";
+    ss.str("");
+  }
+  for (int i=1; i<(int)gens.size(); ++i) {
+    if (orders[i] == 0) {
+      rep += "*" + std::string(1,gens[i]);
+    } else {
+      ss << orders[i];
+      rep += "*(" + std::string(1,gens[i]) + "/" + ss.str() + std::string(1,gens[i]) + ")";
+      ss.str();
+    }
+  }
+  return rep;
+}
     
 std::ostream& SCYLLA::operator<<(std::ostream &os, CyclicProduct &G) {
   int i;

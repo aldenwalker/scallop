@@ -615,18 +615,21 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     return LP_ERROR;
 
 #else
-    
-    if (num_ints > 0) {
-      std::cout << "Gurobi not setup for integer programming\n";
-      return LP_ERROR;
-    }
-    
+        
     GRBenv   *env   = NULL;
     GRBmodel *model = NULL;
     GRBloadenv( &env, "gurobi.log" );
     
     //create a new model and immediately load in all the columns
-    GRBnewmodel( env, &model, "scl", num_cols, &double_objective[0], NULL, NULL, NULL, NULL);
+    if (num_ints == 0) {  
+      GRBnewmodel( env, &model, "scl", num_cols, &double_objective[0], NULL, NULL, NULL, NULL);
+    } else {
+      std::vector<char> var_types(num_cols);
+      for (int i=0; i<num_cols; ++i) {
+        var_types[i] = (col_type[i] == REAL ? GRB_CONTINUOUS : GRB_INTEGER);
+      }
+      GRBnewmodel( env, &model, "scl", num_cols, &double_objective[0], NULL, NULL, &var_types[0], NULL);
+    }
     
     //add the constraints (rows)  here we make them empty equality rows and fix the RHS
     for (int i=0; i<num_rows; i++) {
@@ -645,8 +648,6 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     GRBupdatemodel(model);
     
     //add the matrix:
-    
-    //first fix the matrix entries, because all the rows and columns are 1-based
     GRBchgcoeffs( model, (int)ia.size(), &ia[0], &ja[0], &double_ar[0] );
     
     //set the correct optimization method
@@ -697,6 +698,14 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     //get the solution vector
     double_soln_vector.resize(num_cols);
     GRBgetdblattrarray( model, GRB_DBL_ATTR_X, 0, num_cols, &double_soln_vector[0] );
+    
+    if (verbose > 2) {
+      std::cout << "got lp solution vector: " << "\n";
+      for (int i=0; i<num_cols; ++i) {
+        std::cout << double_soln_vector[i] << " ";
+      }
+      std::cout << "\n";
+    }
     
     //free stuff
     GRBfreemodel(model);

@@ -44,6 +44,8 @@ struct CyclicProduct {
     
   std::vector<char> gens;
   std::vector<int> orders;
+  
+  std::string short_rep();
     
 };
 std::ostream &operator<<(std::ostream &os, CyclicProduct &G);

@@ -48,6 +48,10 @@ SCABBLE::Pt::Pt(int dim, int init) {
   }
 }
 
+int SCABBLE::Pt::dim() {
+  return (int)x.size();
+}
+
 Rational& SCABBLE::Pt::operator[](int i) {
   return x[i];
 }
@@ -1496,10 +1500,10 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
     is_main_word[chain_locs[i].first] = true;
   }
   is_main_word.push_back(true); //<-- this makes all the loops below stop
-  for (i=0; i<num_words; ++i) {
-    std::cout << is_main_word[i] << " ";
-  }
-  std::cout << "\n";
+  //for (i=0; i<num_words; ++i) {
+  //  std::cout << is_main_word[i] << " ";
+  //}
+  //std::cout << "\n";
   //now enter the word columns
   //this is just horrible horrible
   for (i=0; i<(int)GR.size(); ++i) {
@@ -1725,6 +1729,24 @@ void SCABBLE::face_scl(std::vector<std::vector<int> >& chain_cols,
     
 }
 
+void SCABBLE::subdivide_face(std::vector<SCABBLE::Pt>& working_face, 
+                             SCABBLE::Pt& new_vert, 
+                             std::vector<std::vector<SCABBLE::Pt> >& face_stack, 
+                             int verbose) {
+  int dim = new_vert.dim();
+  std::vector<SCABBLE::Pt> new_face(dim);
+  for (int i=0; i<dim; ++i) {
+    for (int j=0; j<dim; ++j) {
+      if (j==i) {
+        new_face[j] = new_vert;
+      } else {
+        new_face[j] = working_face[j];
+      }
+    }
+    face_stack.push_back(new_face);
+  }
+}
+
 
 //computes an (arbitrary dimenion) positive orthant of the ball
 void SCABBLE::compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
@@ -1823,17 +1845,8 @@ void SCABBLE::compute_ball_ant(std::vector<std::pair<int, int> >& chain_locs,
       std::cout << "new vertex: " << new_vert << "\n";
     }
    
-    std::vector<SCABBLE::Pt> new_face(dim);
-    for (int i=0; i<dim; ++i) {
-      for (int j=0; j<dim; ++j) {
-        if (j==i) {
-          new_face[j] = new_vert;
-        } else {
-          new_face[j] = working_face[j];
-        }
-      }
-      face_stack.push_back(new_face);
-    }
+    //now we add the new simplices to the face.
+    subdivide_face(working_face, new_vert, face_stack, verbose);
   }
   
 }
@@ -1982,9 +1995,13 @@ void SCABBLE::draw_ball_to_file(std::string output_filename,
   std::fstream fs;
   fs.open(output_filename.c_str(), std::fstream::out);
   fs << "%!PS-Adobe-2.0 EPSF-2.0\n";
-  fs << "%%BoundingBox: 0 0 200 200\n";
-  fs << "100 100 translate\n";
-    fs << "0 0 0 setcolor\n";
+  fs << "%%BoundingBox: 0 0 800 800\n";
+  fs << "400 400 translate\n";
+  fs << "0 0 0 setcolor\n";
+  fs << "/Arial findfont\n";
+  fs << "14 scalefont\n";
+  fs << "setfont\n";
+  
   //first, find the x and y scaling factors
   double max_x = 0;
   double max_y = 0;
@@ -1998,25 +2015,44 @@ void SCABBLE::draw_ball_to_file(std::string output_filename,
   }
   //make the scaling factor so that max_x and max_y would be about 90
   double scaling_x, scaling_y;
-  scaling_x = 90.0/max_x;
-  scaling_y = 90.0/max_y;
+  scaling_x = 350.0/max_x;
+  scaling_y = 350.0/max_y;
   //now the drawing coords of a point are (100,100) + (scaling_x*x, scaling_y*y)
-  fs << "1 setlinewidth\n";
   for (int i=0; i<(int)faces.size(); ++i) {
-    fs << scaling_x*faces[i][0][0].get_d() << " " << 
-          scaling_y*faces[i][0][1].get_d() << " moveto\n";
-    fs << scaling_x*faces[i][1][0].get_d() << " " << 
-          scaling_y*faces[i][1][1].get_d() << " lineto\n";
+    double start_x = scaling_x*faces[i][0][0].get_d();
+    double start_y = scaling_y*faces[i][0][1].get_d();
+    double end_x = scaling_x*faces[i][1][0].get_d();
+    double end_y = scaling_y*faces[i][1][1].get_d();
+    //draw the line
+    fs << "1 setlinewidth\n";
+    fs << start_x << " " << start_y << " moveto\n";
+    fs << end_x << " " << end_y << " lineto\n";
     fs << "stroke\n";
+    
+    //draw the vertices (they'll get drawn twice)    
+    fs << "3 setlinewidth\n";
+    fs << start_x << " " << start_y << " moveto\n";
+    fs << start_x << " " << start_y << " 1.5 0 360 arc\n";
+    fs << "stroke\n";
+    fs << end_x << " " << end_y << " moveto\n";
+    fs << end_x << " " << end_y << " 1.5 0 360 arc\n";
+    fs << "stroke\n\n";
+    
+    //put the text labels on
+    fs << "1 setlinewidth\n";
+    fs << start_x << " " << start_y << " moveto\n";
+    fs << "(  (" << faces[i][0][0] << ", " << faces[i][0][1] << ")) show\n";
+    fs << end_x << " " << end_y << " moveto\n";
+    fs << "(  (" << faces[i][1][0] << ", " << faces[i][1][1] << ")) show\n";
   }
   
   //now draw the axes
   fs << "0.5 setlinewidth\n";
-  fs << "-98 0 moveto\n";
-  fs << "98 0 lineto\n";
+  fs << "-398 0 moveto\n";
+  fs << "398 0 lineto\n";
   fs << "stroke\n";
-  fs << "0 -98 moveto\n";
-  fs << "0 98 lineto\n";
+  fs << "0 -398 moveto\n";
+  fs << "0 398 lineto\n";
   fs << "stroke\n";  
   
   fs.close();
