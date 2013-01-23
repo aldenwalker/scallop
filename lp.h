@@ -7,6 +7,8 @@
 
 enum SparseLPEqualityType {EQ, LE, GE};
 
+enum SparseLPColumnType {REAL, INT};
+
 enum SparseLPSolver {GLPK, 
                       GLPK_SIMPLEX, 
                       GLPK_IPT, 
@@ -33,6 +35,8 @@ private:
   Rational op_val;
   double double_op_val;
   std::vector<SparseLPEqualityType> eq_type;
+  std::vector<SparseLPColumnType> col_type;
+  int num_ints;
 
   int num_cols;
   int num_rows;
@@ -46,6 +50,7 @@ public:
   void write_to_file(std::string filename);
   void set_num_rows(int nr);
   void set_num_cols(int nc);
+  void set_col_type(int c, SparseLPColumnType t);
   void add_entry(int i, int j, Rational& r);
   void add_entry(int i, int j, int a);
   void add_entry(int i, int j, double a);

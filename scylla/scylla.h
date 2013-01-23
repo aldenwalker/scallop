@@ -34,6 +34,7 @@ void compute_group_teeth_and_rectangles(Chain &C,
                          SparseLPSolver solver, 
                          bool WRITE_LP,
                          std::string LP_filename,
+                         bool cl_not_scl,
                          int VERBOSE,
                  int LP_VERBOSE);
   

@@ -40,6 +40,8 @@ SparseLP::SparseLP(SparseLPSolver s) {
   solver = s;
   op_val = Rational(-1,1);
   double_op_val = -1;
+  col_type.resize(0);
+  num_ints = 0;
 }
 
 SparseLP::SparseLP(SparseLPSolver s, int nr, int nc) {
@@ -68,6 +70,8 @@ SparseLP::SparseLP(SparseLPSolver s, int nr, int nc) {
   solver = s;
   op_val = Rational(-1,1);
   double_op_val = -1;
+  col_type.resize(0);
+  num_ints = 0;
   //std::cout << "Made new LP problem with solver: " << solver << "\n";
 }
 
@@ -99,6 +103,30 @@ void SparseLP::set_num_cols(int nc) {
     double_soln_vector.resize(nc);
   }
   num_cols = nc;
+}
+
+void SparseLP::set_col_type(int c, SparseLPColumnType t) {
+  if (t == REAL && num_ints == 0) {
+    return; //no need to do anything
+  }
+  if (t == REAL) {
+    if (num_ints == 1) {
+      num_ints = 0;
+      col_type.resize(0);
+    } else {
+      num_ints += (col_type[c] == INT ? -1 : 0);
+      col_type[c] = REAL;
+    }
+  } else { //t==INT
+    if (num_ints == 0) {
+      col_type.resize(num_cols, REAL);
+      col_type[c] = INT;
+      num_ints = 1;
+    } else {
+      num_ints += (col_type[c] == REAL ? 1 : 0);
+      col_type[c] = INT;
+    }
+  }
 }
 
 
@@ -293,6 +321,7 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     glp_prob *lp;
     glp_smcp parm;
     glp_iptcp ipt_parm;
+    glp_iocp int_parm;
     
     lp = glp_create_prob();
     
@@ -330,7 +359,7 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     ja.pop_back();
     double_ar.pop_back();
     
-    if (solver == GLPK || solver == GLPK_SIMPLEX) {
+    if (num_ints==0 && (solver == GLPK || solver == GLPK_SIMPLEX)) {
       glp_init_smcp(&parm);
       parm.presolve=GLP_ON;
       if (verbose > 1) {
@@ -339,7 +368,8 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
         parm.msg_lev = GLP_MSG_OFF;
       }
       glp_simplex(lp, &parm);
-    } else if (solver == GLPK_IPT) {
+      
+    } else if (num_ints == 0 && solver == GLPK_IPT) {
       glp_init_iptcp(&ipt_parm);
       if (verbose > 1) {
         ipt_parm.msg_lev = GLP_MSG_ALL;
@@ -347,9 +377,29 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
         ipt_parm.msg_lev = GLP_MSG_OFF;
       }
       glp_interior(lp, &ipt_parm);
-    }
+      
+    } else if (num_ints > 0) {
+      for (int i=0; i<num_cols; ++i) {
+        glp_set_col_kind(lp, i+1, (col_type[i] == INT ? GLP_IV : GLP_CV));
+      }
+      glp_init_iocp(&int_parm);
+      int_parm.msg_lev = (verbose > 1 ? GLP_MSG_ALL : GLP_MSG_OFF);
+      int_parm.presolve = GLP_ON;
+      glp_intopt(lp, &int_parm);
+    }  
     
-    int stat = glp_get_status(lp);
+    int stat = 0;
+    if (num_ints == 0) {
+      stat = glp_get_status(lp);
+      if (verbose > 1) {
+        std::cout << "Got status " << stat << " (optimal = status " << GLP_OPT << ")\n";
+      }
+    } else {
+      stat = glp_mip_status(lp);
+      if (verbose > 1) {
+        std::cout << "Got status " << stat << " (optimal = status " << GLP_OPT << ")\n";
+      }
+    }
     if (stat != GLP_OPT) {
       if (stat == GLP_NOFEAS || stat == GLP_UNDEF) {
         glp_delete_prob(lp);
@@ -361,12 +411,28 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
       return LP_ERROR;
     }
     
-    double_op_val = glp_get_obj_val(lp)/4.0;	
+    if (num_ints == 0) {
+      if (verbose > 1) {
+        std::cout << "Retrieving lp value...\n";
+      }
+      double_op_val = glp_get_obj_val(lp)/4.0;	
+    } else {
+      if (verbose > 1) {
+        std::cout << "Retrieving mip value...\n";
+      }
+      double_op_val = glp_mip_obj_val(lp)/4.0;
+    }
     
     double_soln_vector.resize(num_cols);
-    for (int i=0; i<num_cols; i++) {
-      double_soln_vector[i] = glp_get_col_prim(lp,i+1);
-    }	
+    if (num_ints == 0) {
+      for (int i=0; i<num_cols; i++) {
+        double_soln_vector[i] = glp_get_col_prim(lp,i+1);
+      }	
+    } else {
+      for (int i=0; i<num_cols; i++) {
+        double_soln_vector[i] = glp_mip_col_val(lp,i+1);
+      }	
+    }
     
 	  glp_delete_prob(lp);
 	  
@@ -374,6 +440,11 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     
 	  
 	} else if (solver == EXLP) {
+    
+    if (num_ints > 0) {
+      std::cout << "Integer programming not supported with exlp\n";
+      return LP_ERROR;
+    }
     
     //exlp init
 	  mylib_init();
@@ -545,6 +616,11 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
 
 #else
     
+    if (num_ints > 0) {
+      std::cout << "Gurobi not setup for integer programming\n";
+      return LP_ERROR;
+    }
+    
     GRBenv   *env   = NULL;
     GRBmodel *model = NULL;
     GRBloadenv( &env, "gurobi.log" );
@@ -644,6 +720,12 @@ void SparseLP::print_LP() {
     std::cout << "RHS: ";
     for (int i=0; i<num_rows; ++i) {
       std::cout << double_RHS[i] << " ";
+    }
+    if (num_ints>0) {
+      std::cout << "\nInteger: ";
+      for (int i=0; i<num_cols; ++i) {
+        std::cout << col_type[i] << " ";
+      }
     }
     std::cout << "\nEntries: ";
     for (int i=0; i<(int)ia.size(); ++i) {

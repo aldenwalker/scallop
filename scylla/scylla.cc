@@ -316,6 +316,7 @@ void SCYLLA::scylla_lp(Chain& C,
                SparseLPSolver solver, 
                bool WRITE_LP,
                std::string LP_filename,
+               bool cl_not_scl,
                int VERBOSE,
                int LP_VERBOSE) {
   int i,j,k,m;
@@ -380,6 +381,11 @@ void SCYLLA::scylla_lp(Chain& C,
   
   //Create the LP problem
   SparseLP LP(solver, num_rows, num_cols);
+  if (cl_not_scl) {
+    for (i=0; i<num_cols; ++i) {
+      LP.set_col_type(i, INT);
+    }
+  }
   
   for(i=0; i<(int)num_equality_rows; i++){
     LP.set_RHS(i, 0); // glp_set_row_bnds(lp, i+1, GLP_FX, 0.0, 0.0);
@@ -536,10 +542,11 @@ void SCYLLA::scylla(int argc, char** argv) {
   SparseLPSolver solver = GLPK_SIMPLEX;
   bool LIMIT_CENTRAL_SIDES = false;
   bool WRITE_LP = false;
+  bool CL = false;
   std::string LP_filename;
   
   if (argc < 1 || std::string(argv[0]) == "-h") {
-    std::cout << "usage: ./scallop -cyclic [-h] [-v[n]] [-L <filename>] [-l] [-m<GLPK,GIPT,EXLP,GUROBI>] <gen string> <chain>\n";
+    std::cout << "usage: ./scallop -cyclic [-h] [-v[n]] [-L <filename>] [-l] [-C] [-m<GLPK,GIPT,EXLP,GUROBI>] <gen string> <chain>\n";
     std::cout << "\twhere <gen string> is of the form <gen1><order1><gen2><order2>...\n";
     std::cout << "\te.g. a5b0 computes in Z/5Z * Z\n";
     std::cout << "\tand <chain> is an integer linear combination of words in the generators\n";
@@ -549,6 +556,7 @@ void SCYLLA::scylla(int argc, char** argv) {
     std::cout << "\t-v[n]: verbose output (n=0,1,2,3); 0 gives quiet output\n";
     std::cout << "\t-V: verbose LP output\n";
     std::cout << "\t-L <filename>: write out a sparse lp to the filename .A, .b, and .c\n";
+    std::cout << "\t-C compute commutator length (not scl)\n";
     std::cout << "\t-m<format>: use the LP solver specified (EXLP uses GMP for exact output)\n";
     exit(0);
   }
@@ -574,8 +582,10 @@ void SCYLLA::scylla(int argc, char** argv) {
       } else {
         VERBOSE = atoi(&argv[current_arg][2]);
       }
+      
     } else if (argv[current_arg][1] == 'V') {
       LP_VERBOSE = 1;
+      
     } else if (argv[current_arg][1] == 'L') {
       WRITE_LP = true;
       LP_filename = std::string(argv[current_arg+1]);
@@ -583,7 +593,11 @@ void SCYLLA::scylla(int argc, char** argv) {
       
     } else if (argv[current_arg][1] == 'l') {
       LIMIT_CENTRAL_SIDES = true;
+    
+    } else if (argv[current_arg][1] == 'C') {
+      CL = true;
     }
+    
     current_arg++;
   }
   
@@ -645,6 +659,7 @@ void SCYLLA::scylla(int argc, char** argv) {
             &solution_vector, 
             solver,
             WRITE_LP, LP_filename,
+            CL,
             VERBOSE,
             LP_VERBOSE); 
   
