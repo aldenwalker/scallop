@@ -1981,6 +1981,7 @@ void SCABBLE::write_ball_to_file(std::string output_filename,
                                   std::vector<SCABBLE::Pt>& verts, 
                                   std::vector<std::vector<SCABBLE::Pt> >& faces, 
                                   int verbose) {
+  std::cout << "Sorry, writing the ball to a file is currently not implemented\n";
 }
 
 void SCABBLE::draw_ball_to_file(std::string output_filename, 
@@ -2174,6 +2175,10 @@ int SCABBLE::scabble(int argc, char** argv) {
     std::cout << "Computing ball\n";
   }    
   
+  if ((int)chain_locs.size() > 2) {
+    std::cout << "Sorry, only 2-d balls are currently supported\n";
+  }
+  
   SCABBLE::compute_ball(G, 
                         words, 
                         chain_locs, 
@@ -2190,6 +2195,7 @@ int SCABBLE::scabble(int argc, char** argv) {
     SCABBLE::write_ball_to_file(output_filename, verts, faces, verbose);
   } else {
     SCABBLE::draw_ball_to_file(output_filename, verts, faces, verbose);
+    std::cout << "Drew ball to file\n";
   }
   
   return 0;
