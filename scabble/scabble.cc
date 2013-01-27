@@ -1480,26 +1480,27 @@ void SCABBLE::init_orthant_lp(std::vector<std::pair<int, int> >& chain_locs,
   //now make the constraints -- for all words, they must appear the same
   //number of times as the first word in that chain
   //only put the -1 for non-first words
-  int row_offset = num_equality_rows;
-  offset = CP.size();
-  for (i=0; i<(int)chain_locs.size(); ++i) {
-    int main_word = chain_locs[i].first;
-    for (j=0; j<(int)GT.size(); ++j) {
-      if (C.chain_letters[GT[i].first].index != 0) continue;
-      int w1 = C.chain_letters[GT[j].first].word;
-      if (w1 == main_word) continue;
-      LP.add_entry( row_offset + w1 ,
-                    offset + j,
-                   -1 );
-    }
-  }
-  offset = CP.size() + GT.size();
+  
   //get a list of which words are main words
   std::vector<bool> is_main_word(num_words, false);
   for (i=0; i<(int)chain_locs.size(); ++i) {
     is_main_word[chain_locs[i].first] = true;
   }
   is_main_word.push_back(true); //<-- this makes all the loops below stop
+  
+  int row_offset = num_equality_rows;
+  offset = CP.size();
+  for (i=0; i<(int)GT.size(); ++i) {
+    int wi1 = C.chain_letters[GT[i].first].index;
+    if (wi1 != 0) continue;
+    int w1 = C.chain_letters[GT[i].first].word;
+    if (is_main_word[w1]) continue;
+    LP.add_entry( row_offset + w1,
+                  offset + i,
+                 -1 );
+  }
+  
+  offset = CP.size() + GT.size();
   //for (i=0; i<num_words; ++i) {
   //  std::cout << is_main_word[i] << " ";
   //}
