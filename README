@@ -4,9 +4,165 @@ Copyright 2012, 2013 by Alden Walker
 
 Released under the GPL.
 
-Computes scl in free products of cyclic groups (-cyclic),
-Computes minimal surfaces satisfying a local constraint (-local),
-and computes with traintracks (-train)
-
-Type ./scallop for help.
 See INSTALL for installation instructions.
+
+
+******* Background
+
+scallop computes with surfaces in free groups and free products of
+cyclic groups.  The appropriate background material is contained 
+in [1] (for the -cyclic and -ball options) and [2] (for -local and -train).
+The -cyclic and -ball options contain improvements to be explained in 
+an upcoming paper.
+
+******** Installation
+
+See the INSTALL file
+
+******** Executing scallop
+
+scallop is run by choosing one of four main options, and then 
+providing more option-specific arguments:
+
+./scallop [-cyclic, -ball, -local, -train] <option-specific arguments>
+
+It is not necessary to explicitly give an option, in which case 
+scallop will default to the -cyclic option.
+
+We discuss the four options separately.  In all cases, giving no 
+option-specific arguments will cause scallop to output a list of 
+possible options and descriptions.  In an effort 
+to produce a timeless document, we'll only discuss the options that 
+are non-obvious or particularly important.
+
+There are several things that are not implemented yet.  See the end 
+of the readme.
+
+  ****** -cyclic
+  
+  ./scallop -cyclic [options] [group] chain
+  
+  Examples: 
+  
+  $ ./scallop -cyclic a0b0 abAB
+  scl_{a*b}( 1abAB ) = 1/2 = 0.5
+  
+  $ ./scallop -cyclic a0b0 abAAABBB aa bb
+  scl_{a*b}( 1abAAABBB 1aa 1bb ) = 3/4 = 0.75
+  
+  $ ./scallop -cyclic a3b2 ab
+  scl_{(a/3a)*(b/2b)}( 1ab ) = 1/12 = 0.0833333
+  
+  $ ./scallop -cyclic -mGUROBI a10b7 ab
+  scl_{(a/10a)*(b/7b)}( 1ab ) = 53/140 = 0.378571
+  
+  $ ./scallop -cyclic -C a0b0 abAABB ab
+  cl_{a*b}(1abAABB 1ab ) = 1 = 1
+  
+  $ ./scallop -cyclic -C a0b0c0 abcAABBCC abc
+  cl_{a*b*c}(1abcAABBCC 1abc ) = 2 = 2
+  
+  The -cyclic mode computes scl and cl in free products of cyclic groups.  
+  The group string lists the generators and their orders (0 means infinite).  
+  The option -C causes scallop to compute commutator length.  This involves 
+  an integer programming problem, which is far harder than the linear programming 
+  problem used to compute scl.  
+  The option -m[solver] lets the user choose GLPK (default), GUROBI (if compiled 
+  with support), or EXLP (only available for free groups).  EXLP uses GMP for 
+  exact solutions.  
+  
+  The default is to assume that the group is free if the group string is omitted, 
+  and the default main option is -cyclic, so no options at all causes 
+  scallop to do an scl computation in a free group:
+  
+  $ ./scallop abAAABBB aa bb
+  scl_{a*b}( 1abAAABBB 1aa 1bb ) = 3/4 = 0.75
+ 
+ 
+  
+  ****** -ball
+  
+  ./scallop -ball [options] filename [group] chain1 , chain2
+  
+  Examples:
+  
+  $ ./scallop -ball test.eps abAB , abAABB ab
+  Drew ball to file
+  
+  $ ./scallop -ball -mGUROBI test.eps a5b3 abAB , abAABB ab
+  Drew ball to file
+  
+  The -ball mode computes the scl norm ball in the subspace of B_1^H spanned 
+  by the given chains.  It defaults to using -mEXLP as the solver to avoid 
+  rounding errors.  However, to compute a ball in a group with finite cyclic 
+  factors, the user must specify -mGLPK or -mGUROBI.  scallop will 
+  write an eps file to whatever filename is specified.
+  
+  Theoretically, the algorithm can produce the ball in any dimension and 
+  output the result as a polyhedron in CDD format (see http://www.inf.ethz.ch/personal/fukudak/cdd_home/).
+  However, CDD output is not currently implemented, so the only 
+  possibility is a 2d ball output to an eps file.
+  
+  
+  
+  ****** -local
+  
+  ./scallop -local [options] chain
+  
+  Examples:
+  
+  $ ./scallop -local abAAABBB aa bb
+  scl = 3/4 = 0.75
+  
+  $ ./scallop -local -f abAAABBB aa bb
+  No feasible solution found
+  
+  $ ./scallop -local -p4 abAB
+  scl = 1/2 = 0.5
+  
+  $ ./scallop -local -p4 -e abAB
+  Feasible solution found
+  
+  $ ./scallop -local -p4 abcdABCD
+  No feasible solution found
+  
+  $ ./scallop -local -p8 abcdABCD
+  scl = 3/2 = 1.5
+  
+  $ ./scallop -local -ff1 abAB baBA a.ab.bAABB
+  scl = 1/2 = 0.5
+  
+  $ ./scallop -local -ff1 abAB a.ab.bAABB
+  No feasible solution found
+  
+  The -local option searchs for fatgraphs in a free group bounding the chain 
+  which have the desired local properties.  The typical options are:
+  -f requires that the result be Stallings folded
+  -e only checks whether the surface exists, but does not find it (this is faster)
+     (this is accomplished by optimizing the function 0 rather than -chi)
+  -pn only searches for fatgraph whose valence is at most n
+  -ffn only searches for surfaces whose f-vertices are isolated (see [2]) and 
+       partial^- doesn't touch itself, where n is the number of words in 
+       partial^-, and the f-vertices in the rest are marked with periods, 
+       as indicated above.
+       
+  The last example is dumb because obviously we just glue abAB to baBA.  It is 
+  just to illustrate the idea.
+       
+  
+  
+
+
+
+
+
+
+
+
+******** References
+
+[1] D. Calegari. scl. MSJ Memoirs, 20. Mathematical Society of Japan, Tokyo, 2009.
+
+[2] D. Calegari and A. Walker. Surface subgroups from Linear programming. preprint: arXiv:1212.2618
+
+
