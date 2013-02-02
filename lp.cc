@@ -390,7 +390,11 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     
     int stat = 0;
     if (num_ints == 0) {
-      stat = glp_get_status(lp);
+      if (solver == GLPK_IPT) {
+        stat = glp_ipt_status(lp);
+      } else {
+        stat = glp_get_status(lp);
+      }
       if (verbose > 1) {
         std::cout << "Got status " << stat << " (optimal = status " << GLP_OPT << ")\n";
       }
@@ -415,7 +419,11 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
       if (verbose > 1) {
         std::cout << "Retrieving lp value...\n";
       }
-      double_op_val = glp_get_obj_val(lp)/4.0;	
+      if (solver == GLPK_IPT) {
+        double_op_val = glp_ipt_obj_val(lp)/4.0;	
+      } else {
+        double_op_val = glp_get_obj_val(lp)/4.0;	
+      }
     } else {
       if (verbose > 1) {
         std::cout << "Retrieving mip value...\n";
@@ -425,9 +433,15 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     
     double_soln_vector.resize(num_cols);
     if (num_ints == 0) {
-      for (int i=0; i<num_cols; i++) {
-        double_soln_vector[i] = glp_get_col_prim(lp,i+1);
-      }	
+      if (solver == GLPK_IPT) {
+        for (int i=0; i<num_cols; i++) {
+          double_soln_vector[i] = glp_ipt_col_prim(lp,i+1);
+        }	
+      } else {
+        for (int i=0; i<num_cols; i++) {
+          double_soln_vector[i] = glp_get_col_prim(lp,i+1);
+        }
+      }
     } else {
       for (int i=0; i<num_cols; i++) {
         double_soln_vector[i] = glp_mip_col_val(lp,i+1);
