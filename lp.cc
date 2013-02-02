@@ -744,7 +744,7 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     
     //create a new model and immediately load in all the columns
     if (num_ints == 0) {  
-      GRBnewmodel( env, &model, "scl", num_cols, &double_objective[0], lb_pointer, ub_double, NULL, NULL);
+      GRBnewmodel( env, &model, "scl", num_cols, &double_objective[0], lb_pointer, ub_pointer, NULL, NULL);
     } else {
       std::vector<char> var_types(num_cols);
       for (int i=0; i<num_cols; ++i) {
