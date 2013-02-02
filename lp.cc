@@ -42,6 +42,9 @@ SparseLP::SparseLP(SparseLPSolver s) {
   double_op_val = -1;
   col_type.resize(0);
   num_ints = 0;
+  col_bounds.resize(0);
+  col_bounds_double.resize(0);
+  col_bound_types.resize(0);
 }
 
 SparseLP::SparseLP(SparseLPSolver s, int nr, int nc) {
@@ -72,6 +75,9 @@ SparseLP::SparseLP(SparseLPSolver s, int nr, int nc) {
   double_op_val = -1;
   col_type.resize(0);
   num_ints = 0;
+  col_bounds.resize(0);
+  col_bounds_double.resize(0);
+  col_bound_types.resize(0);
   //std::cout << "Made new LP problem with solver: " << solver << "\n";
 }
 
@@ -129,6 +135,57 @@ void SparseLP::set_col_type(int c, SparseLPColumnType t) {
   }
 }
 
+
+void SparseLP::set_col_bound(int c, SparseLPColumnBoundType t) {
+  if ((int)col_bounds.size() == 0) {
+    if (t == LB) return;
+    col_bound_types.resize(num_cols, LB);
+    if (solver == EXLP) {
+      col_bounds.resize(num_cols, 0);
+    } else {
+      col_bounds_double.resize(num_cols, 0);
+    }
+  }
+  col_bound_types[c] = t;
+}
+
+void SparseLP::set_col_bound(int c, SparseLPColumnBoundType t, double b) {
+  if ((int)col_bounds.size() == 0) {
+    if (t == LB) return;
+    col_bound_types.resize(num_cols, LB);
+    if (solver == EXLP) {
+      col_bounds.resize(num_cols, 0);
+    } else {
+      col_bounds_double.resize(num_cols, 0);
+    }
+  }
+  col_bound_types[c] = t;
+  if (solver == EXLP) {
+    std::cout << "Can't input a double column bound for rational LP\n";
+  } else {
+    col_bounds_double[c] = b;
+  }
+}
+
+void SparseLP::set_col_bound(int c, SparseLPColumnBoundType t, int b) {
+  if ((int)col_bounds.size() == 0) {
+    if (t == LB) return;
+    col_bound_types.resize(num_cols, LB);
+    if (solver == EXLP) {
+      col_bounds.resize(num_cols, 0);
+    } else {
+      col_bounds_double.resize(num_cols, 0);
+    }
+  }
+  col_bound_types[c] = t;
+  if (solver == EXLP) {
+    col_bounds[c] = b;
+  } else {
+    col_bounds_double[c] = (double)b;
+  }
+}
+
+  
 
 void SparseLP::add_entry(int i, int j, Rational& r) {
   if (solver == EXLP) {
@@ -271,12 +328,26 @@ void SparseLP::reset_num_entries(int i) {
 void SparseLP::get_soln_vector(std::vector<double>& sv) {
   sv.resize(num_cols);
   if (solver == EXLP) {
-    for (int i; i<num_cols; ++i) {
+    for (int i=0; i<num_cols; ++i) {
       sv[i] = soln_vector[i].get_d();
     }
   } else {
-    for (int i; i<num_cols; ++i) {
+    for (int i=0; i<num_cols; ++i) {
       sv[i] = double_soln_vector[i];
+    }
+  }
+}
+
+void SparseLP::get_soln_vector(std::vector<long double>& sv) {
+  sv.resize(num_cols);
+  if (solver == EXLP) {
+    for (int i=0; i<num_cols; ++i) {
+      sv[i] = soln_vector[i].get_d();
+    }
+  } else {
+    std::cout << "Num cols is " << num_cols << "\n";
+    for (int i=0; i<num_cols; ++i) {
+      sv[i] = (double)double_soln_vector[i];
     }
   }
 }
@@ -335,9 +406,29 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     for (int i=0; i<num_rows; i++) {
       glp_set_row_bnds(lp, i+1, GLP_FX, double_RHS[i], double_RHS[i]);
     }
-    for (int i=0; i<num_cols; i++) {
-      glp_set_col_bnds(lp, i+1, GLP_LO, 0.0, 0.0);
-      glp_set_obj_coef(lp, i+1, double_objective[i]);
+    if ((int)col_bounds.size() == 0) {
+      for (int i=0; i<num_cols; i++) {
+        glp_set_col_bnds(lp, i+1, GLP_LO, 0.0, 0.0);
+        glp_set_obj_coef(lp, i+1, double_objective[i]);
+      }
+    } else {
+      for (int i=0; i<num_cols; i++) {
+        switch (col_bound_types[i]) { 
+          case LB:
+            glp_set_col_bnds(lp, i+1, GLP_LO, col_bounds_double[i], col_bounds_double[i]);
+            break;
+          case UB:
+            glp_set_col_bnds(lp, i+1, GLP_UP, col_bounds_double[i], col_bounds_double[i]);
+            break;
+          case FREE:
+            glp_set_col_bnds(lp, i+1, GLP_FR, 0,0);
+            break;
+          case FIX:
+            glp_set_col_bnds(lp, i+1, GLP_FX, col_bounds_double[i], col_bounds_double[i]);
+            break;
+        }
+        glp_set_obj_coef(lp, i+1, double_objective[i]);
+      }
     }
     //rearrange
     ia.push_back(0);
@@ -438,6 +529,9 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
           double_soln_vector[i] = glp_ipt_col_prim(lp,i+1);
         }	
       } else {
+        if (verbose>1) {
+          std::cout << "Retriving solution vector from LP\n";
+        }
         for (int i=0; i<num_cols; i++) {
           double_soln_vector[i] = glp_get_col_prim(lp,i+1);
         }
@@ -634,15 +728,29 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
     GRBmodel *model = NULL;
     GRBloadenv( &env, "gurobi.log" );
     
+    std::vector<double> lb(0);
+    std::vector<double> ub(0);
+    if ((int)col_bound_types.size() != 0) {
+      lb.resize(num_cols);
+      ub.resize(num_cols);
+      for (int i=0; i<num_cols; ++i) {
+        lb[i] = (col_bound_types[i]  == UB || col_bound_types[i] == FREE ? -GRB_INFINITY : col_bounds_double[i]);
+        ub[i] = (col_bound_types[i]  == LB || col_bound_types[i] == FREE ? GRB_INFINITY : col_bounds_double[i]);
+      }
+    }
+    double* lb_pointer = ((int)col_bound_types.size() == 0 ? NULL : &lb[0]);
+    double* ub_pointer = ((int)col_bound_types.size() == 0 ? NULL : &ub[0]);
+      
+    
     //create a new model and immediately load in all the columns
     if (num_ints == 0) {  
-      GRBnewmodel( env, &model, "scl", num_cols, &double_objective[0], NULL, NULL, NULL, NULL);
+      GRBnewmodel( env, &model, "scl", num_cols, &double_objective[0], lb_pointer, ub_double, NULL, NULL);
     } else {
       std::vector<char> var_types(num_cols);
       for (int i=0; i<num_cols; ++i) {
         var_types[i] = (col_type[i] == REAL ? GRB_CONTINUOUS : GRB_INTEGER);
       }
-      GRBnewmodel( env, &model, "scl", num_cols, &double_objective[0], NULL, NULL, &var_types[0], NULL);
+      GRBnewmodel( env, &model, "scl", num_cols, &double_objective[0], lb_pointer, ub_pointer, &var_types[0], NULL);
     }
     
     //add the constraints (rows)  here we make them empty equality rows and fix the RHS
@@ -735,6 +843,8 @@ SparseLPSolveCode SparseLP::solve(int verbose) {
 
 void SparseLP::print_LP() {
   if (solver != EXLP) {
+    std::cout << "Cols: " << num_cols << "\n";
+    std::cout << "Rows: " << num_rows << "\n";
     std::cout << "Objective: ";
     for (int i=0; i<num_cols; ++i) {
       std::cout << double_objective[i] << " ";
@@ -756,6 +866,8 @@ void SparseLP::print_LP() {
     }
     std::cout << "\n";
   } else {
+    std::cout << "Cols: " << num_cols << "\n";
+    std::cout << "Rows: " << num_rows << "\n";
     std::cout << "Objective: ";
     for (int i=0; i<num_cols; ++i) {
       std::cout << objective[i] << " ";

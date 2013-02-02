@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-O3 #-g -Wall
+CFLAGS=-g -Wall
 IFLAGS=-I/sw/include
 LDFLAGS=-L/sw/lib -lglpk -lgmp
 

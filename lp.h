@@ -7,6 +7,8 @@
 
 enum SparseLPEqualityType {EQ, LE, GE};
 
+enum SparseLPColumnBoundType {LB, UB, FIX, FREE};
+
 enum SparseLPColumnType {REAL, INT};
 
 enum SparseLPSolver {GLPK, 
@@ -37,6 +39,9 @@ private:
   std::vector<SparseLPEqualityType> eq_type;
   std::vector<SparseLPColumnType> col_type;
   int num_ints;
+  std::vector<SparseLPColumnBoundType> col_bound_types;
+  std::vector<double> col_bounds_double;
+  std::vector<int> col_bounds;
 
   int num_cols;
   int num_rows;
@@ -51,6 +56,9 @@ public:
   void set_num_rows(int nr);
   void set_num_cols(int nc);
   void set_col_type(int c, SparseLPColumnType t);
+  void set_col_bound(int c, SparseLPColumnBoundType t);
+  void set_col_bound(int c, SparseLPColumnBoundType t, double b);
+  void set_col_bound(int c, SparseLPColumnBoundType t, int b);
   void add_entry(int i, int j, Rational& r);
   void add_entry(int i, int j, int a);
   void add_entry(int i, int j, double a);
@@ -69,6 +77,7 @@ public:
   int get_num_entries();
   void reset_num_entries(int i);
   void get_soln_vector(std::vector<double>& sv);
+  void get_soln_vector(std::vector<long double>& sv);
   void get_soln_vector(std::vector<Rational>& sv);
   void get_optimal_value(double& ov);
   void get_optimal_value(Rational& ov);
