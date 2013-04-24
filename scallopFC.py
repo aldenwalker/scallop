@@ -13,9 +13,10 @@ it's an inverse (1=inverse)
 It takes whatever power of the chain is necessary so that it's in the kernel
 
 the syntax is 
-./scallopFC.py [-q] g1 g2 n m C
+./scallopFC.py [-q] [-G] g1 g2 n m C
 where g1 and g2 are generators and n and m are the orders and C is the chain
 -q makes it be quiet (just print the answer)
+-G makes it use Gurobi
 """
 
 import fractions
@@ -28,8 +29,10 @@ alphabet = list('abcdefghijklmnopqrstuvwxyz')
 SCALLOPDIR = './'
 FNULL = open('/dev/null', 'w')
 
-def scl(C, do5=False, timeout=1e8, rational=False):
-  runString = ['scallop', '-q'] if not do5 else ['scallop', '-q', '-m5']
+def scl(C, do5=False, timeout=1e8, rational=False, m=None):
+  runString = ['scallop', '-local'] if not do5 else ['scallop', '-local', '-p5']
+  if m != None:
+    runString.append('-m' + m)
   sca = subprocess.Popen(runString+[str(C[0][i]) + C[1][i] for i in xrange(len(C[0]))],  \
                          executable=SCALLOPDIR+'scallop',         \
                          stdout=subprocess.PIPE,                  \
@@ -46,10 +49,7 @@ def scl(C, do5=False, timeout=1e8, rational=False):
     time.sleep(0.01)      
   scaout, scaerr = sca.communicate()
   s = scaout
-  if '/' in s:
-    return fractions.Fraction(int(s.split('/')[0]), int(s.split('/')[1]))
-  else:
-    return fractions.Fraction(int(s), 1)
+  return fractions.Fraction(s.split('=')[1])
 
 
 
@@ -339,7 +339,7 @@ def lift_chain(C, g1, g2, n, m):
   return [multiplier, c]
   
 
-def scl_FC(C, g1, g2, n, m, quiet=False):
+def scl_FC(C, g1, g2, n, m, quiet=False, method=None):
   if type(C) == list:
     if type(C[0]) == list:
       multiplier, c = lift_chain(C, g1, g2, n, m)
@@ -352,14 +352,19 @@ def scl_FC(C, g1, g2, n, m, quiet=False):
   if not quiet:
     print "Running: scallop " + ' + '.join([ str(c[0][i]) + c[1][i]  for i in xrange(len(c[0]))] )
     sys.stdout.flush()
-  s = scl(c)
+  s = scl(c, m=method)
   return multiplier * s
 
 if len(sys.argv) > 2:
   quiet = False
-  if sys.argv[1] == '-q':
-    quiet = True
-    del sys.argv[1]
+  G = False
+  while sys.argv[1][0] == '-':
+    if sys.argv[1] == '-q':
+      quiet = True
+      del sys.argv[1]
+    if sys.argv[1] == '-G':
+      G = True
+      del sys.argv[1]
   if sys.argv < 5:
     print "Read scallopFC.py for syntax"
     sys.exit(0)
@@ -380,7 +385,7 @@ if len(sys.argv) > 2:
     C[1].append( sys.argv[i][j:] )
     i += 1
   
-  print scl_FC(C, g1, g2, n, m, quiet)
+  print scl_FC(C, g1, g2, n, m, quiet, method=(None if G==False else 'GUROBI'))
   
 
 
