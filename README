@@ -37,8 +37,9 @@ providing more mode-specific arguments:
 
 ./scallop [-cyclic, -ball, -local, -train] <mode-specific arguments>
 
-It is not necessary to explicitly give an mode, in which case 
-scallop will default to -cyclic.
+It is not necessary to explicitly give a mode, in which case 
+scallop will default to the original scallop algorithm for free 
+groups, which is equivalent to the options -local -pn, where n is 2*rank.
 
 We discuss the four modes separately.  In all cases, giving no 
 option-specific arguments will cause scallop to output a list of 
@@ -50,6 +51,47 @@ In all modes, the option -v[n] is available, which gives verbose debug
 information.  The optional integer n says how much: default output (1), 
 verbose output (2), really verbose (3), and so verbose you probably don't 
 want it (4).
+
+  *** A note on speed
+  
+  Scallop defaults to the nonrigorous original scallop algorithm because 
+  for small rank it is much faster than the rigorous -cyclic.  At 
+  rank approximately 3 or 4, -cyclic becomes faster.  Asymptotically, 
+  -cyclic is polynomial time in the length, rank, and 
+  orders of the finite factors.
+  
+  Gurobi is significantly faster than GLPK, so if possible, it's 
+  worthwhile getting the free academic license.
+
+
+  ****** default (no mode specified) 
+  
+  ./scallop chain 
+  
+  Example:
+  
+  $ ./scallop abAB
+  scl( abAB ) = 1/2 = 0.5
+  
+  $ ./scallop AbaaBAAABabAAbAAABBBBaaababbabaBaabbABBA
+  scl( AbaaBAAABabAAbAAABBBBaaababbabaBaabbABBA ) = 245/146 = 1.67808
+  
+  With no mode specified, scallop defaults to -local, and the default 
+  -local behavior is to compute in a free group with the maximum fatgraph 
+  valence set to 2*rank.  This is nonrigorous (but generically correct, and 
+  experimentally accurate with probability more than 0.95 for words of 
+  length up through 100ish ).  In some cases, this mode can fail:
+  
+  $ ./scallop abAAABBB aa bb
+  No feasible solution found
+  
+  This is because a fatgraph bounding this chain must have valance at least 5.  
+  If the default mode fails, simply run scallop in -cyclic mode to get a rigorous 
+  answer:
+  
+  $./scallop -cyclic abAAABBB aa bb
+  scl_{a*b}( 1abAAABBB 1aa 1bb ) = 3/4 = 0.75 
+ 
 
   ****** -cyclic
   
@@ -82,16 +124,7 @@ want it (4).
   problem used to compute scl.  
   The option -m[solver] lets the user choose GLPK (default), GUROBI (if compiled 
   with support), or EXLP (only available for free groups).  EXLP uses GMP for 
-  exact solutions.  
-  
-  The default is to assume that the group is free if the group string is omitted, 
-  and the default main mode is -cyclic, so no options at all causes 
-  scallop to do an scl computation in a free group:
-  
-  $ ./scallop abAAABBB aa bb
-  scl_{a*b}( 1abAAABBB 1aa 1bb ) = 3/4 = 0.75
- 
- 
+  exact solutions.   
   
   ****** -ball
   
@@ -164,8 +197,6 @@ want it (4).
        partial^-, and the f-vertices in the rest are marked with periods, 
        as indicated above.
        
-  The last example is dumb because obviously we just glue abAB to baBA.  It is 
-  just to illustrate the idea.
 
   
   

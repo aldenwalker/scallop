@@ -35,6 +35,8 @@ struct Chain {
         int verbose);
 };
 
+std::ostream &operator<<(std::ostream &os, Chain &C);
+
 
 struct Rect {
   int first;  //the chainletters

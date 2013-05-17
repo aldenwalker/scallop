@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
   }
   
   if (argv[1][0] != '-') {
-    comp_func = CYCLIC;
+    comp_func = LOCAL;
     arg_array = &argv[1];
     num_args = argc-1;
   } else if (argv[1][1] == 't') {
@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
     arg_array = &argv[2];
     num_args = argc-2;
   } else {
-    comp_func = CYCLIC;
+    comp_func = LOCAL;
     arg_array = &argv[1];
     num_args = argc-1;
   }

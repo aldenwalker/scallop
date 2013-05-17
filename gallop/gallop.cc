@@ -203,7 +203,7 @@ void compute_polys(std::vector<Poly>& P,
     } else if (require_f_folded) {
       max_rects = valence;
     } else {
-      max_rects = valence + 2;
+      max_rects = valence;
     }
     
     //initialize the local tester
@@ -548,6 +548,21 @@ int Chain::prev_letter(int a) {
     return a-1;
   }
 }
+
+std::ostream& GALLOP::operator<<(std::ostream &os, Chain &C) {
+  int i;
+  int len = (int)C.words.size();
+  for (i=0; i<len; i++) {
+    if (C.weights[i] != 1) {
+      os << C.weights[i] << C.words[i] << " ";
+    } else {
+      os << C.words[i] << " ";
+    }
+  }
+  return os;
+}
+
+
 
 
 
@@ -933,7 +948,7 @@ void GALLOP::gallop(int argc, char** argv) {
       if (only_check_exists) {
         std::cout << "Feasible solution found\n";
       } else {
-        std::cout << "scl = " << scl << " = " << scl.get_d() << "\n";
+        std::cout << "scl( " << C << ") = " << scl << " = " << scl.get_d() << "\n";
       }
     }
   }
