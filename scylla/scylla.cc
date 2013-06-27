@@ -688,7 +688,9 @@ void SCYLLA::scylla(int argc, char** argv) {
     std::cout << "There was some linear programming error\n";
     return;
   }
-  
+  if (CL) {
+    scl = scl + Rational(1,2);
+  }
   if (VERBOSE>0) {
     if (CL) {
       std::cout << "cl_{" << G.short_rep() << "}(" << C << ") = " << scl << " = " << scl.get_d() << "\n";
