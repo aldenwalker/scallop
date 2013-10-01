@@ -2,6 +2,7 @@
 #define __word__
 
 #include <string>
+#include <vector>
 
 
 void red(std::string& s);			// reduce by cancelling adjacent inverse letters
@@ -12,6 +13,9 @@ void cyc_red(std::string& s);
 std::string inverse(std::string& s);
 std::string reverse(std::string s);
 std::string multiply_words(std::string& s1, std::string& s2);
+int letter_index(char let);
 int chain_rank(int num_words, char** words); 
+int chain_rank(std::vector<std::string >& words); 
+int chain_rank(std::string& word);
 
 #endif

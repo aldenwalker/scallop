@@ -10,7 +10,7 @@ GURLIBDIR = $(GURDIR)/lib
 GURINC = -I$(GURINCDIR) 
 GURLIB = -L$(GURLIBDIR) -lgurobi50
 
-DIRS = exlp-package scylla gallop trollop scabble
+DIRS = exlp-package scylla gallop trollop scabble hallop
 
 all: scallop
 
@@ -34,10 +34,10 @@ scallop.o: scallop.cc
 	$(CC) $(CFLAGS) $(IFLAGS) -c scallop.cc
 
 scallop_with_gurobi: $(DIRS) scallop.o rational.o word.o lp.o_GUR scylla gallop trollop exlp-package
-	$(CC) $(CFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o scabble/*.o $(GURLIB) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o scabble/*.o hallop/*.o $(GURLIB) $(LDFLAGS)
 
 scallop: $(DIRS) scallop.o rational.o word.o lp.o scylla gallop trollop scabble exlp-package
-	$(CC) $(CFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o scabble/*.o $(LDFLAGS)
+	$(CC) $(CFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o scabble/*.o hallop/*.o $(LDFLAGS)
 
 clean: 
 	rm *.o
@@ -46,4 +46,5 @@ clean:
 	rm gallop/*.o
 	rm trollop/*.o
 	rm scabble/*.o
+	rm hallop/*.o
 	rm scallop

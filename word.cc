@@ -83,6 +83,16 @@ string multiply_words(string& s1, string& s2) {
   return ans;
 }
 
+
+//returns 0 for a/A, etc
+int letter_index(char let) {
+  int val = (int)let;
+  if (val < 97) val += 32;
+  val -= 97;
+  return val;
+}
+
+
 int chain_rank(int num_words, char** words) {
   int max_found = 0;
   for (int i=0; i<num_words; ++i) {
@@ -105,6 +115,46 @@ int chain_rank(int num_words, char** words) {
   return max_found;
 }
 
+int chain_rank(std::vector<std::string >& words) {
+  int max_found = 0;
+  for (int i=0; i<(int)words.size(); ++i) {
+    int j=0; 
+    for (int j=0; j<(int)words[i].size(); ++j) {
+      int val = (int)words[i][j];
+      if ((val < 65) || (val > 90 && val < 97) || (val > 122)) {
+        j++;
+        continue;
+      }
+      if (val < 97) val += 32;
+      val -= 97;
+      val += 1;
+      if (val > max_found) {
+        max_found = val;
+      }
+      j++;
+    }
+  }
+  return max_found;
+}
+
+
+int chain_rank(std::string& word) {
+  int max_found = 0;
+  for (int j=0; j<(int)word.size(); ++j) {
+    int val = (int)word[j];
+    if ((val < 65) || (val > 90 && val < 97) || (val > 122)) {
+      j++;
+      continue;
+    }
+    if (val < 97) val += 32;
+    val -= 97;
+    val += 1;
+    if (val > max_found) {
+      max_found = val;
+    }
+  }
+  return max_found;
+}
 
 
 /*
