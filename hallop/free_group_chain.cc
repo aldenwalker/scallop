@@ -136,6 +136,10 @@ int HALLOP::FreeGroupChain::num_letters() {
   return chain_letters.size();
 }
 
+int HALLOP::FreeGroupChain::rnk() {
+  return rank;
+}
+
 std::string HALLOP::FreeGroupChain::operator[](int index) {
   return words[index];
 }

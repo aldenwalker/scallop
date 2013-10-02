@@ -39,6 +39,7 @@ struct FreeGroupChain {
   int prev_letter(int n);
   int num_words(void);
   int num_letters();
+  int rnk();
   std::string operator[](int index);    //get a word
   void print_letters(std::ostream &os);
   void print_group_letters(std::ostream &os);
