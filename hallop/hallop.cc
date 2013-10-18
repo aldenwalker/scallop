@@ -67,7 +67,7 @@ void HALLOP::hallop(int argc, char** argv) {
   FreeGroupChain CR = C; 
   
   for (int i=0; i<(int)relators.size(); ++i) {
-    CR.add_word(-1, relators[i]);
+    CR.add_relator(relators[i]);
   }
   
   if (verbose>1) {

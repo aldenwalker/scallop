@@ -110,6 +110,13 @@ void HALLOP::hallop_lp(HALLOP::FreeGroupChain& C,
   for (int i=0; i<num_relators; ++i) {
     LP.set_obj(Nrects + Ntris + i, -2);
   }
+
+  /************** solving ***********************/
+
+  LP.solve(verbose-1);
+
+  LP.get_optimal_value(scl);
+  LP.get_soln_vector(soln_vec);
   
 } 
 

@@ -87,6 +87,7 @@ void HALLOP::FreeGroupChain::add_word(int weight, std::string w) {
   //add the word to the chain
   HALLOP::ChainLetter temp_letter;
   temp_letter.word = (int)words.size()-1;
+  temp_letter.inverse_chain_letter = -1;
   for (int j=0; j<(int)w.size(); j++) {
     temp_letter.index = j;
     temp_letter.letter = w[j];
@@ -103,6 +104,57 @@ void HALLOP::FreeGroupChain::add_word(int weight, std::string w) {
     }
     chain_letters.push_back(temp_letter);
   }
+}
+
+
+void HALLOP::FreeGroupChain::add_relator(std::string w) {
+  
+  //add the relator and the inverse
+  add_word(-1, w);
+  add_word(-1, inverse(w));
+
+  //go back and fix which letters cannot be paired together
+  
+  
+
+
+  words.push_back(w);
+  weights.push_back(-1);
+  words.push_back(inverse(w));
+  weights.push_back(-1);
+  
+  //compute the rank of the word
+  int new_rank = chain_rank(w);
+  
+  if (new_rank > rank) {
+    group_letters.resize(new_rank, std::vector<int>());
+    regular_letters.resize(new_rank, std::vector<int>());
+    inverse_letters.resize(new_rank, std::vector<int>());
+    rank = new_rank;
+  }
+  
+  //add the relator to the chain
+  HALLOP::ChainLetter temp_letter;
+  temp_letter.word = (int)words.size()-2;
+  for (int j=0; j<(int)w.size(); j++) {
+    temp_letter.index = j;
+    temp_letter.letter = w[j];
+    temp_letter.group = letter_index( temp_letter.letter );
+    group_letters[ temp_letter.group ].push_back(chain_letters.size());
+    if (isupper(temp_letter.letter)) {
+      inverse_letters[temp_letter.group].push_back(chain_letters.size());
+      temp_letter.index_in_group_reg_inv_list 
+                            = inverse_letters[temp_letter.group].size()-1;
+    } else {
+      regular_letters[temp_letter.group].push_back(chain_letters.size());
+      temp_letter.index_in_group_reg_inv_list 
+                            = regular_letters[temp_letter.group].size()-1;
+    }
+    chain_letters.push_back(temp_letter);
+  }
+
+  //add the inverse relator to the chain
+
 }
 
 

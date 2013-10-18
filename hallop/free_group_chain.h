@@ -18,6 +18,7 @@ struct ChainLetter {
   int index_in_group_reg_inv_list;  //index of the letter in the reg/inverse list
   char letter;
   int group;         //the index of the group in the free product
+  int inverse_chain_letter; //this is for relators, and records where it *cannot* be glued
 };
 
 std::ostream &operator<<(std::ostream &os, HALLOP::ChainLetter &CL); 
@@ -34,6 +35,7 @@ struct FreeGroupChain {
   FreeGroupChain(void);
   FreeGroupChain(char** input, int num_strings);
   void add_word(int weight, std::string w);
+  void add_relator(std::string w);
   
   int next_letter(int n);
   int prev_letter(int n);
