@@ -666,11 +666,11 @@ Graph read_branched_surface(Chain& C,
     extract_signed_index(first_chainletter.edge_index, &ind1, &sign1);
     extract_signed_index(second_chainletter.edge_index, &ind2, &sign2);
     e.label_forward = (sign1 < 0 ? C.G->edges[ind1].label_backward : C.G->edges[ind1].label_forward );
-    sprintf(temp, "%d", RL.r[ind].first);
-    e.label_forward += std::string(temp);
+    //sprintf(temp, "%d", RL.r[ind].first);
+    //e.label_forward += std::string(temp);
     e.label_backward = (sign2 < 0 ? C.G->edges[ind2].label_backward : C.G->edges[ind2].label_forward );
-    sprintf(temp, "%d", RL.r[ind].second);
-    e.label_backward += std::string(temp);
+    //sprintf(temp, "%d", RL.r[ind].second);
+    //e.label_backward += std::string(temp);
     G.edges.push_back(e);
     G.verts[first_edge_vert].incident_edges[first_edge_index] = G.num_edges;
     G.verts[second_edge_vert].incident_edges[second_edge_index] = G.num_edges;
