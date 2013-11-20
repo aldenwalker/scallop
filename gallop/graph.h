@@ -28,6 +28,7 @@ struct Graph {
   
   int get_edge_from_label(char label);
   void set_standard_rose(int rank, int verbose);
+  void set_labeled_rose(const std::vector<char>& labels, int verbose);
   int read_file(std::string file_name, int verbose);
   int write_file(std::string file_name, int verbose);
 };

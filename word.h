@@ -14,6 +14,7 @@ std::string inverse(std::string& s);
 std::string reverse(std::string s);
 std::string multiply_words(std::string& s1, std::string& s2);
 int letter_index(char let);
+std::vector<char> chain_gens(int num_words, char** words);
 int chain_rank(int num_words, char** words); 
 int chain_rank(std::vector<std::string >& words); 
 int chain_rank(std::string& word);

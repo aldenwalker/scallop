@@ -231,7 +231,7 @@ std::string SCYLLA::CyclicProduct::short_rep() {
     } else {
       ss << orders[i];
       rep += "*(" + std::string(1,gens[i]) + "/" + ss.str() + std::string(1,gens[i]) + ")";
-      ss.str();
+      ss.str("");
     }
   }
   return rep;

@@ -1,14 +1,8 @@
-/********************************************************
- * word.cc: library of functions on strings and         *
- * words in groups used by program free.cc              *
- *                                                      *
- *                                                      *
- * Author: Danny Calegari                               *
- *                                                      *
- * 5/2/2007                                             *
- ********************************************************/
+#include <set>
+#include <cctype>
 
 #include "word.h"
+
 
 using namespace std;
 
@@ -93,6 +87,19 @@ int letter_index(char let) {
 }
 
 
+std::vector<char> chain_gens(int num_words, char** words) {
+  std::set<char> found_letters;
+  for (int i=0; i<num_words; ++i) {
+    int j=0;
+    while (words[i][j] != '\0') {
+      found_letters.insert(tolower(words[i][j]));
+      ++j;
+    }
+  }
+  std::vector<char> gens(found_letters.begin(), found_letters.end());
+  return gens;
+}
+
 int chain_rank(int num_words, char** words) {
   int max_found = 0;
   for (int i=0; i<num_words; ++i) {
@@ -157,36 +164,6 @@ int chain_rank(std::string& word) {
 }
 
 
-/*
-pair fix_find(string s, int pos){	// find last biggest cancelling substring with fixed initial
-	int len;
-	int i;
-	int j,k,l,m;
-	pair p;
-	string t;
-	string u;
-	
-	t=inv(s);
-	j=0;
-	k=0;
-	
-	l=s.length();
-	m=l/2;
-	for(len=1;len<m;len++){
-		u=s.substr(pos,len);
-		i=(int) t.find(u,0);
-		if(i==-1){
-			break;
-		} else {
-			j=len;
-			k=i;
-		};
-	};
-	p.loc = l-k-len+1;
-	p.siz = j;
-	return(p);
-};
-*/
 
 string reverse(string s){		// returns reverse of a word
 	string t,u;
@@ -199,26 +176,4 @@ string reverse(string s){		// returns reverse of a word
 		t=u.erase(0,u.length()-1) + reverse(s.erase(s.length()-1,1));
 		return(t);
 	};
-};
-/*
-string prepare(string s){		// insert an underscore between (cyclically) repeated adjacent letters
-	string t;
-	int i;
-	t="";
-	for(i=0;i< (int) s.length();i++){
-		t=t+s[i];
-		if(i< (int) s.length()-1){
-			if(s[i+1]==s[i]){
-				t=t+'_';
-			};
-		} else {
-			if(s[0]==s[i]){
-				t=t+'_';
-			};
-		};
-	};
-	
-	return(t);
-};
-
-*/
+}

@@ -6,6 +6,7 @@
 #include <cstdio>
 
 #include "graph.h"
+#include "../word.h"
 
 using namespace GALLOP;
 
@@ -34,6 +35,38 @@ int Graph::get_edge_from_label(char label) {
   return 0;
 }
 
+
+
+void Graph::set_labeled_rose(const std::vector<char>& labels, int verbose) {
+  num_verts = 1;
+  num_edges = labels.size();
+  int rank = labels.size();
+  verts.resize(1);
+  edges.resize(0);
+  Vert V;
+  V.name = "VERT0";
+  V.incident_edges.resize(2*rank);
+  V.is_outgoing.resize(2*rank);
+  Edge E;
+  char c[2];
+  c[1] = '\0';
+  for (int i=0; i<rank; ++i) {
+    V.incident_edges[2*i] = i;
+    V.incident_edges[2*i+1] = i;
+    V.is_outgoing[2*i] = true;
+    V.is_outgoing[2*i+1] = false;
+    c[0] = (char)(48+i);
+    E.name = "EDGE" + std::string(c);
+    c[0] = labels[i];
+    E.label_forward = std::string(c);
+    c[0] = swapCaseChar(labels[i]);
+    E.label_backward = std::string(c);
+    E.source = 0;
+    E.dest = 0;
+    edges.push_back(E);
+  }
+  verts[0] = V;
+}
 
 
 void Graph::set_standard_rose(int rank, int verbose) {
@@ -142,10 +175,10 @@ int Graph::read_file(std::string filename, int verbose) {
     } while (tempc != EOF && tempc != '\n');
   }
   fseek(ifile, -1, SEEK_CUR);
-  fscanf(ifile, "vertices %d\n", &num_verts);
+  (void)fscanf(ifile, "vertices %d\n", &num_verts);
   verts.resize(num_verts);
   for (i=0; i<num_verts; i++) {
-    fscanf(ifile, "%s %d\n", temps, &tempe);
+    (void)fscanf(ifile, "%s %d\n", temps, &tempe);
     if (verbose > 1) std::cout << "new vertex " << temps << " with " << tempe << " edges\n"; 
     verts[i].name = std::string(temps);  
     if (tempe > 0 ) {
@@ -162,28 +195,28 @@ int Graph::read_file(std::string filename, int verbose) {
       
       //read in the edges direction(even though we don't know what they are!)
       for (j=0; j<(int)verts[i].incident_edges.size(); j++) {
-        fscanf(ifile, "%d", &tempi);
+        (void)fscanf(ifile, "%d", &tempi);
         //std::cout << "Read direction: " << tempi << "\n";
         verts[i].is_outgoing[j] = (bool)tempi;
       }
     }
     
     //read the bezier and location, if we've got them
-    fscanf(ifile, "\n%s", temps);
+    (void)fscanf(ifile, "\n%s", temps);
     if (verbose > 1) std::cout << "next word: " << temps << "\n";
     if (strcmp(temps, "bezier") == 0) {
       if (verbose > 1) std::cout << "It's got bezier stuff\n";
       for (j=0; j<(int)verts[i].incident_edges.size(); j++) {
-        fscanf(ifile, "%*f %*f");
+        (void)fscanf(ifile, "%*f %*f");
       }
-      fscanf(ifile, "%s", temps);
+      (void)fscanf(ifile, "%s", temps);
     } else {
       //there's no bezier, so deal with that
       if (verbose > 1) std::cout << "There's no bezier\n";
     }
     
     if (strcmp(temps, "loc") == 0) {
-      fscanf(ifile, "%*f %*f");
+      (void)fscanf(ifile, "%*f %*f");
     } else {
       //there's no loc, so deal with that
       fseek(ifile, -strlen(temps)-1, SEEK_CUR);
@@ -196,11 +229,11 @@ int Graph::read_file(std::string filename, int verbose) {
   if (verbose > 1) std::cout << "There should be " << num_edges << " edges\n";
   edges.resize(num_edges);
   for (i=0; i<num_edges; i++) {
-    fscanf(ifile, " %s %s %s %s %s\n", temp_edge_name, 
-                                       temp_label_forward,
-                                       temp_label_backward,
-                                       temp_vert_start,
-                                       temp_vert_end);
+    (void)fscanf(ifile, " %s %s %s %s %s\n", temp_edge_name, 
+                                              temp_label_forward,
+                                              temp_label_backward,
+                                              temp_vert_start,
+                                              temp_vert_end);
     if (verbose > 1) {
       std::cout << "Read edge: " << temp_edge_name << " " 
                                << temp_label_forward << " "
@@ -236,13 +269,13 @@ int Graph::read_file(std::string filename, int verbose) {
   
   fscanf(ifile, "vertices %*d\n");
   for (i=0; i<num_verts; i++) {
-    fscanf(ifile, " %s ", temps);
+    (void)fscanf(ifile, " %s ", temps);
     while (std::string(temps) != verts[i].name) {
       fscanf(ifile, " %s ", temps);
     }
-    fscanf(ifile, "%*d"); //get rid of the number of edges
+    (void)fscanf(ifile, "%*d"); //get rid of the number of edges
     for (j=0; j<(int)verts[i].incident_edges.size(); j++) {
-      fscanf(ifile, " %s ", temp_edge_name);
+      (void)fscanf(ifile, " %s ", temp_edge_name);
       for (k=0; k<num_edges; k++) {
         if (std::string(temp_edge_name) == edges[k].name) {
           break;

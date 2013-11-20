@@ -858,8 +858,10 @@ void GALLOP::gallop(int argc, char** argv) {
     //read in the file
     G.read_file(input_file_name, verbose);
   } else {
-    G.set_standard_rose(chain_rank(argc-current_arg, &argv[current_arg]), verbose);
+    G.set_labeled_rose(chain_gens(argc-current_arg, &argv[current_arg]), verbose);
   }
+  
+  if (verbose>1) std::cout << "Set labeled rose\n";
   
   //and the chain
   Chain C(G, &argv[current_arg], argc-current_arg, require_f_folded, verbose);
