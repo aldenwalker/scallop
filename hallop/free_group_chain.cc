@@ -61,6 +61,7 @@ HALLOP::FreeGroupChain::FreeGroupChain(char** input, int num_strings) {
   inverse_letters.resize(0);
   words.resize(0);
   weights.resize(0);
+  word_start_indices.resize(0);
   rank = 0;
   
   for (int i=0; i<(int)temp_words.size(); ++i) {
@@ -73,6 +74,7 @@ void HALLOP::FreeGroupChain::add_word(int weight, std::string w) {
   
   words.push_back(w);
   weights.push_back(weight);
+  word_start_indices.push_back(chain_letters.size());
   
   //compute the rank of the word
   int new_rank = chain_rank(w);
@@ -87,7 +89,7 @@ void HALLOP::FreeGroupChain::add_word(int weight, std::string w) {
   //add the word to the chain
   HALLOP::ChainLetter temp_letter;
   temp_letter.word = (int)words.size()-1;
-  temp_letter.inverse_chain_letter = -1;
+  temp_letter.inverse_relator_letter = -1;
   for (int j=0; j<(int)w.size(); j++) {
     temp_letter.index = j;
     temp_letter.letter = w[j];
@@ -114,7 +116,10 @@ void HALLOP::FreeGroupChain::add_relator(std::string w) {
   add_word(-1, inverse(w));
 
   //go back and fix which letters cannot be paired together
-  
+  int wi = num_words() - 2;
+  int wIi = num_words() - 1;
+  int w_chain_letter_start = word_start_index(wi);
+  int wI_chain_letter_start = word_start_index(wIi);
   
 
 
@@ -179,6 +184,9 @@ int HALLOP::FreeGroupChain::prev_letter(int n) {
   }
 }
 
+int HALLOP::FreeGroupChain::word_start_index(int n) {
+  return word_start_indices[n];
+}
 
 int HALLOP::FreeGroupChain::num_words(void) {
   return words.size();

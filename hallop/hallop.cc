@@ -14,6 +14,7 @@
 void HALLOP::hallop(int argc, char** argv) {
   SparseLPSolver solver = GLPK_SIMPLEX;
   int verbose = 1;
+  bool lp_verbose = false;
   
   if (argc < 1 || std::string(argv[0]) == "-h") {
     std::cout << "usage: ./scallop -hyp [-m<GLPK,GIPT,EXLP,GUROBI>] [-v[n]] [-R<relator>] <chain>\n";
@@ -23,6 +24,7 @@ void HALLOP::hallop(int argc, char** argv) {
     std::cout << "\t-v[n]: verbosity (if -v isn't used, n=1, if -v but no n, then n=2)\n";
     std::cout << "\t-R relator: add a relator\n";
     std::cout << "\tExample: ./scallop -hyp -RabABcdCD abAB\n";
+    exit(0);
   }
   
   std::vector<std::string> relators(0);
@@ -31,8 +33,8 @@ void HALLOP::hallop(int argc, char** argv) {
   while (argv[current_arg][0] == '-') {
     if (argv[current_arg][1] == 'R') {
       relators.push_back( std::string(&argv[current_arg][2]) );
-    }
-    if (argv[current_arg][1] == 'm') {
+    
+    } else if (argv[current_arg][1] == 'm') {
       switch (argv[current_arg][3]) {
         case 'L':
           solver = GLPK_SIMPLEX; break;
@@ -43,13 +45,16 @@ void HALLOP::hallop(int argc, char** argv) {
         case 'U':
           solver = GUROBI; break;
       }
-    }
-    if (argv[current_arg][1] == 'v') {
+    
+    } else if (argv[current_arg][1] == 'v') {
       if (argv[current_arg][2] == '\0') {
         verbose = 2;
       } else {
         verbose = atoi(&argv[current_arg][2]);
       }
+    
+    } else if (argv[current_arg][1] == 'V') {
+      lp_verbose = true;
     }
     current_arg++;
   }
