@@ -16,6 +16,8 @@ struct ChainLetter {
   int in_tag;                   //0 means not in a tag, 1 means in one
   int edge_index;               //the graph index of the edge, -1 for opposite direction, and indices start at 1
   bool in_delta_minus;          //is it in delta minus?
+  int inverse_letter;           //if the chain has inverse words, this records 
+                                //the chainletter index which is the inverse
 };
 
 struct Chain {
@@ -27,6 +29,8 @@ struct Chain {
   
   int next_letter(int a);  
   int prev_letter(int a);
+  int CL_from_inds(int w, int ell); //find the chainletter index for a word, index pair
+  void add_inverse_word(int i);     //add the inverse of the word index i (also record inverse letters)
   
   Chain(Graph& G, 
         char** input, 
@@ -55,7 +59,7 @@ struct RectList {
   std::vector<Rect> r;
   std::vector<std::vector<int> > rects_starting_with;
   
-  RectList(Chain& C, int require_f_folded, int verbose);
+  RectList(Chain& C, int require_f_folded, bool check_no_inverse_pairings, int verbose);
   RectList();
   int find_index_from_pair(int a, int b);
 };

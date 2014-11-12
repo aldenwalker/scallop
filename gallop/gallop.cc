@@ -326,6 +326,7 @@ RectList::RectList() {
 
 RectList::RectList(Chain& C,
                    int require_f_folded,
+                   bool check_no_inverse_pairings,
                    int verbose) {
   int a,b;
   Rect temp_rect;
@@ -342,6 +343,9 @@ RectList::RectList(Chain& C,
       for (k=0; k<(int)C.CLs_from_gen[2*i+1].size(); k++) {
         a = C.CLs_from_gen[2*i][j];
         b = C.CLs_from_gen[2*i+1][k];
+        if (check_no_inverse_pairings && C.CL[a].inverse_letter == b) {
+          continue;
+        }
         if (C.CL[a].in_tag ^ C.CL[b].in_tag) {
           continue;
         }
@@ -477,6 +481,7 @@ Chain::Chain(Graph& input_G,
   //load in the letters which we actually use
   //scan for marked letters
   ChainLetter temp;
+  temp.inverse_letter = -1;
   CL.resize(0);
   for (i=0; i<(int)words.size(); i++) {
     temp.in_delta_minus = (i < require_f_folded);
@@ -547,6 +552,43 @@ int Chain::prev_letter(int a) {
   } else {
     return a-1;
   }
+}
+
+
+int Chain::CL_from_inds(int w, int ell) {
+  std::pair<int, int> pos_to_find = std::make_pair(w, ell);
+  for (int i=0; i<(int)CL.size(); ++i) {
+    if (pos_to_find == CL[i].position) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+void Chain::add_inverse_word(int i) {
+  std::string w_inv = inverse(words[i]);
+  int wL = w_inv.size();
+  int new_ind = words.size();
+  
+  words.push_back(w_inv);
+  weights.push_back(weights[i]);
+  
+  for (int j=0; j<wL; ++j) {
+    int let_inv_ind = CL_from_inds( i, wL-1-j );
+    ChainLetter temp;
+    temp = CL[let_inv_ind];
+    temp.position = std::make_pair( new_ind, j );
+    temp.edge_index = -temp.edge_index;
+    temp.inverse_letter = let_inv_ind;
+    
+    CL[let_inv_ind].inverse_letter = CL.size();
+    int ind, sign;
+    extract_signed_index(temp.edge_index, &ind, &sign);
+    sign = (sign < 0 ? 1 : 0);
+    CLs_from_gen[2*ind+sign].push_back(CL.size());
+    CL.push_back(temp);
+  } 
+  
 }
 
 std::ostream& GALLOP::operator<<(std::ostream &os, Chain &C) {
@@ -698,6 +740,7 @@ void gallop_lp(Chain& C,
                std::vector<Rational>& solution_vector, 
                Rational& scl, 
                bool only_check_exists,
+               bool check_polygonal,
                SparseLPSolver solver,
                int time_limit,
                int verbose) {
@@ -707,7 +750,8 @@ void gallop_lp(Chain& C,
   //build the sparse matrix
   //there is a row for each rectangle, plus one for each word
   //there is a column for each polygon
-  int num_rows = RL.r.size() + C.words.size();
+  int num_extra_rows = (check_polygonal ? 1 : C.words.size());
+  int num_rows = RL.r.size() + num_extra_rows;
   int num_cols = P.size();
   
   std::vector<int> temp_ia(0);
@@ -729,7 +773,8 @@ void gallop_lp(Chain& C,
       temp_ar.push_back(sign);
       //this is the rows for the words -- we count 1 whenever there is a first letter
       letter = ( sign < 0 ? RL.r[ind].second : RL.r[ind].first );
-      if (C.CL[letter].position.second == 0) {
+      if (C.CL[letter].position.second == 0 && 
+          (!check_polygonal || C.CL[letter].position.first == 0)) {
         temp_ia.push_back( RL.r.size() + C.CL[letter].position.first );
         temp_ja.push_back( i );
         temp_ar.push_back(1);
@@ -743,7 +788,7 @@ void gallop_lp(Chain& C,
     LP.set_RHS(i,0);
     LP.set_equality_type(i, EQ);
   }
-  for (i=0; i<(int)C.words.size(); i++) {
+  for (i=0; i<num_extra_rows; i++) {
     LP.set_RHS(RL.r.size() + i, C.weights[i]);
     LP.set_equality_type(RL.r.size() + i, EQ);
     //RHS[RL.r.size() + i] = C.weights[i];
@@ -777,12 +822,14 @@ void GALLOP::gallop(int argc, char** argv) {
   bool only_check_exists = false;
   int max_polygon_valence = -1;
   bool do_output = false;
+  bool check_polygonal = false;
   SparseLPSolver solver = GLPK_SIMPLEX;
   int time_limit=0;
   
   if (argc < 1 || std::string(argv[0]) == "-h") {
     std::cout << "usage: ./scallop -local [-v[n]] [-f] [-ff[n=1]] [-e] [-tn] [-pn] [-m<GLPK,GIPT,GUROBI,EXLP>] [-G<graph input file>] [-o <surface (graph) output file>] <chain>\n";
     std::cout << "\t-v[n]: verbose output (level n)\n";
+    std::cout << "\t-y: check if the chain is polygonal (overrides -f,-ff,-p)\n";
     std::cout << "\t-f: only search for surfaces that are folded\n";
     std::cout << "\t-ff[n=1]: only search for surfaces that are f-folded:\n";
     std::cout << "\t\tn is the number of words in delta^- (these must come first)\n";
@@ -851,7 +898,17 @@ void GALLOP::gallop(int argc, char** argv) {
       input_file_name = std::string(&argv[current_arg][2]);
     }
     
+    else if (argv[current_arg][1] == 'y') {
+      check_polygonal = true;
+    }
+    
     current_arg++;
+  }
+  
+  if (check_polygonal) {
+    require_f_folded = false;
+    require_folded = true;
+    max_polygon_valence = -1;
   }
   
   if (input_file_name != "") {
@@ -865,6 +922,13 @@ void GALLOP::gallop(int argc, char** argv) {
   
   //and the chain
   Chain C(G, &argv[current_arg], argc-current_arg, require_f_folded, verbose);
+  if (check_polygonal) {
+    int num_words = C.words.size();
+    for (int i=0; i<(int)num_words; ++i) {
+      C.add_inverse_word(i);
+    }
+  }
+  
   if (verbose > 1) {
     if (require_folded) std::cout << "Requiring a folded surface\n";
     if (max_polygon_valence > 0) std::cout << "Requiring valence at most " << max_polygon_valence << "\n";
@@ -898,7 +962,7 @@ void GALLOP::gallop(int argc, char** argv) {
   
   
   //compute the polygons and rectangles
-  RL = RectList(C, require_f_folded, verbose);
+  RL = RectList(C, require_f_folded, check_polygonal, verbose);
   if (verbose > 1) {
     std::cout << "Generated " << RL.r.size() << " rectangles\n";
     if (verbose > 2) {
@@ -939,6 +1003,7 @@ void GALLOP::gallop(int argc, char** argv) {
             solution_vector, 
             scl, 
             only_check_exists, 
+            check_polygonal,
             solver,
             time_limit,
             verbose);
@@ -950,7 +1015,11 @@ void GALLOP::gallop(int argc, char** argv) {
       if (only_check_exists) {
         std::cout << "Feasible solution found\n";
       } else {
-        std::cout << "scl( " << C << ") = " << scl << " = " << scl.get_d() << "\n";
+        if (check_polygonal) {
+          std::cout << C << "is polygonal with min -chi/2n = " << scl << " = " << scl.get_d() << "\n";
+        } else {
+          std::cout << "scl( " << C << ") = " << scl << " = " << scl.get_d() << "\n";
+        }
       }
     }
   }
