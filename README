@@ -1,6 +1,6 @@
 scallop
 
-Copyright 2012, 2013 by Alden Walker
+Copyright 2012, 2013, 2014 by Alden Walker
 
 Released under the GPL.
 
@@ -11,14 +11,12 @@ See INSTALL for installation instructions.
 
 scallop computes with surfaces in free groups and free products of
 cyclic groups.  The appropriate background material is contained 
-in [1] (for the -cyclic and -ball modes) and [2] (for -local and -train).
-The -cyclic and -ball modes contain improvements to be explained in 
-an upcoming paper.
+in [1] (for the -local mode), [2] (for -train), and [3] (for -cyclic and -ball) 
 
 The original version of scallop was written by Danny Calegari, implementing 
 the algorithm described in [1], Chapter 4 to compute scl in free groups.  
 The current version is a conglomeration of packages written by Alden Walker 
-implementing pieces of [1] and [2], all using the basic principle that 
+implementing pieces of [1], [2], and [3], all using the basic principle that 
 surface maps into free groups factor through fatgraph maps, and we can 
 usually produce these via linear programming.
 
@@ -196,6 +194,8 @@ want it (4).
        partial^- doesn't touch itself, where n is the number of words in 
        partial^-, and the f-vertices in the rest are marked with periods, 
        as indicated above.
+  -v[n]: verbose output (level n)
+	-y: check if the chain is polygonal (overrides -f,-ff,-p)
        
 
   
@@ -244,7 +244,7 @@ encountering these issues *should* find that scallop explains itself and
 then exits, but it is possible that scallop will simply crash.
 
 Make sure the options are correctly specified!  Often, a missing option 
-will cause scallop to misinterpret what the chain is, which often 
+will cause scallop to misinterpret what the chain is, which usually 
 causes it to crash.
 
 Missing pieces:
@@ -260,4 +260,4 @@ Missing pieces:
 
 [2] D. Calegari and A. Walker. Surface subgroups from Linear programming. preprint: arXiv:1212.2618
 
-
+[3] A. Walker, Stable commutator length in free products of cyclic groups, Experimental Math 22 (2013), no. 3, 282-298.
