@@ -823,13 +823,15 @@ void GALLOP::gallop(int argc, char** argv) {
   int max_polygon_valence = -1;
   bool do_output = false;
   bool check_polygonal = false;
+  bool check_polygonal_relaxed = false;
   SparseLPSolver solver = GLPK_SIMPLEX;
   int time_limit=0;
   
   if (argc < 1 || std::string(argv[0]) == "-h") {
-    std::cout << "usage: ./scallop -local [-v[n]] [-f] [-ff[n=1]] [-e] [-tn] [-pn] [-m<GLPK,GIPT,GUROBI,EXLP>] [-G<graph input file>] [-o <surface (graph) output file>] <chain>\n";
+    std::cout << "usage: ./scallop -local [-v[n]] [-f] [-ff[n=1]] [-e] [-tn] [-pn] [-y,Y] [-m<GLPK,GIPT,GUROBI,EXLP>] [-G<graph input file>] [-o <surface (graph) output file>] <chain>\n";
     std::cout << "\t-v[n]: verbose output (level n)\n";
     std::cout << "\t-y: check if the chain is polygonal (overrides -f,-ff,-p)\n";
+    std::cout << "\t-Y: check polygonal without folded restriction\n";
     std::cout << "\t-f: only search for surfaces that are folded\n";
     std::cout << "\t-ff[n=1]: only search for surfaces that are f-folded:\n";
     std::cout << "\t\tn is the number of words in delta^- (these must come first)\n";
@@ -838,6 +840,7 @@ void GALLOP::gallop(int argc, char** argv) {
     std::cout << "\t-tn: set an LP time limit of n seconds (only works with Gurobi)\n";
     std::cout << "\t-pn: only use polygons which have at most n sides\n";
     std::cout << "\t-m<method>: specify which LP solver to use\n";
+    std::cout << "\t-o filename: write out the solution fatgraph\n";
     return;
   }
   
@@ -902,6 +905,10 @@ void GALLOP::gallop(int argc, char** argv) {
       check_polygonal = true;
     }
     
+    else if (argv[current_arg][1] == 'Y') {
+      check_polygonal_relaxed = true;
+    }
+    
     current_arg++;
   }
   
@@ -909,7 +916,13 @@ void GALLOP::gallop(int argc, char** argv) {
     require_f_folded = false;
     require_folded = true;
     max_polygon_valence = -1;
+  } else if (check_polygonal_relaxed) {
+    check_polygonal = true;
+    require_f_folded = false;
+    require_folded = false;
+    max_polygon_valence = -1;
   }
+    
   
   if (input_file_name != "") {
     //read in the file
