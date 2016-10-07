@@ -1,5 +1,5 @@
 CC=gcc 
-CFLAGS=-DHAVE_CONFIG_H -I. -I/sw/include  -DNO_GMP_HASH -O3
+CFLAGS=-DHAVE_CONFIG_H -I. -I/sw/include  -I/opt/local/include -DNO_GMP_HASH -O3
 
 all: main.o hash.o solve_ip.o preprocess.o matrix.o lpstruct.o \
      eta_file.o solve_lp.o mps.o lu.o EXLPvector.o mylib.o

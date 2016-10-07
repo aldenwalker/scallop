@@ -920,7 +920,7 @@ void GALLOP::gallop(int argc, char** argv) {
     check_polygonal = true;
     require_f_folded = false;
     require_folded = false;
-    max_polygon_valence = -1;
+    //max_polygon_valence = -1;
   }
     
   
