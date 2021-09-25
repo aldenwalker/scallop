@@ -1,5 +1,5 @@
-#ifndef __word__
-#define __word__
+#ifndef __word_h__
+#define __word_h__
 
 #include <string>
 #include <vector>
