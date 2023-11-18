@@ -97,6 +97,7 @@ want it (4).
   
   Examples: 
   
+  ```
   $ ./scallop -cyclic a0b0 abAB
   scl_{a*b}( 1abAB ) = 1/2 = 0.5
   
@@ -114,7 +115,12 @@ want it (4).
   
   $ ./scallop -cyclic -C a0b0c0 abcAABBCC abc
   cl_{a*b*c}(1abcAABBCC 1abc ) = 2 = 2
-  
+
+  $ ./scallop -cyclic -r 1,2,-1,-2 3,4,-3,-4 5,6,-5,-6 7,8,-7,-8 9,10,-9,-10 11,12,-11,-12 13,14,-13,-14 15,16,-15,-16 17,18,-17,-18 19,20,-19,-20 21,22,-21,-22 23,24,-23,-24 25,26,-25,-26 w2,27,28,-27,-28
+  ```
+
+  The 'raw' mode `-r` lets you compute in groups with more than 26 factors.
+
   The -cyclic mode computes scl and cl in free products of cyclic groups.  
   The group string lists the generators and their orders (0 means infinite).  
   The option -C causes scallop to compute commutator length.  This involves 
