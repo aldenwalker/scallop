@@ -116,10 +116,10 @@ void HALLOP::FreeGroupChain::add_relator(std::string w) {
   add_word(-1, inverse(w));
 
   //go back and fix which letters cannot be paired together
-  int wi = num_words() - 2;
-  int wIi = num_words() - 1;
-  int w_chain_letter_start = word_start_index(wi);
-  int wI_chain_letter_start = word_start_index(wIi);
+  // int wi = num_words() - 2;
+  // int wIi = num_words() - 1;
+  // int w_chain_letter_start = word_start_index(wi);
+  // int wI_chain_letter_start = word_start_index(wIi);
   
 
 

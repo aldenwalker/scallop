@@ -22,25 +22,26 @@ struct ChainLetter {
   int index;
   int index_in_group_reg_inv_list;
   char letter;
+  int raw_letter;
   int group;
 };
 
-std::ostream &operator<<(std::ostream &os, ChainLetter &CL);
+std::ostream &operator<<(std::ostream &os, const ChainLetter &CL);
 
 /*****************************************************************************
 * A free product of cyclic groups
 * ****************************************************************************/
 struct CyclicProduct {
   CyclicProduct(void);
-  CyclicProduct(std::string input);
-  ~CyclicProduct(void);
+  CyclicProduct(std::string input, bool raw);
 
-  int gen_order(char gen);                 //return the order of the given generator
-  int index_order(int index);
-  int gen_index(char gen);                 //return the number of the gen
-  int num_groups(void);
+  int gen_order(char gen) const;                 //return the order of the given generator
+  int index_order(int index) const;
+  int gen_index(char gen) const;                 //return the number of the gen
+  int num_groups(void) const;
   
-  void cyc_red(std::string &S);                 //cyclically reduce a string
+  void cyc_red(std::vector<int>& w) const;                 //cyclically reduce a word given as a list of signed 1-based gen indices
+  void cyc_red(std::string &S) const;                 //cyclically reduce a string
     
   std::vector<char> gens;
   std::vector<int> orders;
@@ -48,26 +49,28 @@ struct CyclicProduct {
   std::string short_rep();
     
 };
-std::ostream &operator<<(std::ostream &os, CyclicProduct &G);
+std::ostream &operator<<(std::ostream &os, const CyclicProduct &G);
 
 /*****************************************************************************
  * A chain   
  * ***************************************************************************/
 struct Chain { 
   Chain(void);
-  Chain(CyclicProduct* G, char** input, int num_strings);
+  Chain(CyclicProduct* G, char** input, int num_strings, bool raw);
 
-  int next_letter(int n);
-  int prev_letter(int n);
-  int num_words(void);
-  int num_letters();
-  std::string operator[](int index);    //get a word
-  void print_chunks(std::ostream &os);
-  void print_letters(std::ostream &os);
-  void print_group_letters(std::ostream &os);
+  int next_letter(int n) const;
+  int prev_letter(int n) const;
+  int num_words(void) const;
+  int num_letters() const;
+  std::string operator[](int index) const;    //get a word
+  void print_chunks(std::ostream &os) const;
+  void print_letters(std::ostream &os) const;
+  void print_group_letters(std::ostream &os) const;
   
   CyclicProduct* G;
+  bool raw;
   std::vector<std::string> words;
+  std::vector<std::vector<int> > raw_words;
   std::vector<int> weights;
   std::vector<std::vector<int> > group_letters;
   std::vector<ChainLetter> chain_letters;
@@ -76,7 +79,7 @@ struct Chain {
     
 };
 
-std::ostream &operator<<(std::ostream &os, Chain &C);
+std::ostream &operator<<(std::ostream &os, const Chain &C);
 
 
 /****************************************************************************

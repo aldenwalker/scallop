@@ -125,7 +125,6 @@ int chain_rank(int num_words, char** words) {
 int chain_rank(std::vector<std::string >& words) {
   int max_found = 0;
   for (int i=0; i<(int)words.size(); ++i) {
-    int j=0; 
     for (int j=0; j<(int)words[i].size(); ++j) {
       int val = (int)words[i][j];
       if ((val < 65) || (val > 90 && val < 97) || (val > 122)) {

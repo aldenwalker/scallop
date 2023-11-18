@@ -532,6 +532,30 @@ void SCYLLA::scylla_lp(Chain& C,
 
 
 
+static int raw_chain_rank(int argc, char** argv) {
+  int r = 0;
+  for (int i=0; i<argc; i++) {
+    std::string w{argv[i]};
+    if (w.size() == 0) {
+      std::cout << "You provided an empty argument?\n";
+      exit(1);
+    }
+    int j=0;
+    if (w[0] == 'w') {
+      while (j < (int)w.size() && w[j] != ',') j++;
+      j++;
+    }
+    while (j < (int)w.size()) {
+      int k = j;
+      while (k < (int)w.size() && w[k] != ',') k++;
+      r = std::max(r, abs(atoi(w.substr(j, k-j).c_str()))); //note we don't subtract 1, and that's correct
+      j = k+1;
+    }
+  }
+  return r;
+}
+
+
 void SCYLLA::write_solution_to_fatgraph(std::string& output_filename,
                                         Chain& C,
                                         InterfaceEdgeList& IEL,
@@ -554,6 +578,7 @@ void SCYLLA::scylla(int argc, char** argv) {
   std::string LP_filename;
   bool WRITE_FATGRAPH = false;
   std::string fatgraph_file = "";
+  bool RAW = false;
   
   if (argc < 1 || std::string(argv[0]) == "-h") {
     std::cout << "usage: ./scallop -cyclic [-h] [-v[n]] [-o <filename>] [-L <filename>] [-l] [-C] [-m<GLPK,GIPT,EXLP,GUROBI>] <gen string> <chain>\n";
@@ -568,6 +593,10 @@ void SCYLLA::scylla(int argc, char** argv) {
     std::cout << "\t-L <filename>: write out a sparse lp to the filename .A, .b, and .c\n";
     std::cout << "\t-C compute commutator length (not scl)\n";
     std::cout << "\t-m<format>: use the LP solver specified (EXLP uses GMP for exact output)\n";
+    std::cout << "\t-r: Specify that the input is 'raw', which supports more than 26 factors.\n";
+    std::cout << "\t    A 'raw' gen string is of the form 'G0,1,2,2', for 4 groups of orders infinity, 1, 2, 2 respectively\n";
+    std::cout << "\t    A 'raw' weighted word is 'w2,1,2,-1,-2' meaning 2*abAB.  The weight is optional.\n";
+    std::cout << "\t    There can be no spaces.  The indices are ONE BASED!!!\n";
     exit(0);
   }
   while (argv[current_arg][0] == '-') {
@@ -606,14 +635,15 @@ void SCYLLA::scylla(int argc, char** argv) {
     
     } else if (argv[current_arg][1] == 'C') {
       CL = true;
-    
       
     } else if (argv[current_arg][1] == 'o') {
       WRITE_FATGRAPH = true;
       fatgraph_file = std::string(argv[current_arg+1]);
       current_arg++;
+
+    } else if (argv[current_arg][1] == 'r') {
+      RAW = true;
     }
-    
     current_arg++;
   }
   
@@ -621,22 +651,42 @@ void SCYLLA::scylla(int argc, char** argv) {
   //otherwise, assume it's a free group
   std::string first_arg = std::string(argv[current_arg]);
   std::string G_in = "";
-  if (first_arg.size() < 2 || isalpha(first_arg[1])) {
-    //it's not a group string
-    int r = chain_rank(argc-current_arg, &argv[current_arg]);
-    for (int i=0; i<r; ++i) {
-      G_in += (char)(97+i);
-      G_in += "0";
+  if (RAW) {
+    if (first_arg.size() == 0) {
+      std::cout << "I'm confused by the first argument";
+      exit(1);
     }
-  } else {  
-    G_in = std::string(argv[current_arg]);                                                        //create the group
-    current_arg++;
+    if (first_arg[0] == 'G') {
+      G_in = first_arg.substr(1, first_arg.size()-1);
+    } else {
+      int r = raw_chain_rank(argc-current_arg, argv + current_arg);
+      G_in = "0";
+      for (int i=0; i<r-1; i++) {
+        G_in += ",0";
+      }
+    }
+  } else {
+    if (first_arg.size() < 2 || isalpha(first_arg[1])) {
+      //it's not a group string
+      int r = chain_rank(argc-current_arg, &argv[current_arg]);
+      for (int i=0; i<r; ++i) {
+        G_in += (char)(97+i);
+        G_in += "0";
+      }
+    } else {  
+      G_in = std::string(argv[current_arg]);                                                        //create the group
+      current_arg++;
+    }
   }
-  CyclicProduct G(G_in); 
+  if (VERBOSE > 1) {
+    std::cout << "Input generator string: " << G_in << "\n";
+  }
+  CyclicProduct G(G_in, RAW); 
   
-  Chain C(&G, &argv[current_arg], argc-current_arg);                              //process the chain argument
+  Chain C(&G, &argv[current_arg], argc-current_arg, RAW);                              //process the chain argument
 
   if (VERBOSE>1) {
+    std::cout << "Input in RAW mode\n";
     std::cout << "Group: " << G << "\n";
     std::cout << "Chain: " << C << "\n";
     if (VERBOSE>2) {

@@ -89,7 +89,7 @@ void HALLOP::hallop(int argc, char** argv) {
   std::vector<Rational> soln_vec(0); //rectangles, then triangles
   Rational scl;
   
-  hallop_lp(CR, P, solver, scl, soln_vec, verbose);
+  hallop_lp(CR, P, solver, scl, soln_vec, lp_verbose);
   
   if (verbose > 0) {
     std::cout << "Lower bound on scl: " << scl << "\n";

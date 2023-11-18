@@ -22,7 +22,7 @@ int sub_1_mod(int a, int m) {
 /****************************************************************************
  print a chain letter
  ***************************************************************************/
-std::ostream& SCYLLA::operator<<(std::ostream &os, ChainLetter &CL) {
+std::ostream& SCYLLA::operator<<(std::ostream &os, const ChainLetter &CL) {
   os << CL.letter << " (" << CL.word << "," << CL.index << ","
      << CL.index_in_group_reg_inv_list << ")";
   return os;
@@ -39,30 +39,40 @@ CyclicProduct::CyclicProduct(void) {
 }
 
 /* Create a cyclic group from an input of the form a0b2c3, giving Z*Z/2Z*Z/3Z
+ * OR input of the form @0,2,3, where the @ is not optional and there can be no spaces
  */
-CyclicProduct::CyclicProduct(std::string input) {
+CyclicProduct::CyclicProduct(std::string input, bool raw) {
   int i;
   int start;
   gens.resize(0);
   orders.resize(0);
-  i=0;
-  while (i < (int)input.size()) { 
-    gens.push_back(input[i]);
-    i++;
-    start = i;
-    while (i < (int)input.size() && isdigit(input[i])) {
-      i++;
+  if (input.size() == 0) return;
+  if (raw) {
+    i=0;
+    std::string alphabet = "abcdefghijklmnopqrstuvwxyz";
+    while (i < (int)input.size()) {
+      int end=i;
+      while (end < (int)input.size() && input[end] != ',') end++;
+      gens.push_back(((int)gens.size() < 26 ? alphabet[gens.size()] : '?'));
+      orders.push_back( atoi( input.substr(i, end-i).c_str() ));
+      i=end+1;
     }
-    orders.push_back( atoi( input.substr(start, i-start).c_str() ));
+  } else {
+    i=0;
+    while (i < (int)input.size()) { 
+      gens.push_back(input[i]);
+      i++;
+      start = i;
+      while (i < (int)input.size() && isdigit(input[i])) {
+        i++;
+      }
+      orders.push_back( atoi( input.substr(start, i-start).c_str() ));
+    }
   }
 }
 
-CyclicProduct::~CyclicProduct(void) {
-  //I don't need to free the vectors, right?
-}
-
 /* Return the order of a factor, given the generator letter */
-int CyclicProduct::gen_order(char gen) {
+int CyclicProduct::gen_order(char gen) const {
   int i;
   int len = gens.size();
   char gen_to_find = tolower(gen);
@@ -76,12 +86,12 @@ int CyclicProduct::gen_order(char gen) {
 }
 
 /* return the order of a factor, given the index of that factor */
-int CyclicProduct::index_order(int index) {
+int CyclicProduct::index_order(int index) const {
   return orders[index];
 }
 
 /* return the index of a generator, given the generator letter */
-int CyclicProduct::gen_index(char gen) {
+int CyclicProduct::gen_index(char gen) const {
   int i;
   int len = gens.size();
   char gen_to_find = tolower(gen);
@@ -93,15 +103,87 @@ int CyclicProduct::gen_index(char gen) {
   return -1;
 }
 
-int CyclicProduct::num_groups(void) {
+int CyclicProduct::num_groups(void) const {
   return gens.size();
 }
+
+
+/* Cyclically minimally reduce the word S given as a 1-based list of signed generator indices.  This entails:
+ * (1) cyclically reduce it
+ * (2) replace strings of generators with inverses, if that makes it shorter
+ * */
+void CyclicProduct::cyc_red(std::vector<int>& w) const {
+
+  // Group the generators into chunks
+  std::vector<std::pair<int,int> > chunks(0); // gen index, power
+  int start = 0;
+  while (start < (int)w.size()) {
+    int end = start;
+    int gen = abs(w[start])-1;
+    int sgn = (w[start] < 0 ? -1 : 1);
+    while (end < (int)w.size() && w[start] == w[end]) end++;
+    chunks.push_back(std::make_pair(gen, sgn*(end-start)));
+    start = end;
+  }
+
+  // Now repeatedly simplify
+  while (1) {
+    if ((int)chunks.size() > 1 && chunks[0].first == chunks[chunks.size()-1].first) { // check cyclic reduction
+      chunks[0].second += chunks[chunks.size()-1].second;
+      if (orders[chunks[0].first]) chunks[0].second = chunks[0].second % orders[chunks[0].first];
+      chunks.erase(chunks.end()-1);
+      if (chunks[0].second == 0) chunks.erase(chunks.begin());
+      continue;
+    }
+    int i=0;
+    int did_something=0;
+    while (i < (int)chunks.size()) {
+      // check cyclic combining
+      int j = (i < (int)chunks.size()-1 ? i+1 : 0);
+      if (i!=j && chunks[i].first == chunks[j].first) {
+        chunks[i].second += chunks[j].second;
+        chunks.erase(chunks.begin()+j);
+        did_something = 1;
+        break;
+      }
+      // check minimal length
+      int ord = orders[chunks[i].first];
+      if (ord) {
+        chunks[i].second = chunks[i].second % ord;
+        if (chunks[i].second < -(ord/2)) {
+          chunks[i].second += ord;
+        } else if (chunks[i].second > ord/2) {
+          chunks[i].second -= ord;
+        }
+      }
+      if (chunks[i].second == 0) {
+        chunks.erase(chunks.begin()+i);
+        did_something = 1;
+        break;
+      }
+      i++;
+    }
+    if (!did_something) break;
+  }
+  
+  // Reassemble the word
+  w.resize(0);
+  for (int i=0; i<(int)chunks.size(); i++) {
+    int gen = chunks[i].first;
+    int sgn = (chunks[i].second < 0 ? -1 : 1);
+    int ap  = abs(chunks[i].second);
+    for (int j=0; j<ap; j++) {
+      w.push_back(sgn*(gen+1));
+    }
+  }
+}
+
 
 /* Cyclically minimally reduce the word S.  This entails:
  * (1) cyclically reduce it
  * (2) replace strings of generators with inverses, if that makes it shorter
  * */
-void CyclicProduct::cyc_red(std::string &S) {
+void CyclicProduct::cyc_red(std::string &S) const {
   int i,j;
   char current_char;
   int current_start;
@@ -213,11 +295,16 @@ void CyclicProduct::cyc_red(std::string &S) {
 }    
 
 
-std::string SCYLLA::CyclicProduct::short_rep() {
+std::string CyclicProduct::short_rep() {
   std::string rep = "";
   int len = (int)gens.size();
   if (len == 0) return rep;
   std::stringstream ss;
+  if (num_groups() > 10) {
+    ss << "<prod of " << num_groups() << " groups>";
+    rep += ss.str();
+    return rep;
+  }
   if (orders[0] == 0) {
     rep += std::string(1,gens[0]);
   } else {
@@ -237,9 +324,19 @@ std::string SCYLLA::CyclicProduct::short_rep() {
   return rep;
 }
     
-std::ostream& SCYLLA::operator<<(std::ostream &os, CyclicProduct &G) {
+std::ostream& SCYLLA::operator<<(std::ostream &os, const CyclicProduct &G) {
   int i;
   int len = G.orders.size();
+  if (len > 26) {
+    for (i=0; i<len; i++) {
+      if (G.orders[i] == 0) {
+        os << "Z";
+      } else {
+        os << "Z/" << G.orders[i] << "Z";
+      }
+      if (i<len-1) os << "*";
+    }
+  }
   for (i=0; i<len-1; i++) {
     os << "<" << G.gens[i] << ">/<" << G.orders[i] << G.gens[i] << "> * ";
   }
@@ -257,36 +354,75 @@ Chain::Chain(void) {
 }
 
 
-Chain::Chain(CyclicProduct* G_in, char** input, int num_strings) {
+Chain::Chain(CyclicProduct* G_in, char** input, int num_strings, bool raw) {
   int i;
   int j;
-  std::string word;
-  std::string weight;
+  int k;
   
   G = G_in; //just a pointer assignment, not copy constructor
   
-  //input the raw words
-  for (i=0; i<num_strings; i++) {
-    j=0;
-    while (isdigit(input[i][j])) {
-      j++;
+  this->raw = raw;
+
+  if (raw) {
+    raw_words.clear();
+    weights.clear();
+    for (i=0; i<num_strings; i++) {
+      std::string s{input[i]};
+      if ((int)s.size() == 0) continue;
+      int weight = 1;
+      j=0;
+      if (s[0] == 'w') {
+        while (j<(int)s.size() && s[j] != ',') j++;
+        weight = atoi(s.substr(1,j).c_str());
+        j++;
+      }
+      if (j >= (int)s.size()) {
+        std::cout << "You gave me an empty word?";
+        exit(1);
+      }
+      weights.push_back(weight);
+      raw_words.push_back(std::vector<int>());
+      while (j < (int)s.size()) {
+        k=j;
+        while (k < (int)s.size() && s[k] != ',') k++;
+        raw_words[raw_words.size()-1].push_back(atoi(s.substr(j, k-j).c_str()));
+        j = k+1;
+      }
     }
-    weight = std::string(input[i]).substr(0,j);
-    word = std::string(&input[i][j]);
-    if (weight == "") {
-      weights.push_back(1);
-    } else {
-      weights.push_back( atoi( weight.c_str() ));
+    for (i=0; i<(int)raw_words.size(); i++) {
+      G->cyc_red(raw_words[i]);
+      if ((int)raw_words[i].size() == 0) {
+        std::cout << "You gave me a trivial word\n";
+        exit(1);
+      }
     }
-    words.push_back(word);
-  }
-  
-  //simplify the words
-  for (i=0; i<(int)words.size(); i++) {
-    (*G).cyc_red(words[i]);
-    if ((int)words[i].size() == 0) {
-      std::cout << "You gave me a trivial word\n";
-      exit(1);
+
+  } else {
+    std::string word;
+    std::string weight;
+    //input the words
+    for (i=0; i<num_strings; i++) {
+      j=0;
+      while (isdigit(input[i][j])) {
+        j++;
+      }
+      weight = std::string(input[i]).substr(0,j);
+      word = std::string(&input[i][j]);
+      if (weight == "") {
+        weights.push_back(1);
+      } else {
+        weights.push_back( atoi( weight.c_str() ));
+      }
+      words.push_back(word);
+    }
+    
+    //simplify the words
+    for (i=0; i<(int)words.size(); i++) {
+      (*G).cyc_red(words[i]);
+      if ((int)words[i].size() == 0) {
+        std::cout << "You gave me a trivial word\n";
+        exit(1);
+      }
     }
   }
   
@@ -304,59 +440,83 @@ Chain::Chain(CyclicProduct* G_in, char** input, int num_strings) {
     regular_letters[i].resize(0);
     inverse_letters[i].resize(0);
   }
-  for (i=0; i<(int)words.size(); i++) {
-    temp_letter.word = i;
-    for (j=0; j<(int)words[i].size(); j++) {
-      temp_letter.index = j;
-      temp_letter.letter = words[i][j];
-      temp_letter.group = (*G).gen_index(words[i][j]);
-      group_letters[ temp_letter.group ].push_back(chain_letters.size());
-      if (isupper(temp_letter.letter)) {
-        inverse_letters[temp_letter.group].push_back(chain_letters.size());
-        temp_letter.index_in_group_reg_inv_list 
-                              = inverse_letters[temp_letter.group].size()-1;
-      } else {
-        regular_letters[temp_letter.group].push_back(chain_letters.size());
-        temp_letter.index_in_group_reg_inv_list 
-                              = regular_letters[temp_letter.group].size()-1;
+  if (raw) {
+    for (i=0; i<(int)raw_words.size(); i++) {
+      temp_letter.word = i;
+      for (j=0; j<(int)raw_words[i].size(); j++) {
+        temp_letter.index = j;
+        temp_letter.letter = -1; //words[i][j];
+        temp_letter.raw_letter = raw_words[i][j];
+        temp_letter.group = abs(raw_words[i][j])-1; //G->gen_index(words[i][j]);
+        group_letters[ temp_letter.group ].push_back(chain_letters.size());
+        if (temp_letter.raw_letter < 0) {
+          inverse_letters[temp_letter.group].push_back(chain_letters.size());
+          temp_letter.index_in_group_reg_inv_list 
+                                = inverse_letters[temp_letter.group].size()-1;
+        } else {
+          regular_letters[temp_letter.group].push_back(chain_letters.size());
+          temp_letter.index_in_group_reg_inv_list 
+                                = regular_letters[temp_letter.group].size()-1;
+        }
+        chain_letters.push_back(temp_letter);
       }
-      chain_letters.push_back(temp_letter);
+    }
+  } else {
+    for (i=0; i<(int)words.size(); i++) {
+      temp_letter.word = i;
+      for (j=0; j<(int)words[i].size(); j++) {
+        temp_letter.index = j;
+        temp_letter.letter = words[i][j];
+        temp_letter.raw_letter = 0;
+        temp_letter.group = (*G).gen_index(words[i][j]);
+        group_letters[ temp_letter.group ].push_back(chain_letters.size());
+        if (isupper(temp_letter.letter)) {
+          inverse_letters[temp_letter.group].push_back(chain_letters.size());
+          temp_letter.index_in_group_reg_inv_list 
+                                = inverse_letters[temp_letter.group].size()-1;
+        } else {
+          regular_letters[temp_letter.group].push_back(chain_letters.size());
+          temp_letter.index_in_group_reg_inv_list 
+                                = regular_letters[temp_letter.group].size()-1;
+        }
+        chain_letters.push_back(temp_letter);
+      }
     }
   }
-  
-  
 }
 
-int Chain::next_letter(int n) {
+int Chain::next_letter(int n) const {
   int word = chain_letters[n].word;
   int index = chain_letters[n].index;
-  if (index == (int)words[word].size()-1) {
-    return n-words[word].size()+1;
+  int wordlen = (raw ? raw_words[word].size() : words[word].size());
+  if (index == wordlen-1) {
+    return n-wordlen+1;
   } else {
     return n+1;
   }
 }
 
-int Chain::prev_letter(int n) {
+int Chain::prev_letter(int n) const {
   int word = chain_letters[n].word;
   int index = chain_letters[n].index;
+  int wordlen = (raw ? raw_words[word].size() : words[word].size());
   if (index == 0) {
-    return n+words[word].size()-1;
+    return n+wordlen-1;
   } else {
     return n-1;
   }
 }
 
 
-int Chain::num_words(void) {
-  return words.size();
+int Chain::num_words(void) const {
+  return (raw ? raw_words.size() : words.size());
 }
 
-int Chain::num_letters() {
+int Chain::num_letters() const {
   return chain_letters.size();
 }
 
-std::string Chain::operator[](int index) {
+std::string Chain::operator[](int index) const {
   return words[index];
 }
 
@@ -375,14 +535,14 @@ void Chain::print_chunks(std::ostream &os) {
 }
 */
 
-void Chain::print_letters(std::ostream &os) {
+void Chain::print_letters(std::ostream &os) const {
   int i;
   for (i=0; i<(int)chain_letters.size(); i++) {
     os << i << ": " << chain_letters[i] << "\n";
   }
 }
 
-void Chain::print_group_letters(std::ostream &os) {
+void Chain::print_group_letters(std::ostream &os) const {
   int i,j;
   for (i=0; i<(*G).num_groups(); i++) {
     os << "Group " << i << ":\n";
@@ -396,11 +556,21 @@ void Chain::print_group_letters(std::ostream &os) {
 }
 
 
-std::ostream& SCYLLA::operator<<(std::ostream &os, Chain &C) {
+std::ostream& SCYLLA::operator<<(std::ostream &os, const Chain &C) {
   int i;
-  int len = (int)C.words.size();
-  for (i=0; i<len; i++) {
-    os << C.weights[i] << C.words[i] << " ";
+  int len = (int)C.num_words();
+  if (C.raw) {
+    for (i=0; i<len; i++) {
+      os << C.weights[i] << "[";
+      for (int j=0; j<(int)C.raw_words[i].size(); j++) {
+        os << (j > 0 ? "," : "") << C.raw_words[i][j];
+      }
+      os << "]" << (i < len-1 ? " + " : "");
+    }
+  } else {
+    for (i=0; i<len; i++) {
+      os << C.weights[i] << C.words[i] << " ";
+    }
   }
   return os;
 }

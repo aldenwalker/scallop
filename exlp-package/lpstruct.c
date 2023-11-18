@@ -157,7 +157,7 @@ int lp_add_row_without_A(LP* lp, char* name) {
 
   lp->basis_column = my_realloc(lp->basis_column, lp->rows*sizeof(int));
   lp->basis_column[lp->rows-1] = 0;
-  /* ¢¬¤Ï lp_remove_row() ¤ò¤¹¤ëºÝ½é´ü²½¤·¤Æ¤¤¤ë¤³¤È¤¬É¬Í×¤Ê¤¿¤á */
+  /* ï¿½ï¿½ï¿½ï¿½ lp_remove_row() ï¿½ò¤¹¤ï¿½Ý½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¤ï¿½ï¿½ë¤³ï¿½È¤ï¿½É¬ï¿½×¤Ê¤ï¿½ï¿½ï¿½ */
   return(lp->rows - 1);
 }
 
@@ -168,9 +168,9 @@ int lp_add_row(LP* lp, char* name) {
 }
 
 void lp_remove_row(LP* lp, int row) {
-  /* phase1 ¤ÎÁ°¤Ë¸Æ¤Ö¤Î¤Ï¤¤¤¤¤ó¤À¤±¤É
-     phase1 ¤È phase2 ¤Î´Ö¤Ë¸Æ¤ó¤ÇÊ¿µ¤¤«¤Ê? 
-     ¤È¤ê¤¢¤¨¤º lp->eta °Ê²¼¤ÎÌÌÅÝ¤ß¤Æ¤Ê¤¤. */
+  /* phase1 ï¿½ï¿½ï¿½ï¿½ï¿½Ë¸Æ¤Ö¤Î¤Ï¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+     phase1 ï¿½ï¿½ phase2 ï¿½Î´Ö¤Ë¸Æ¤ï¿½ï¿½Ê¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½? 
+     ï¿½È¤ê¤¢ï¿½ï¿½ï¿½ï¿½ lp->eta ï¿½Ê²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¤ß¤Æ¤Ê¤ï¿½. */
   int  i;
 
   matrix_dec_row_dimension(lp->A, row);
@@ -192,10 +192,10 @@ void lp_remove_row(LP* lp, int row) {
 }
 
 int lp_add_var_without_A(LP* lp, char* name) {
-  /* ÄÉ²Ã¤µ¤ì¤ë¤Î¤ÏÈóÉéÊÑ¿ô       */
-  /* Ìá¤êÃÍ¤ÏÄÉ²Ã¤µ¤ì¤¿ÊÑ¿ô¤ÎÈÖ¹æ */
-  /* ±þµÞ½èÃÖ¤Ç¤¹... matrix_add_column(lp->A) ¤·¤Ê¤¤°Ê³°¤Ï lp_add_var()
-     ¤ÈÆ±¤¸¤Ç¤¹. */
+  /* ï¿½É²Ã¤ï¿½ï¿½ï¿½ï¿½Î¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¿ï¿½       */
+  /* ï¿½ï¿½ï¿½ï¿½Í¤ï¿½ï¿½É²Ã¤ï¿½ï¿½ì¤¿ï¿½Ñ¿ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ */
+  /* ï¿½ï¿½ï¿½Þ½ï¿½ï¿½Ö¤Ç¤ï¿½... matrix_add_column(lp->A) ï¿½ï¿½ï¿½Ê¤ï¿½ï¿½Ê³ï¿½ï¿½ï¿½ lp_add_var()
+     ï¿½ï¿½Æ±ï¿½ï¿½ï¿½Ç¤ï¿½. */
   lp->vars ++;
 
   lp->var_type = my_realloc(lp->var_type, lp->vars*sizeof(int));
@@ -232,8 +232,8 @@ int lp_add_var_without_A(LP* lp, char* name) {
 }
 
 int lp_add_var(LP* lp, char* name) {
-  /* ÄÉ²Ã¤µ¤ì¤ë¤Î¤ÏÈóÉéÊÑ¿ô       */
-  /* Ìá¤êÃÍ¤ÏÄÉ²Ã¤µ¤ì¤¿ÊÑ¿ô¤ÎÈÖ¹æ */
+  /* ï¿½É²Ã¤ï¿½ï¿½ï¿½ï¿½Î¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¿ï¿½       */
+  /* ï¿½ï¿½ï¿½ï¿½Í¤ï¿½ï¿½É²Ã¤ï¿½ï¿½ì¤¿ï¿½Ñ¿ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ */
   int i = lp_add_var_without_A(lp, name);
   matrix_add_column(lp->A);
 
@@ -548,8 +548,8 @@ void lp_add_slacks(LP* lp) {
   for (i = 0; i < lp->rows; i ++) {
     if (lp->row_equality[i] == LP_EQUALITY_LE) {
       if(lp->row_name != NULL) {
-        strncpy(buf, "#S", LP_NAME_LEN_MAX);
-        strncat(buf, lp->row_name[i], LP_NAME_LEN_MAX);
+        strncpy(buf, "#S", LP_NAME_LEN_MAX-1);
+        strncat(buf, lp->row_name[i], LP_NAME_LEN_MAX-1);
         j = lp_add_var_without_A(lp, buf);
       }
       else
@@ -847,7 +847,7 @@ void lp_add_artificials(LP* lp) {
       j = lp_add_var_without_A(lp, NULL);
     else {
       strncpy(buf, "#A", LP_NAME_LEN_MAX);
-      strncat(buf, lp->row_name[i], LP_NAME_LEN_MAX);
+      strncat(buf, lp->row_name[i], LP_NAME_LEN_MAX-1);
       j = lp_add_var_without_A(lp, buf);
     }
     lp_add_slackref(lp, -(i+1));

@@ -163,7 +163,8 @@ SCABBLE::Pt SCABBLE::Pt::negate_coords(int i) {
   return p;
 }
 
-std::ostream& SCABBLE::operator<<(std::ostream& os, const SCABBLE::Pt& p) {
+namespace SCABBLE {
+std::ostream& operator<<(std::ostream& os, const SCABBLE::Pt& p) {
   int dim = p.x.size();
   os << "[";
   if (dim > 0) {
@@ -175,7 +176,7 @@ std::ostream& SCABBLE::operator<<(std::ostream& os, const SCABBLE::Pt& p) {
   os << "]";
   return os;
 }
-
+}
 
 
     

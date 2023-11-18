@@ -310,13 +310,14 @@ void compute_polys(std::vector<Poly>& P,
   }    
 }
 
-
-std::ostream& GALLOP::operator<<(std::ostream& os, Poly P) {
+namespace GALLOP {
+std::ostream& operator<<(std::ostream& os, Poly P) {
   int i;
   for (i=0; i<(int)P.rects.size(); i++) {
     std::cout << P.rects[i] << " ";
   }
   return os;
+}
 }
 
 RectList::RectList() {
@@ -432,11 +433,13 @@ int RectList::find_index_from_pair(int a, int b) {
   }
   return 0; 
 }
-  
-std::ostream& GALLOP::operator<<(std::ostream& os, Rect R) {
+
+namespace GALLOP {
+std::ostream& operator<<(std::ostream& os, Rect R) {
   os << "R(" << R.first << ", " << R.second << "); edge: " << R.graph_edge << 
         "; source_idx: " << R.source_edge_idx << "; dest_idx: " << R.dest_edge_idx;
   return os;
+}
 }
 
 void cyc_red_marked(std::string& s) {
