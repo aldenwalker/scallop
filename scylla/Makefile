@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-O3 #-g -Wall
-IFLAGS=-I/sw/include
+IFLAGS=-I/sw/include -I${CONDA_PREFIX}/include
 
 all: scylla.o scylla_classes.o 
 

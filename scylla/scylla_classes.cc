@@ -124,6 +124,7 @@ void CyclicProduct::cyc_red(std::vector<int>& w) const {
     while (end < (int)w.size() && w[start] == w[end]) end++;
     chunks.push_back(std::make_pair(gen, sgn*(end-start)));
     start = end;
+    // std::cout << "Chunk " << gen << ", " << sgn*(end-start) << std::endl;
   }
 
   // Now repeatedly simplify

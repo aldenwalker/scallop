@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-O3 -fcommon #-g -Wall
-IFLAGS=-I/sw/include -I/opt/local/include
-LDFLAGS=-L/sw/lib -I/opt/local/lib -lglpk -lgmp
+IFLAGS=-I/sw/include -I/opt/local/include -I${CONDA_PREFIX}/include
+LDFLAGS=-L/sw/lib -I/opt/local/lib -L${CONDA_PREFIX}/lib -lglpk -lgmp 
 
 #gurobi stuff
 GURDIR = /home/akwalker/Documents/software/gurobi501/linux64

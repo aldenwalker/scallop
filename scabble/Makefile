@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-g -Wall
-IFLAGS=-I/sw/include
+IFLAGS=-I/sw/include -I${CONDA_PREFIX}/include
 
 all: scabble.o 
 

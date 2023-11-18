@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-g -Wall
-IFLAGS=-I/sw/include
+IFLAGS=-I/sw/include -I${CONDA_PREFIX}/include
 
 all: hallop.o free_group_chain.o pieces.o hallop_lp.o
 

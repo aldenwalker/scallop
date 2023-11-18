@@ -658,6 +658,7 @@ void SCYLLA::scylla(int argc, char** argv) {
     }
     if (first_arg[0] == 'G') {
       G_in = first_arg.substr(1, first_arg.size()-1);
+      current_arg++;
     } else {
       int r = raw_chain_rank(argc-current_arg, argv + current_arg);
       G_in = "0";
@@ -684,6 +685,11 @@ void SCYLLA::scylla(int argc, char** argv) {
   CyclicProduct G(G_in, RAW); 
   
   Chain C(&G, &argv[current_arg], argc-current_arg, RAW);                              //process the chain argument
+
+  if (C.num_words() > 1 && CL) {
+    std::cout << "Commutator length for multiple words is sketchy at best, so maybe better to bail out" << std::endl;
+    exit(1);
+  }
 
   if (VERBOSE>1) {
     std::cout << "Input in RAW mode\n";
@@ -755,6 +761,10 @@ void SCYLLA::scylla(int argc, char** argv) {
     write_solution_to_fatgraph(fatgraph_file,
                                C, IEL, CEL, CP, GT, GR, solution_vector, VERBOSE);
   }
+
+  // for (int i=0; i<(int)solution_vector.size(); i++) {
+  //   std::cout << i << ": " << solution_vector[i] << std::endl;
+  // }
   
   return;
 }

@@ -1,4 +1,4 @@
-scallop
+# scallop
 
 Copyright 2012, 2013, 2014 by Alden Walker
 
@@ -7,7 +7,7 @@ Released under the GPL.
 See INSTALL for installation instructions.
 
 
-******* Background
+## Background
 
 scallop computes with surfaces in free groups and free products of
 cyclic groups.  The appropriate background material is contained 
@@ -22,18 +22,20 @@ usually produce these via linear programming.
 
 
 
-******** Installation
+## Installation
 
 See the INSTALL file
 
 
 
-******** Executing scallop
+## Executing scallop
 
 scallop is run by choosing one of four main modes, and then 
 providing more mode-specific arguments:
 
+```
 ./scallop [-cyclic, -ball, -local, -train] <mode-specific arguments>
+```
 
 It is not necessary to explicitly give a mode, in which case 
 scallop will default to the original scallop algorithm for free 
@@ -50,7 +52,7 @@ information.  The optional integer n says how much: default output (1),
 verbose output (2), really verbose (3), and so verbose you probably don't 
 want it (4).
 
-  *** A note on speed
+  ### A note on speed
   
   Scallop defaults to the nonrigorous original scallop algorithm because 
   for small rank it is much faster than the rigorous -cyclic.  At 
@@ -62,39 +64,47 @@ want it (4).
   worthwhile getting the free academic license.
 
 
-  ****** default (no mode specified) 
+  ### default (no mode specified) 
   
+  ```
   ./scallop chain 
+  ```
+
+  Examples:
   
-  Example:
-  
+  ```
   $ ./scallop abAB
   scl( abAB ) = 1/2 = 0.5
   
   $ ./scallop AbaaBAAABabAAbAAABBBBaaababbabaBaabbABBA
   scl( AbaaBAAABabAAbAAABBBBaaababbabaBaabbABBA ) = 245/146 = 1.67808
-  
-  With no mode specified, scallop defaults to -local, and the default 
-  -local behavior is to compute in a free group with the maximum fatgraph 
+  ```
+
+  With no mode specified, scallop defaults to `-local`, and the default 
+  `-local` behavior is to compute in a free group with the maximum fatgraph 
   valence set to 2*rank.  This is nonrigorous (but generically correct, and 
   experimentally accurate with probability more than 0.95 for words of 
   length up through 100ish ).  In some cases, this mode can fail:
   
+  ```
   $ ./scallop abAAABBB aa bb
   No feasible solution found
-  
+  ```
+
   This is because a fatgraph bounding this chain must have valance at least 5.  
   If the default mode fails, simply run scallop in -cyclic mode to get a rigorous 
   answer:
-  
+  ```
   $./scallop -cyclic abAAABBB aa bb
   scl_{a*b}( 1abAAABBB 1aa 1bb ) = 3/4 = 0.75 
- 
+ ```
 
-  ****** -cyclic
+  ### `-cyclic`
   
+  ```
   ./scallop -cyclic [options] [group] chain
-  
+  ```
+
   Examples: 
   
   ```
@@ -121,7 +131,7 @@ want it (4).
 
   The 'raw' mode `-r` lets you compute in groups with more than 26 factors.
 
-  The -cyclic mode computes scl and cl in free products of cyclic groups.  
+  The `-cyclic` mode computes scl and cl in free products of cyclic groups.  
   The group string lists the generators and their orders (0 means infinite).  
   The option -C causes scallop to compute commutator length.  This involves 
   an integer programming problem, which is far harder than the linear programming 
@@ -130,22 +140,26 @@ want it (4).
   with support), or EXLP (only available for free groups).  EXLP uses GMP for 
   exact solutions.   
   
-  ****** -ball
+  ### `-ball`
   
+  ```
   ./scallop -ball [options] filename [group] chain1 , chain2
-  
+  ```
+
   Examples:
   
+  ```
   $ ./scallop -ball test.eps abAB , abAABB ab
   Drew ball to file
   
   $ ./scallop -ball -mGUROBI test.eps a5b3 abAB , abAABB ab
   Drew ball to file
-  
-  The -ball mode computes the scl norm ball in the subspace of B_1^H spanned 
-  by the given chains.  It defaults to using -mEXLP as the solver to avoid 
+  ```
+
+  The `-ball`` mode computes the scl norm ball in the subspace of B_1^H spanned 
+  by the given chains.  It defaults to using `-mEXLP` as the solver to avoid 
   rounding errors.  However, to compute a ball in a group with finite cyclic 
-  factors, the user must specify -mGLPK or -mGUROBI.  scallop will 
+  factors, the user must specify `-mGLPK` or `-mGUROBI`.  scallop will 
   write an eps file to whatever filename is specified.
   
   Theoretically, the algorithm can produce the ball in any dimension and 
@@ -156,16 +170,19 @@ want it (4).
   Make sure to include the output file name!  Omitting it will 
   almost certainly cause scallop to crash (it will assume the first word in 
   the chain is the output file name, which will probably render the rest 
-  not homologically trivial.  Also, the commas are necessary!
+  not homologically trivial).  Also, the commas are necessary!
   
   
   
-  ****** -local
+  ### `-local`
   
+  ```
   ./scallop -local [options] chain
-  
+  ```
+
   Examples:
   
+  ```
   $ ./scallop -local abAAABBB aa bb
   scl = 3/4 = 0.75
   
@@ -189,7 +206,8 @@ want it (4).
   
   $ ./scallop -local -ff1 abAB a.ab.bAABB
   No feasible solution found
-  
+  ```
+
   The -local option searchs for fatgraphs in a free group bounding the chain 
   which have the desired local properties.  The typical options are:
   -f requires that the result be Stallings folded
@@ -206,12 +224,15 @@ want it (4).
 
   
   
-  ****** -train
+  ### -train
   
+  ```
   ./scallop -train [-sup, -scl] length chain
-  
+  ```
+
   Examples:
   
+  ```
   $ ./scallop -train 3 abAABB ab
   scl( abA bAA AAB ABB BBa Bab aba bab ) = 1/2 = 0.5
   
@@ -229,8 +250,9 @@ want it (4).
   
   $ ./scallop -train -sup -mGUROBI 4 abAAABBB aa bb
   sup_{Q_4} phi(C)/2D(phi) = inf_t(w + tE) = (t->35319/1304); 2/3 = 0.666667
-  
-  The -train mode computes with traintracks (see [2]).  If the length 
+  ```
+
+  The `-train` mode computes with traintracks (see [2]).  If the length 
   specified is n, then it finds a minimal surface bounding the set 
   of length n words contained in the given chain.  It can also find 
   the supremum of phi(C)/2D(phi) over all counting quasimorphisms phi, 
@@ -243,7 +265,7 @@ want it (4).
 
   
 
-******** TODO / Troubleshooting
+## TODO / Troubleshooting
 
 There are several pieces of scallop that aren't implemented.  A user 
 encountering these issues *should* find that scallop explains itself and 
@@ -254,13 +276,13 @@ will cause scallop to misinterpret what the chain is, which usually
 causes it to crash.
 
 Missing pieces:
-1) -cyclic should have the capability to output a fatgraph file 
-2) -ball should be able to output an arbitrary dimensional ball
-3) -ball should be able to write an eps or povray file for a 3d ball
+ - -cyclic should have the capability to output a fatgraph file 
+ - -ball should be able to output an arbitrary dimensional ball
+ - -ball should be able to write an eps or povray file for a 3d ball
 
 
 
-******** References
+## References
 
 [1] D. Calegari. scl. MSJ Memoirs, 20. Mathematical Society of Japan, Tokyo, 2009.
 
