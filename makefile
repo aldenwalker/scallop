@@ -1,7 +1,9 @@
 CC=g++
-CFLAGS=-O3 -fcommon #-g -Wall
-IFLAGS=-I/sw/include -I/opt/local/include -I${CONDA_PREFIX}/include
-LDFLAGS=-L/sw/lib -I/opt/local/lib -L${CONDA_PREFIX}/lib -lglpk -lgmp 
+CFLAGS=-O3 -fcommon  -g -Wall 
+CXXFLAGS=-std=c++11
+IFLAGS=-I/usr/local/include -I${CONDA_PREFIX}/include
+LDFLAGS=-I/usr/local/include  -L/usr/local/lib -lglpk -lgmpxx -lgmp 
+ 
 
 #gurobi stuff
 GURDIR = /home/akwalker/Documents/software/gurobi501/linux64
@@ -19,25 +21,25 @@ $(DIRS) :
 	$(MAKE) -C $@
 
 rational.o: rational.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c rational.cc
+	$(CC) $(CFLAGS) $(CXXFLAGS)  $(IFLAGS) -c rational.cc -target x86_64-apple-macos14
 
 word.o: word.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c word.cc
+	$(CC) $(CFLAGS) $(CXXFLAGS) $(IFLAGS) -c word.cc -target x86_64-apple-macos14
 
 lp.o: lp.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c lp.cc
+	$(CC) $(CFLAGS) $(CXXFLAGS) $(IFLAGS) -c lp.cc -target x86_64-apple-macos14
 
 lp.o_GUR: lp.cc
-	$(CC) $(CFLAGS) $(IFLAGS) $(GURINC) -DGUROBI_INSTALLED -c lp.cc
+	$(CC) $(CFLAGS) $(CXXFLAGS) $(IFLAGS) $(GURINC) -DGUROBI_INSTALLED -c lp.cc -target x86_64-apple-macos14
 
 scallop.o: scallop.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c scallop.cc
+	$(CC) $(CFLAGS) $(CXXFLAGS) $(IFLAGS) -c scallop.cc -target x86_64-apple-macos14
 
 scallop_with_gurobi: $(DIRS) scallop.o rational.o word.o lp.o_GUR scylla gallop trollop exlp-package
-	$(CC) $(CFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o scabble/*.o hallop/*.o $(GURLIB) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(CXXFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o scabble/*.o hallop/*.o $(GURLIB) $(LDFLAGS) -target x86_64-apple-macos14
 
 scallop: $(DIRS) scallop.o rational.o word.o lp.o scylla gallop trollop scabble exlp-package
-	$(CC) $(CFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o scabble/*.o hallop/*.o $(LDFLAGS)
+	$(CC) $(CFLAGS) $(CXXFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o scabble/*.o hallop/*.o $(LDFLAGS) -target x86_64-apple-macos14
 
 clean: 
 	rm *.o
