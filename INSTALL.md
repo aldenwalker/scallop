@@ -15,8 +15,7 @@ One way to satisfy the dependencies is to install conda/mamba, say from https://
 mamba create -n scallop-build cmake gmp glpk
 ```
 
-To run `scallop`, you may find that you need to `export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib` so that the executable can find the glpk shared libary.
-On MacOS, the environment variable is `DYLD_LIBRARY_PATH`.
+To run `scallop`, you may find that you need to `export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib` so that the executable can find the glpk shared libary.  On MacOS, the environment variable is `DYLD_LIBRARY_PATH`.  Hopefully, the cmake now prefers the static libraries.
 
 ### Using gurobi with cmake
 

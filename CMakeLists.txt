@@ -3,9 +3,11 @@ set(CMAKE_CXX_STANDARD 11)
 project(scallop)
 
 find_path(GMP_INCLUDE gmp.h REQUIRED)
-find_library(GMP_LIB gmp REQUIRED)
+find_library(GMP_LIB NAMES libgmp.a gmp REQUIRED)
+message(STATUS "Using GMP library ${GMP_LIB}")
 find_path(GLPK_INCLUDE glpk.h REQUIRED)
-find_library(GLPK_LIB glpk REQUIRED)
+find_library(GLPK_LIB NAMES libglpk.a glpk REQUIRED)
+message(STATUS "Using GLPK library ${GLPK_LIB}")
 
 add_library(scalloplib lp.cc rational.cc word.cc)
 target_sources(scalloplib PUBLIC FILE_SET scalloplib_headers TYPE HEADERS FILES lp.h rational.h word.h)
