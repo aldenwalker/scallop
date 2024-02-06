@@ -1,13 +1,16 @@
+TARGET=
 CC=g++
-CFLAGS=-O3 -fcommon #-g -Wall
-IFLAGS=-I/sw/include -I/opt/local/include -I${CONDA_PREFIX}/include
-LDFLAGS=-L/sw/lib -I/opt/local/lib -L${CONDA_PREFIX}/lib -lglpk -lgmp 
+CFLAGS=-O3 -fcommon  -g -Wall
+CXXFLAGS=-std=c++11
+IFLAGS=-I/usr/local/include -I${CONDA_PREFIX}/include
+LDFLAGS=-I/usr/local/include  -L/usr/local/lib -lglpk -lgmpxx -lgmp
+
 
 #gurobi stuff
 GURDIR = /home/akwalker/Documents/software/gurobi501/linux64
 GURINCDIR = $(GURDIR)/include
 GURLIBDIR = $(GURDIR)/lib
-GURINC = -I$(GURINCDIR) 
+GURINC = -I$(GURINCDIR)
 GURLIB = -L$(GURLIBDIR) -lgurobi50
 
 DIRS = exlp-package scylla gallop trollop scabble hallop
@@ -19,27 +22,27 @@ $(DIRS) :
 	$(MAKE) -C $@
 
 rational.o: rational.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c rational.cc
+	$(CC) $(CFLAGS) $(CXXFLAGS)  $(IFLAGS) -c rational.cc $(TARGET)
 
 word.o: word.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c word.cc
+	$(CC) $(CFLAGS) $(CXXFLAGS) $(IFLAGS) -c word.cc $(TARGET)
 
 lp.o: lp.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c lp.cc
+	$(CC) $(CFLAGS) $(CXXFLAGS) $(IFLAGS) -c lp.cc $(TARGET)
 
 lp.o_GUR: lp.cc
-	$(CC) $(CFLAGS) $(IFLAGS) $(GURINC) -DGUROBI_INSTALLED -c lp.cc
+	$(CC) $(CFLAGS) $(CXXFLAGS) $(IFLAGS) $(GURINC) -DGUROBI_INSTALLED -c lp.cc $(TARGET)
 
 scallop.o: scallop.cc
-	$(CC) $(CFLAGS) $(IFLAGS) -c scallop.cc
+	$(CC) $(CFLAGS) $(CXXFLAGS) $(IFLAGS) -c scallop.cc $(TARGET)
 
 scallop_with_gurobi: $(DIRS) scallop.o rational.o word.o lp.o_GUR scylla gallop trollop exlp-package
-	$(CC) $(CFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o scabble/*.o hallop/*.o $(GURLIB) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(CXXFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o scabble/*.o hallop/*.o $(GURLIB) $(LDFLAGS) $(TARGET)
 
 scallop: $(DIRS) scallop.o rational.o word.o lp.o scylla gallop trollop scabble exlp-package
-	$(CC) $(CFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o scabble/*.o hallop/*.o $(LDFLAGS)
+	$(CC) $(CFLAGS) $(CXXFLAGS) -o scallop *.o exlp-package/*.o scylla/*.o gallop/*.o trollop/*.o scabble/*.o hallop/*.o $(LDFLAGS) $(TARGET)
 
-clean: 
+clean:
 	rm *.o
 	rm exlp-package/*.o
 	rm scylla/*.o
