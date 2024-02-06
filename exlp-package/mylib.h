@@ -40,22 +40,22 @@ void  print_rational(mpq_t q);
 void  print_rational_as_float(mpq_t q, int n);
 int mympq_cmp_abs(mpq_t a, mpq_t b);
 void mympq_floor(mpq_t c, mpq_t q);
-  /* c ¤Ë q ¤ò±Û¤¨¤Ê¤¤ºÇÂç¤ÎÀ°¿ô¤òÊÖ¤¹. */
+  /* c ï¿½ï¿½ q ï¿½ï¿½Û¤ï¿½ï¿½Ê¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¤ï¿½. */
 void mympq_ceil(mpq_t c, mpq_t q);
-  /* c ¤Ë q ¤è¤ê¾®¤µ¤¯¤Ê¤¤ºÇ¾®¤ÎÀ°¿ô¤òÊÖ¤¹. */
+  /* c ï¿½ï¿½ q ï¿½ï¿½ê¾®ï¿½ï¿½ï¿½ï¿½ï¿½Ê¤ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¤ï¿½. */
 void mympq_remainder(mpq_t r, mpq_t q);
-  /* ²¾Ê¬¿ô q ¤òÂÓÊ¬¿ô ¤ÇÉ½¤·¤¿»þ¤Î¿¿Ê¬¿ôÉô¤ò q ¤ËÊÖ¤¹. r >= 0 */
+  /* ï¿½ï¿½Ê¬ï¿½ï¿½ q ï¿½ï¿½ï¿½ï¿½Ê¬ï¿½ï¿½ ï¿½ï¿½É½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î¿ï¿½Ê¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ q ï¿½ï¿½ï¿½Ö¤ï¿½. r >= 0 */
 int mympq_is_integer(mpq_t q);
 void  mympq_simplify(mpq_t to, mpq_t from, int exactness);
-  /* exactness ·å¤ÎÏ¢Ê¬¿ôÅ¸³«¤ò¤¹¤ë ^_^; */
+  /* exactness ï¿½ï¿½ï¿½Ï¢Ê¬ï¿½ï¿½Å¸ï¿½ï¿½ï¿½ò¤¹¤ï¿½ ^_^; */
 void  mympq_set_float_string(mpq_t q, char* s);
 void  mympq_set_string(mpq_t q, char* s);
 
 static char mpq_const_defined = 0;
-mpq_t mympq_zero;
-mpq_t mympq_one;
-mpq_t mympq_minus_one;
-mpq_t mympq_tmp;
+extern mpq_t mympq_zero;
+extern mpq_t mympq_one;
+extern mpq_t mympq_minus_one;
+extern mpq_t mympq_tmp;
 
 #ifdef NO_GMP_HASH
 

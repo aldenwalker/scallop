@@ -1,6 +1,11 @@
 #include "mylib.h"
 #include <string.h>
 
+mpq_t mympq_zero;
+mpq_t mympq_one;
+mpq_t mympq_minus_one;
+mpq_t mympq_tmp;
+
 void mylib_init(void) {
   if(mpq_const_defined)
     return;
@@ -62,8 +67,8 @@ void* my_calloc(size_t n, size_t size) {
 }
 
 void my_sort(int* I, mpq_t* V, int min, int max) {
-  /* I[min] ¤«¤é I[max] ¤ÎÃÍ¤ò¾®¤µ¤¤½ç¤ËÊÂ¤ÙÊÑ¤¨¤ë.
-     ¤½¤ÎºÝ V ¤âÊÂ¤ÙÊÑ¤¨¤é¤ì¤ë. */
+  /* I[min] ï¿½ï¿½ï¿½ï¿½ I[max] ï¿½ï¿½ï¿½Í¤ò¾®¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¤ï¿½ï¿½Ñ¤ï¿½ï¿½ï¿½.
+     ï¿½ï¿½ï¿½Îºï¿½ V ï¿½ï¿½ï¿½Â¤ï¿½ï¿½Ñ¤ï¿½ï¿½ï¿½ï¿½ï¿½. */
   int  i, j, t, x;
   char d[sizeof(mpq_t)];
 
@@ -90,8 +95,8 @@ void my_sort(int* I, mpq_t* V, int min, int max) {
 }
 
 void my_sort2(int* I, mpq_t** V1, mpq_t** V2, int min, int max) {
-  /* I[min] ¤«¤é I[max] ¤ÎÃÍ¤ò¾®¤µ¤¤½ç¤ËÊÂ¤ÙÊÑ¤¨¤ë.
-     ¤½¤ÎºÝ V1, V2 ¤âÊÂ¤ÙÊÑ¤¨¤é¤ì¤ë. */
+  /* I[min] ï¿½ï¿½ï¿½ï¿½ I[max] ï¿½ï¿½ï¿½Í¤ò¾®¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¤ï¿½ï¿½Ñ¤ï¿½ï¿½ï¿½.
+     ï¿½ï¿½ï¿½Îºï¿½ V1, V2 ï¿½ï¿½ï¿½Â¤ï¿½ï¿½Ñ¤ï¿½ï¿½ï¿½ï¿½ï¿½. */
   int  i, j, t, x;
   mpq_t* q;
 
@@ -117,8 +122,8 @@ void my_sort2(int* I, mpq_t** V1, mpq_t** V2, int min, int max) {
 }
 
 void my_sort_d(int* I, double* V, int min, int max) {
-  /* I[min] ¤«¤é I[max] ¤ÎÃÍ¤ò¾®¤µ¤¤½ç¤ËÊÂ¤ÙÊÑ¤¨¤ë.
-     ¤½¤ÎºÝ V ¤âÊÂ¤ÙÊÑ¤¨¤é¤ì¤ë. */
+  /* I[min] ï¿½ï¿½ï¿½ï¿½ I[max] ï¿½ï¿½ï¿½Í¤ò¾®¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¤ï¿½ï¿½Ñ¤ï¿½ï¿½ï¿½.
+     ï¿½ï¿½ï¿½Îºï¿½ V ï¿½ï¿½ï¿½Â¤ï¿½ï¿½Ñ¤ï¿½ï¿½ï¿½ï¿½ï¿½. */
   int  i, j, t, x;
   double d;
 
@@ -143,8 +148,8 @@ void my_sort_d(int* I, double* V, int min, int max) {
 }
 
 void my_sort_d2(int* T, double* D, int min, int max) {
-  /* D[min] ¤«¤é D[max] ¤ÎÃÍ¤òÂç¤­¤¤½ç¤ËÊÂ¤ÙÊÑ¤¨¤ë.
-     ¤½¤ÎºÝ T ¤âÊÂ¤ÙÊÑ¤¨¤é¤ì¤ë. */
+  /* D[min] ï¿½ï¿½ï¿½ï¿½ D[max] ï¿½ï¿½ï¿½Í¤ï¿½ï¿½ç¤­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¤ï¿½ï¿½Ñ¤ï¿½ï¿½ï¿½.
+     ï¿½ï¿½ï¿½Îºï¿½ T ï¿½ï¿½ï¿½Â¤ï¿½ï¿½Ñ¤ï¿½ï¿½ï¿½ï¿½ï¿½. */
   int  i, j, t;
   double  x, d;
 
@@ -183,8 +188,8 @@ void print_rational(mpq_t q) {
 }
 
 void print_rational_as_float(mpq_t q, int n) {
-  /* q ¤òÍ­¸ú¿ô»ú n ·å¤Þ¤ÇÉ½¼¨. ¤¿¤À¤·À°¿ôÉô¤ÏÁ´ÉôÉ½¼¨. */
-  /* gmp ¤Ç¤ä¤Ã¤Æ¤¯¤ì */
+  /* q ï¿½ï¿½Í­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ n ï¿½ï¿½Þ¤ï¿½É½ï¿½ï¿½. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É½ï¿½ï¿½. */
+  /* gmp ï¿½Ç¤ï¿½Ã¤Æ¤ï¿½ï¿½ï¿½ */
   mpz_t  tmp, num, den;
   int    i;
 
@@ -227,7 +232,7 @@ int mympq_cmp_abs(mpq_t a, mpq_t b) {
   if (mpq_sgn(a) < 0) {
     if (mpq_sgn(b) < 0)
       return mpq_cmp(b, a);
-    mpq_neg(a, a);  // a < 0 ¤Ç b >= 0 ¤Ê¤Î¤Ç &a != &b ¤Ê¤Î.
+    mpq_neg(a, a);  // a < 0 ï¿½ï¿½ b >= 0 ï¿½Ê¤Î¤ï¿½ &a != &b ï¿½Ê¤ï¿½.
     ret = mpq_cmp(a, b);
     mpq_neg(a, a);
     return ret;
@@ -242,7 +247,7 @@ int mympq_cmp_abs(mpq_t a, mpq_t b) {
 }
 
 void mympq_floor(mpq_t c, mpq_t q) {
-  /* c ¤Ë q ¤ò±Û¤¨¤Ê¤¤ºÇÂç¤ÎÀ°¿ô¤òÊÖ¤¹. */
+  /* c ï¿½ï¿½ q ï¿½ï¿½Û¤ï¿½ï¿½Ê¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¤ï¿½. */
   mpz_t  z;
 
   mpz_init(z);
@@ -254,7 +259,7 @@ void mympq_floor(mpq_t c, mpq_t q) {
 }
 
 void mympq_ceil(mpq_t c, mpq_t q) {
-  /* c ¤Ë q ¤è¤ê¾®¤µ¤¯¤Ê¤¤ºÇ¾®¤ÎÀ°¿ô¤òÊÖ¤¹. */
+  /* c ï¿½ï¿½ q ï¿½ï¿½ê¾®ï¿½ï¿½ï¿½ï¿½ï¿½Ê¤ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¤ï¿½. */
   mpz_t  z;
 
   mpz_init(z);
@@ -266,7 +271,7 @@ void mympq_ceil(mpq_t c, mpq_t q) {
 }
 
 void mympq_remainder(mpq_t r, mpq_t q) {
-  /* ²¾Ê¬¿ô q ¤òÂÓÊ¬¿ô ¤ÇÉ½¤·¤¿»þ¤Î¿¿Ê¬¿ôÉô¤ò q ¤ËÊÖ¤¹. r >= 0 */
+  /* ï¿½ï¿½Ê¬ï¿½ï¿½ q ï¿½ï¿½ï¿½ï¿½Ê¬ï¿½ï¿½ ï¿½ï¿½É½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î¿ï¿½Ê¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ q ï¿½ï¿½ï¿½Ö¤ï¿½. r >= 0 */
   mpz_t  z;
 
   mpz_init(z);
@@ -279,12 +284,12 @@ void mympq_remainder(mpq_t r, mpq_t q) {
 }
 
 int mympq_is_integer(mpq_t q) {
-  // ¤â¤·¤«¤¹¤ë¤È¤Þ¤º¤¤. ¾ï¤Ë´ûÌó¤Ë¤Ê¤Ã¤Æ¤ë¤È²¾Äê¤·¤Æ¤ë¤ó¤Ç
+  // ï¿½â¤·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¤Þ¤ï¿½ï¿½ï¿½. ï¿½ï¿½Ë´ï¿½ï¿½ï¿½Ë¤Ê¤Ã¤Æ¤ï¿½È²ï¿½ï¿½ê¤·ï¿½Æ¤ï¿½ï¿½ï¿½
   return (mpz_cmp_si(mpq_denref(q), 1) == 0);
 }
 
 void  mympq_simplify(mpq_t to, mpq_t from, int exactness) {
-  /* exactness ·å¤ÎÏ¢Ê¬¿ôÅ¸³«¤ò¤¹¤ë ^_^; */
+  /* exactness ï¿½ï¿½ï¿½Ï¢Ê¬ï¿½ï¿½Å¸ï¿½ï¿½ï¿½ò¤¹¤ï¿½ ^_^; */
   mpz_t* b;
   int  i, n;
   int  sgn;
@@ -425,7 +430,7 @@ void mympq_set_float_string(mpq_t q, char* s) {
 }
 
 void mympq_set_string(mpq_t q, char* s) {
-/* -1/4 ¤È¤« +3.2/-7.3 ¤È¤«¤òÇ§¤á¤ë¤È. */
+/* -1/4 ï¿½È¤ï¿½ +3.2/-7.3 ï¿½È¤ï¿½ï¿½ï¿½Ç§ï¿½ï¿½ï¿½ï¿½. */
   mpq_t  tmp;
 
   mympq_set_float_string(q, s);

@@ -1,3 +1,24 @@
+## cmake
+
+Something like the following should work, assuming that you have GMP and GLPK locatable.
+
+```
+cmake -B build -S .
+cmake --build build
+cmake --install --prefix=install
+```
+
+You should get an `install` subdirectory with a library and a `scallop` executable under `bin`.
+
+One way to satisfy the dependencies is to install conda/mamba, say from https://github.com/conda-forge/miniforge, and then
+```
+mamba create -n scallop-build cmake gmp glpk
+```
+
+To run `scallop`, you may find that you need to `export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib` so that the executable can find the glpk shared libary.
+
+## With makefiles
+
 To install, you should be able to simply type:
 
 make

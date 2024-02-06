@@ -17,7 +17,7 @@ HALLOP::HyperbolicGroup::HyperbolicGroup(int rank, std::string relator) {
 }
 
 HALLOP::HyperbolicGroup::HyperbolicGroup(int rank, 
-                                         std::vector<string>& realtors) {
+                                         std::vector<std::string>& relators) {
   this->rank = rank;
   this->relators.resize(relators.size());
   for (int i=0; i<(int)relators.size(); ++i) {
@@ -26,14 +26,14 @@ HALLOP::HyperbolicGroup::HyperbolicGroup(int rank,
 }
 
   
-  void add_relator(std::string r);
-  void make_geodesic(std::vector<HALLOP::SignedInd>& w);
-  std::string geodesic(std::string& w);
+  // void add_relator(std::string r);
+  // void make_geodesic(std::vector<HALLOP::SignedInd>& w);
+  // std::string geodesic(std::string& w);
   
   
   
-  SignedInd letter_to_signed_ind(char c);
-  char signed_ind_to_letter(HALLOP::SignedInd);
-  vector<HALLOP::SignedInd> word_to_vector(std::string& s);
-  std::string vector_to_word(vector<HALLOP::SignedInd>& w);
+  // SignedInd letter_to_signed_ind(char c);
+  // char signed_ind_to_letter(HALLOP::SignedInd);
+  // vector<HALLOP::SignedInd> word_to_vector(std::string& s);
+  // std::string vector_to_word(vector<HALLOP::SignedInd>& w);
   
