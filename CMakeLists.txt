@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.23)
+set(CMAKE_CXX_STANDARD 11)
 project(scallop)
 
 find_path(GMP_INCLUDE gmp.h REQUIRED)
