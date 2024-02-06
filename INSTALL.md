@@ -22,7 +22,7 @@ On MacOS, the environment variable is `DYLD_LIBRARY_PATH`.
 
 Maybe the following will work?  Edit the configure line:
 ```
-cmake -B build -S . -DUSE_GUROBI
+cmake -B build -S . -DUSE_GUROBI=1
 ```
 
 
