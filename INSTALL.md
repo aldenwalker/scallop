@@ -18,6 +18,14 @@ mamba create -n scallop-build cmake gmp glpk
 To run `scallop`, you may find that you need to `export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib` so that the executable can find the glpk shared libary.
 On MacOS, the environment variable is `DYLD_LIBRARY_PATH`.
 
+### Using gurobi with cmake
+
+Maybe the following will work?  Edit the configure line:
+```
+cmake -B build -S . -DUSE_GUROBI
+```
+
+
 ## With makefiles
 
 To install, you should be able to simply type:
