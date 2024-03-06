@@ -5,6 +5,7 @@
 #include "pieces.h"
 #include "../lp.h"
 #include "../rational.h"
+
   
 namespace HALLOP {
   void hallop_lp(HALLOP::FreeGroupChain& C,

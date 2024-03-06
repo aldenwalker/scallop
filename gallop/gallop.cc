@@ -12,6 +12,8 @@
 #include "../word.h"
 
 
+
+
 using namespace GALLOP;
 
 namespace GALLOP {

@@ -14,17 +14,17 @@ typedef int SignedInd;
 
 struct HyperbolicGroup {
   int rank;
-  vector<vector<HALLOP::SignedInd> > relators;
+  std::vector<std::vector<HALLOP::SignedInd> > relators;
   
   HyperbolicGroup();
   HyperbolicGroup(int rank);
   HyperbolicGroup(int rank, std::string relator);
-  HyperbolicGroup(int rank, std::vector<string>& realtors);
+  HyperbolicGroup(int rank, std::vector<std::string>& relators);
   
-  SignedInd letter_to_signed_ind(char c);
+  HALLOP::SignedInd letter_to_signed_ind(char c);
   char signed_ind_to_letter(HALLOP::SignedInd);
-  vector<HALLOP::SignedInd> word_to_vector(std::string& s);
-  std::string vector_to_word(vector<HALLOP::SignedInd>& w);
+  std::vector<HALLOP::SignedInd> word_to_vector(std::string& s);
+  std::string vector_to_word(std::vector<HALLOP::SignedInd>& w);
   
   
   void add_relator(std::string r);

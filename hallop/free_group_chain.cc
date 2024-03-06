@@ -9,7 +9,6 @@
 #include "free_group_chain.h"
 
 #include "../word.h"
-
  
 /****************************************************************************
  print a chain letter
